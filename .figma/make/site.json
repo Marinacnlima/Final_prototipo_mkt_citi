@@ -1,0 +1,10 @@
+{
+  "description": "Streamline marketing team management with a robust platform for campaign monitoring, content libraries, and performance metrics tailored for managers and analysts.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

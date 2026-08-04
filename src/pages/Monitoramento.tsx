@@ -1,0 +1,1420 @@
+import { useState } from 'react'
+import {
+  Plus, Calendar, Columns3, Users, Target, Edit2, Check, X,
+  Clock, Flame, Trash2, BarChart2, ChevronLeft, ChevronRight,
+} from 'lucide-react'
+import {
+  ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine,
+} from 'recharts'
+import type { Profile, Channel } from '../App'
+import type { KanbanColumn, Task, TaskAssignee, ChannelType, Campaign, CalendarEvent, CampaignMetricEntry } from '../data'
+import { initialKanban, campaignsData, calendarEventsData, engagementData, team, type Difficulty } from '../data'
+
+// ─── Shared ────────────────────────────────────────────────────────────────
+
+const CH: Record<ChannelType, { label: string; color: string; bg: string; dot: string }> = {
+  instagram: { label: 'Instagram', color: '#BE185D', bg: '#FDF2F8', dot: '#EC4899' },
+  linkedin: { label: 'LinkedIn', color: '#1E40AF', bg: '#EFF6FF', dot: '#3B82F6' },
+  site: { label: 'Site', color: '#6D28D9', bg: '#F5F3FF', dot: '#7C3AED' },
+  email: { label: 'Email', color: '#92400E', bg: '#FFFBEB', dot: '#F59E0B' },
+}
+
+const DIFF: Record<Difficulty, { label: string; bg: string; color: string }> = {
+  fácil: { label: 'Fácil', bg: '#ECFDF5', color: '#065F46' },
+  médio: { label: 'Médio', bg: '#FFFBEB', color: '#92400E' },
+  difícil: { label: 'Difícil', bg: '#FEF2F2', color: '#991B1B' },
+}
+
+function ChannelBadge({ ch, small }: { ch: ChannelType; small?: boolean }) {
+  const c = CH[ch]
+  return (
+    <span className={`inline-flex items-center font-medium rounded-full ${small ? 'text-xs px-2 py-0.5' : 'text-xs px-2.5 py-1'}`} style={{ background: c.bg, color: c.color }}>
+      <span className="w-1.5 h-1.5 rounded-full mr-1.5 flex-shrink-0" style={{ background: c.dot }} />
+      {c.label}
+    </span>
+  )
+}
+
+function ChannelFilter({ channel, setChannel }: { channel: Channel; setChannel: (c: Channel) => void }) {
+  const opts: { id: Channel; label: string }[] = [
+    { id: 'todos', label: 'Todos' }, { id: 'instagram', label: 'Instagram' },
+    { id: 'linkedin', label: 'LinkedIn' }, { id: 'site', label: 'Site' }, { id: 'email', label: 'Email' },
+  ]
+  return (
+    <div className="flex items-center gap-1.5 flex-wrap">
+      {opts.map((o) => {
+        const active = channel === o.id
+        const c = o.id !== 'todos' ? CH[o.id as ChannelType] : null
+        return (
+          <button key={o.id} onClick={() => setChannel(o.id)} className="text-xs px-3 py-1.5 rounded-full font-medium transition-all"
+            style={active ? { background: c ? c.dot : '#6366F1', color: '#fff' } : { background: '#F1F5F9', color: '#64748B' }}>
+            {o.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function MemberAvatar({ memberId, size = 'sm' }: { memberId: number; size?: 'sm' | 'md' }) {
+  const member = team.find((t) => t.id === memberId)
+  if (!member) return null
+  const dim = size === 'sm' ? 22 : 28
+  return (
+    <div title={member.name} className="flex-shrink-0 flex items-center justify-center rounded-full text-white font-bold"
+      style={{ width: dim, height: dim, background: member.color, fontSize: size === 'sm' ? 9 : 11, fontFamily: "'DM Sans', sans-serif" }}>
+      {member.initials}
+    </div>
+  )
+}
+
+function AvatarStack({ assignees }: { assignees: TaskAssignee[] }) {
+  return (
+    <div className="flex items-center">
+      {assignees.slice(0, 4).map((a, i) => {
+        const member = team.find((t) => t.id === a.memberId)
+        if (!member) return null
+        return (
+          <div key={a.memberId} title={`${member.name}${a.note !== null ? ` — nota: ${a.note}` : ''}`}
+            className="flex items-center justify-center rounded-full text-white font-bold ring-2 ring-white flex-shrink-0"
+            style={{ width: 22, height: 22, background: member.color, fontSize: 9, fontFamily: "'DM Sans', sans-serif", marginLeft: i > 0 ? -6 : 0 }}>
+            {member.initials}
+          </div>
+        )
+      })}
+      {assignees.length > 4 && (
+        <div className="flex items-center justify-center rounded-full ring-2 ring-white flex-shrink-0 text-slate-500 font-bold"
+          style={{ width: 22, height: 22, fontSize: 9, background: '#E2E8F0', marginLeft: -6 }}>
+          +{assignees.length - 4}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function Modal({ title, onClose, children, wide }: { title: string; onClose: () => void; children: React.ReactNode; wide?: boolean }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+      <div
+        className={`bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden ${wide ? 'w-full max-w-2xl' : 'w-full max-w-md'}`}
+        style={{ margin: 16 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-6 py-4 flex-shrink-0" style={{ borderBottom: '1px solid #F1F5F9' }}>
+          <h3 className="font-semibold text-slate-800" style={{ fontFamily: "'DM Sans', sans-serif" }}>{title}</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
+        </div>
+        <div className="overflow-y-auto flex-1">{children}</div>
+      </div>
+    </div>
+  )
+}
+
+function FormField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="block text-xs font-medium text-slate-600 mb-1">{label}</label>
+      {children}
+    </div>
+  )
+}
+
+function Inp({ value, onChange, placeholder, type = 'text' }: { value: string; onChange: (v: string) => void; placeholder?: string; type?: string }) {
+  return (
+    <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
+      className="w-full text-sm px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
+  )
+}
+
+type Tab = 'kanban' | 'calendario' | 'campanhas' | 'engajamento'
+
+function TabNav({ tabs, active, setTab }: { tabs: { id: Tab; label: string; icon: React.ReactNode }[]; active: Tab; setTab: (t: Tab) => void }) {
+  return (
+    <div className="flex gap-1">
+      {tabs.map((t) => (
+        <button key={t.id} onClick={() => setTab(t.id)} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-all"
+          style={active === t.id ? { background: '#EEF2FF', color: '#4F46E5' } : { color: '#64748B', background: 'transparent' }}>
+          {t.icon}{t.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// ─── Task Form ─────────────────────────────────────────────────────────────
+
+function TaskModal({ initial, colId, isManager, onSave, onClose }: {
+  initial?: Task
+  colId: string
+  isManager: boolean
+  onSave: (colId: string, task: Omit<Task, 'id'> & { id?: string }) => void
+  onClose: () => void
+}) {
+  const [title, setTitle] = useState(initial?.title ?? '')
+  const [channel, setChannel] = useState<ChannelType>(initial?.channel ?? 'instagram')
+  const [difficulty, setDifficulty] = useState<Difficulty>(initial?.difficulty ?? 'médio')
+  const [dueDate, setDueDate] = useState(initial?.dueDate ?? '')
+  const [assignees, setAssignees] = useState<TaskAssignee[]>(initial?.assignees ?? [])
+
+  const members = team.filter((t) => t.id !== 1)
+
+  function toggleMember(memberId: number) {
+    setAssignees((prev) => {
+      const exists = prev.find((a) => a.memberId === memberId)
+      if (exists) return prev.filter((a) => a.memberId !== memberId)
+      return [...prev, { memberId, note: null }]
+    })
+  }
+
+  function setNote(memberId: number, val: string) {
+    const num = val === '' ? null : Math.max(0, Math.min(5, parseFloat(val) || 0))
+    setAssignees((prev) => prev.map((a) => a.memberId === memberId ? { ...a, note: num } : a))
+  }
+
+  function save() {
+    if (!title.trim()) return
+    onSave(colId, { title, channel, assignees, difficulty, dueDate, priority: 'média', id: initial?.id })
+    onClose()
+  }
+
+  const difficulties: Difficulty[] = ['fácil', 'médio', 'difícil']
+  const channels: ChannelType[] = ['instagram', 'linkedin', 'site', 'email']
+
+  return (
+    <Modal title={initial ? 'Editar task' : 'Nova task'} onClose={onClose} wide>
+      <div className="px-6 py-4 space-y-4">
+        <FormField label="Título *">
+          <Inp value={title} onChange={setTitle} placeholder="Ex: Carrossel — 5 dicas de produtividade" />
+        </FormField>
+
+        <FormField label="Rede social">
+          <div className="flex gap-2 flex-wrap">
+            {channels.map((ch) => (
+              <button key={ch} onClick={() => setChannel(ch)} className="text-xs px-3 py-1.5 rounded-full font-medium transition-all"
+                style={channel === ch ? { background: CH[ch].dot, color: '#fff' } : { background: CH[ch].bg, color: CH[ch].color }}>
+                {CH[ch].label}
+              </button>
+            ))}
+          </div>
+        </FormField>
+
+        <FormField label={isManager ? 'Responsáveis e notas individuais (0–5)' : 'Responsáveis'}>
+          <div className="space-y-2">
+            {members.map((m) => {
+              const a = assignees.find((x) => x.memberId === m.id)
+              const selected = !!a
+              return (
+                <div key={m.id} className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all"
+                  style={{ background: selected ? '#F5F3FF' : '#F8FAFC', border: `1.5px solid ${selected ? '#A5B4FC' : '#E2E8F0'}` }}>
+                  <button onClick={() => toggleMember(m.id)} className="flex items-center gap-2.5 flex-1 min-w-0 text-left">
+                    <div className="flex items-center justify-center rounded-full text-white font-bold flex-shrink-0"
+                      style={{ width: 28, height: 28, background: m.color, fontSize: 10, fontFamily: "'DM Sans', sans-serif" }}>
+                      {m.initials}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium text-slate-800">{m.name}</div>
+                      <div className="text-xs text-slate-400">{m.role}</div>
+                    </div>
+                  </button>
+                  {selected ? (
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {isManager && (
+                        <>
+                          <label className="text-xs text-slate-500 whitespace-nowrap">Nota:</label>
+                          <input type="number" min={0} max={5} step={0.1}
+                            value={a!.note ?? ''} placeholder="—"
+                            onChange={(e) => setNote(m.id, e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-16 text-xs px-2 py-1 rounded-lg border border-indigo-200 focus:outline-none focus:border-indigo-400 text-center bg-white"
+                            style={{ fontFamily: "'JetBrains Mono', monospace" }} />
+                          <span className="text-xs text-slate-400">/5</span>
+                        </>
+                      )}
+                      <button onClick={() => toggleMember(m.id)} className="text-slate-300 hover:text-red-400 ml-1"><X size={14} /></button>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-slate-400 flex-shrink-0">clique para atribuir</span>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </FormField>
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField label="Nível de dificuldade">
+            <div className="flex gap-2">
+              {difficulties.map((d) => (
+                <button key={d} onClick={() => setDifficulty(d)} className="flex-1 text-xs py-2 rounded-lg font-medium capitalize transition-all"
+                  style={difficulty === d ? { background: DIFF[d].color, color: '#fff' } : { background: DIFF[d].bg, color: DIFF[d].color }}>
+                  {DIFF[d].label}
+                </button>
+              ))}
+            </div>
+          </FormField>
+          <FormField label="Data de entrega">
+            <Inp type="date" value={dueDate} onChange={setDueDate} />
+          </FormField>
+        </div>
+      </div>
+      <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid #F1F5F9' }}>
+        <button onClick={save} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90"
+          style={{ background: 'linear-gradient(135deg, #6366F1, #818CF8)' }}>
+          {initial ? 'Salvar alterações' : 'Criar task'}
+        </button>
+        <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100">Cancelar</button>
+      </div>
+    </Modal>
+  )
+}
+
+// ─── Kanban ───────────────────────────────────────────────────────────────
+
+function KanbanBoard({ channel, isManager, columns, setColumns }: { channel: Channel; isManager: boolean; columns: KanbanColumn[]; setColumns: React.Dispatch<React.SetStateAction<KanbanColumn[]>> }) {
+  const [dragging, setDragging] = useState<{ taskId: string; fromColId: string } | null>(null)
+  const [dragOverColId, setDragOverColId] = useState<string | null>(null)
+  const [editingColId, setEditingColId] = useState<string | null>(null)
+  const [editingColName, setEditingColName] = useState('')
+  const [taskModal, setTaskModal] = useState<{ colId: string; task?: Task } | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'task' | 'col'; id: string; colId?: string } | null>(null)
+
+  function handleDrop(toColId: string) {
+    if (!dragging) return
+    const { taskId, fromColId } = dragging
+    if (fromColId === toColId) { setDragging(null); return }
+    setColumns((prev) => {
+      const task = prev.find((c) => c.id === fromColId)?.tasks.find((t) => t.id === taskId)
+      if (!task) return prev
+      return prev.map((col) => {
+        if (col.id === fromColId) return { ...col, tasks: col.tasks.filter((t) => t.id !== taskId) }
+        if (col.id === toColId) return { ...col, tasks: [...col.tasks, task] }
+        return col
+      })
+    })
+    setDragging(null); setDragOverColId(null)
+  }
+
+  function commitRename() {
+    if (editingColId && editingColName.trim()) {
+      setColumns((prev) => prev.map((c) => c.id === editingColId ? { ...c, name: editingColName.trim() } : c))
+    }
+    setEditingColId(null)
+  }
+
+  function saveTask(colId: string, data: Omit<Task, 'id'> & { id?: string }) {
+    setColumns((prev) => prev.map((col) => {
+      if (col.id !== colId) {
+        if (data.id) return { ...col, tasks: col.tasks.filter((t) => t.id !== data.id) }
+        return col
+      }
+      if (data.id) {
+        return { ...col, tasks: col.tasks.map((t) => t.id === data.id ? { ...t, ...data, id: data.id } : t) }
+      }
+      return { ...col, tasks: [...col.tasks, { ...data, id: `t-${Date.now()}` }] }
+    }))
+  }
+
+  function deleteTask(taskId: string) {
+    setColumns((prev) => prev.map((col) => ({ ...col, tasks: col.tasks.filter((t) => t.id !== taskId) })))
+    setDeleteConfirm(null)
+  }
+
+  function deleteColumn(colId: string) {
+    setColumns((prev) => prev.filter((c) => c.id !== colId))
+    setDeleteConfirm(null)
+  }
+
+  function addColumn() {
+    setColumns((prev) => [...prev, { id: `col-${Date.now()}`, name: 'Nova Coluna', tasks: [] }])
+  }
+
+  const filterTasks = (tasks: Task[]) => channel === 'todos' ? tasks : tasks.filter((t) => t.channel === channel)
+  const colColors = ['#6366F1', '#3B82F6', '#F59E0B', '#10B981', '#8B5CF6', '#EC4899', '#14B8A6']
+
+  return (
+    <>
+      <div className="h-full overflow-x-auto">
+        <div className="flex gap-4 h-full p-5 items-start min-w-max">
+          {columns.map((col, ci) => {
+            const tasks = filterTasks(col.tasks)
+            const isOver = dragOverColId === col.id
+            return (
+              <div key={col.id} className="flex flex-col rounded-xl flex-shrink-0 transition-all"
+                style={{ width: 276, background: isOver ? '#EEF2FF' : '#F8FAFC', border: `1.5px solid ${isOver ? '#A5B4FC' : '#E2E8F0'}`, minHeight: 400 }}
+                onDragOver={(e) => { e.preventDefault(); setDragOverColId(col.id) }}
+                onDrop={() => handleDrop(col.id)}
+                onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverColId(null) }}>
+
+                {/* Header */}
+                <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: '1px solid #E2E8F0' }}>
+                  <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: colColors[ci % colColors.length] }} />
+                  {editingColId === col.id ? (
+                    <input value={editingColName} onChange={(e) => setEditingColName(e.target.value)}
+                      onBlur={commitRename} onKeyDown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') setEditingColId(null) }}
+                      className="flex-1 text-sm font-semibold text-slate-800 bg-white border border-indigo-300 rounded px-2 py-0.5 focus:outline-none" autoFocus />
+                  ) : (
+                    <button className="flex-1 text-sm font-semibold text-left text-slate-700 hover:text-slate-900 truncate"
+                      style={{ fontFamily: "'DM Sans', sans-serif" }} onClick={() => { setEditingColId(col.id); setEditingColName(col.name) }}>
+                      {col.name}
+                    </button>
+                  )}
+                  <span className="text-xs rounded-full px-2 py-0.5 flex-shrink-0"
+                    style={{ background: colColors[ci % colColors.length] + '18', color: colColors[ci % colColors.length], fontFamily: "'JetBrains Mono', monospace" }}>
+                    {tasks.length}
+                  </span>
+                  <button onClick={() => setDeleteConfirm({ type: 'col', id: col.id })}
+                    className="flex-shrink-0 text-slate-300 hover:text-red-400 transition-colors ml-1">
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+
+                {/* Tasks */}
+                <div className="flex-1 p-3 space-y-2 overflow-y-auto">
+                  {tasks.map((task) => (
+                    <div key={task.id} draggable onDragStart={() => setDragging({ taskId: task.id, fromColId: col.id })}
+                      className="bg-white rounded-xl p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-all group"
+                      style={{ border: '1.5px solid #F1F5F9', opacity: dragging?.taskId === task.id ? 0.4 : 1, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <ChannelBadge ch={task.channel} small />
+                        <span className="text-xs px-1.5 py-0.5 rounded font-medium flex-shrink-0"
+                          style={{ background: DIFF[task.difficulty].bg, color: DIFF[task.difficulty].color }}>
+                          {DIFF[task.difficulty].label}
+                        </span>
+                      </div>
+                      <p className="text-sm font-medium text-slate-800 leading-snug mb-3">{task.title}</p>
+                      <div className="flex items-center justify-between">
+                        <AvatarStack assignees={task.assignees} />
+                        <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => setTaskModal({ colId: col.id, task })} className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-indigo-600">
+                            <Edit2 size={12} />
+                          </button>
+                          <button onClick={() => setDeleteConfirm({ type: 'task', id: task.id })} className="p-1 rounded hover:bg-red-50 text-slate-400 hover:text-red-500">
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                        {task.dueDate && (
+                          <span className="text-xs" style={{ color: '#94A3B8', fontFamily: "'JetBrains Mono', monospace" }}>
+                            {task.dueDate.slice(5).split('-').reverse().join('/')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {tasks.length === 0 && (
+                    <div className="text-center py-6 text-slate-400 text-sm">Solte aqui</div>
+                  )}
+                </div>
+
+                <button onClick={() => setTaskModal({ colId: col.id })}
+                  className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl mx-3 mb-3 px-3 py-2.5 transition-colors font-medium border border-dashed border-slate-200 hover:border-indigo-300">
+                  <Plus size={13} /> Adicionar task
+                </button>
+              </div>
+            )
+          })}
+          <button onClick={addColumn} className="flex-shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium text-slate-400 hover:text-slate-600 transition-all"
+            style={{ border: '1.5px dashed #CBD5E1', background: 'transparent', minWidth: 160 }}>
+            <Plus size={16} /> Nova coluna
+          </button>
+        </div>
+      </div>
+
+      {/* Task modal */}
+      {taskModal && (
+        <TaskModal colId={taskModal.colId} initial={taskModal.task} isManager={isManager} onSave={saveTask} onClose={() => setTaskModal(null)} />
+      )}
+
+      {/* Delete confirm */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setDeleteConfirm(null)}>
+          <div className="bg-white rounded-2xl p-6 shadow-2xl max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <p className="font-semibold text-slate-800 mb-1" style={{ fontFamily: "'DM Sans', sans-serif" }}>Confirmar exclusão</p>
+            <p className="text-sm text-slate-500 mb-4">
+              {deleteConfirm.type === 'col' ? 'Apagar esta coluna e todas as tasks nela?' : 'Apagar esta task permanentemente?'}
+            </p>
+            <div className="flex gap-2">
+              <button onClick={() => deleteConfirm.type === 'task' ? deleteTask(deleteConfirm.id) : deleteColumn(deleteConfirm.id)}
+                className="px-4 py-2 rounded-xl text-sm font-medium text-white bg-red-500 hover:bg-red-600">Apagar</button>
+              <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100">Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+// ─── Calendar ─────────────────────────────────────────────────────────────
+
+type CalView = 'week' | 'month' | 'year'
+
+const PT_MONTHS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+const PT_MONTHS_SHORT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+const PT_DAYS_SHORT = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
+
+function dateStr(d: Date): string {
+  return d.toISOString().slice(0, 10)
+}
+
+function getMonthGrid(year: number, month: number): (Date | null)[] {
+  const firstDay = new Date(year, month, 1)
+  const startOffset = (firstDay.getDay() + 6) % 7
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const cells: (Date | null)[] = []
+  for (let i = 0; i < startOffset; i++) cells.push(null)
+  for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(year, month, d))
+  while (cells.length % 7 !== 0) cells.push(null)
+  return cells
+}
+
+const typeStyle = {
+  meeting: { bg: '#EEF2FF', border: '#A5B4FC', color: '#4338CA', icon: <Clock size={11} /> },
+  deadline: { bg: '#FEF2F2', border: '#FCA5A5', color: '#B91C1C', icon: <Flame size={11} /> },
+  task: { bg: '#F0FDF4', border: '#86EFAC', color: '#166534', icon: <Check size={11} /> },
+}
+
+interface EventForm {
+  date: string; title: string; time: string; duration: string
+  type: 'meeting' | 'deadline' | 'task'; channel: ChannelType | ''
+}
+
+function CalendarView() {
+  const TODAY = '2026-07-31'
+  const [events, setEvents] = useState<CalendarEvent[]>(calendarEventsData)
+  const [view, setView] = useState<CalView>('week')
+  const [navDate, setNavDate] = useState(new Date('2026-07-28'))
+  const [dayDetail, setDayDetail] = useState<string | null>(null)
+  const [addModal, setAddModal] = useState<string | null>(null)
+  const [form, setForm] = useState<EventForm>({ date: '', title: '', time: '09:00', duration: '30min', type: 'meeting', channel: '' })
+
+  function navigate(dir: -1 | 1) {
+    setNavDate((d) => {
+      const nd = new Date(d)
+      if (view === 'week') nd.setDate(nd.getDate() + dir * 7)
+      else if (view === 'month') nd.setMonth(nd.getMonth() + dir)
+      else nd.setFullYear(nd.getFullYear() + dir)
+      return nd
+    })
+  }
+
+  function openDayDetail(date: string) {
+    setDayDetail(date)
+  }
+
+  function openAdd(date: string) {
+    setForm({ date, title: '', time: '09:00', duration: '30min', type: 'meeting', channel: '' })
+    setAddModal(date)
+  }
+
+  function saveEvent() {
+    if (!form.title.trim()) return
+    const ev: CalendarEvent = {
+      id: Date.now(), date: form.date, title: form.title, time: form.time,
+      duration: form.duration, type: form.type,
+      channel: form.channel ? form.channel as ChannelType : null, attendees: [],
+    }
+    setEvents((prev) => [...prev, ev])
+    setAddModal(null)
+  }
+
+  function deleteEvent(id: number) {
+    setEvents((prev) => prev.filter((e) => e.id !== id))
+  }
+
+  const eventsOnDate = (d: string) => events.filter((e) => e.date === d)
+
+  // ── Day detail modal ──
+  function DayDetailModal({ date }: { date: string }) {
+    const dayEvents = eventsOnDate(date)
+    const [d, m, y] = [
+      new Date(date + 'T12:00:00').getDate(),
+      PT_MONTHS[new Date(date + 'T12:00:00').getMonth()],
+      new Date(date + 'T12:00:00').getFullYear(),
+    ]
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setDayDetail(null)}>
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm flex flex-col max-h-[85vh] overflow-hidden" style={{ margin: 16 }} onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-between px-6 py-4 flex-shrink-0" style={{ borderBottom: '1px solid #F1F5F9' }}>
+            <div>
+              <h3 className="font-semibold text-slate-800" style={{ fontFamily: "'DM Sans', sans-serif" }}>{d} de {m}</h3>
+              <p className="text-xs text-slate-400">{y} · {dayEvents.length} evento{dayEvents.length !== 1 ? 's' : ''}</p>
+            </div>
+            <button onClick={() => setDayDetail(null)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
+          </div>
+          <div className="overflow-y-auto flex-1 px-6 py-4 space-y-2">
+            {dayEvents.length === 0 && (
+              <p className="text-sm text-slate-400 text-center py-4">Nenhum evento neste dia.</p>
+            )}
+            {dayEvents.map((ev) => {
+              const s = typeStyle[ev.type]
+              return (
+                <div key={ev.id} className="group rounded-xl px-3 py-2.5 flex items-start justify-between gap-2" style={{ background: s.bg, border: `1.5px solid ${s.border}` }}>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <span style={{ color: s.color }}>{s.icon}</span>
+                      <span className="text-xs font-semibold" style={{ color: s.color, fontFamily: "'JetBrains Mono', monospace" }}>{ev.time}</span>
+                      {ev.duration && <span className="text-xs text-slate-400">· {ev.duration}</span>}
+                    </div>
+                    <p className="text-sm font-medium text-slate-700 leading-snug">{ev.title}</p>
+                    {ev.channel && <div className="mt-1"><ChannelBadge ch={ev.channel} small /></div>}
+                  </div>
+                  <button onClick={() => deleteEvent(ev.id)} className="flex-shrink-0 opacity-0 group-hover:opacity-100 text-red-300 hover:text-red-500 transition-all mt-0.5">
+                    <X size={13} />
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+          <div className="px-6 py-4 flex-shrink-0" style={{ borderTop: '1px solid #F1F5F9' }}>
+            <button onClick={() => { setDayDetail(null); openAdd(date) }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium text-white hover:opacity-90 transition-opacity"
+              style={{ background: 'linear-gradient(135deg, #6366F1, #818CF8)' }}>
+              <Plus size={15} /> Adicionar evento
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Week view ──
+  function WeekView() {
+    const monday = new Date(navDate)
+    monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7))
+    const days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(monday); d.setDate(d.getDate() + i); return d
+    })
+    return (
+      <div className="overflow-x-auto -mx-1 px-1">
+        <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(7, minmax(130px, 1fr))', minWidth: 700 }}>
+          {days.map((day) => {
+            const ds = dateStr(day)
+            const dayEvents = eventsOnDate(ds)
+            const isToday = ds === TODAY
+            return (
+              <div key={ds} className="rounded-xl overflow-hidden"
+                style={{ background: '#fff', border: isToday ? '2px solid #6366F1' : '1.5px solid #E2E8F0', minHeight: 180 }}>
+                <button className="w-full px-3 py-2.5 flex items-center gap-2 text-left hover:bg-indigo-50/60 transition-colors"
+                  style={{ background: isToday ? '#EEF2FF' : '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}
+                  onClick={() => openDayDetail(ds)}>
+                  <div className="text-sm font-bold flex items-center justify-center rounded-lg flex-shrink-0"
+                    style={{ width: 28, height: 28, background: isToday ? '#6366F1' : 'transparent', color: isToday ? '#fff' : '#1E293B', fontFamily: "'DM Sans', sans-serif" }}>
+                    {day.getDate()}
+                  </div>
+                  <div>
+                    <div className="text-xs font-semibold" style={{ color: isToday ? '#4F46E5' : '#64748B', fontFamily: "'DM Sans', sans-serif" }}>
+                      {PT_DAYS_SHORT[(day.getDay() + 6) % 7]}
+                    </div>
+                    <div className="text-xs text-slate-400">{PT_MONTHS_SHORT[day.getMonth()]}</div>
+                  </div>
+                  {isToday && <span className="ml-auto text-xs px-1.5 py-0.5 rounded font-medium" style={{ background: '#6366F1', color: '#fff' }}>Hoje</span>}
+                </button>
+                <div className="p-2 space-y-1.5">
+                  {dayEvents.map((ev) => {
+                    const s = typeStyle[ev.type]
+                    return (
+                      <div key={ev.id} className="group rounded-lg px-2.5 py-1.5" style={{ background: s.bg, borderLeft: `3px solid ${s.border}` }}>
+                        <div className="flex items-center gap-1 mb-0.5">
+                          <span style={{ color: s.color }}>{s.icon}</span>
+                          <span className="text-xs font-medium" style={{ color: s.color, fontFamily: "'JetBrains Mono', monospace" }}>{ev.time}</span>
+                        </div>
+                        <div className="flex items-start justify-between gap-1">
+                          <p className="text-xs font-medium text-slate-700 leading-snug flex-1">{ev.title}</p>
+                          <button onClick={() => deleteEvent(ev.id)} className="flex-shrink-0 opacity-0 group-hover:opacity-100 text-red-300 hover:text-red-500 transition-all">
+                            <X size={11} />
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                  <button onClick={() => openAdd(ds)} className="w-full text-xs text-slate-300 hover:text-indigo-400 hover:bg-indigo-50 rounded-lg py-1 transition-colors text-center border border-dashed border-slate-200 hover:border-indigo-300">
+                    + Evento
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
+
+  // ── Month view ──
+  function MonthView() {
+    const year = navDate.getFullYear()
+    const month = navDate.getMonth()
+    const cells = getMonthGrid(year, month)
+    return (
+      <div>
+        <div className="grid grid-cols-7 mb-1">
+          {PT_DAYS_SHORT.map((d) => (
+            <div key={d} className="text-center text-xs font-semibold text-slate-400 py-2">{d}</div>
+          ))}
+        </div>
+        <div className="grid grid-cols-7 gap-1">
+          {cells.map((day, i) => {
+            if (!day) return <div key={i} className="rounded-lg" style={{ minHeight: 80 }} />
+            const ds = dateStr(day)
+            const dayEvents = eventsOnDate(ds)
+            const isToday = ds === TODAY
+            const isCurrentMonth = day.getMonth() === month
+            return (
+              <div key={ds} className="rounded-lg overflow-hidden cursor-pointer hover:shadow-sm transition-all group"
+                style={{ minHeight: 80, background: isToday ? '#EEF2FF' : '#fff', border: isToday ? '1.5px solid #6366F1' : '1.5px solid #F1F5F9', opacity: isCurrentMonth ? 1 : 0.4 }}
+                onClick={() => openDayDetail(ds)}>
+                <div className="flex items-center justify-between px-2 pt-2 pb-1">
+                  <span className="text-xs font-bold" style={{ color: isToday ? '#6366F1' : '#64748B', fontFamily: "'DM Sans', sans-serif" }}>{day.getDate()}</span>
+                  {dayEvents.length > 0 && (
+                    <span className="text-xs font-medium rounded-full px-1.5" style={{ background: '#6366F1', color: '#fff', fontFamily: "'JetBrains Mono', monospace", fontSize: 10 }}>
+                      {dayEvents.length}
+                    </span>
+                  )}
+                </div>
+                <div className="px-1.5 pb-1.5 space-y-0.5">
+                  {dayEvents.slice(0, 2).map((ev) => {
+                    const s = typeStyle[ev.type]
+                    return (
+                      <div key={ev.id} className="flex items-center justify-between group/ev rounded px-1.5 py-0.5" style={{ background: s.bg }}>
+                        <p className="text-xs truncate leading-snug flex-1" style={{ color: s.color }}>{ev.title}</p>
+                        <button onClick={(e) => { e.stopPropagation(); deleteEvent(ev.id) }} className="flex-shrink-0 opacity-0 group-hover/ev:opacity-100 ml-1 text-red-400">
+                          <X size={9} />
+                        </button>
+                      </div>
+                    )
+                  })}
+                  {dayEvents.length > 2 && <p className="text-xs text-slate-400 px-1">+{dayEvents.length - 2}</p>}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
+
+  // ── Year view ──
+  function YearView() {
+    const year = navDate.getFullYear()
+    return (
+      <div className="grid grid-cols-4 gap-4">
+        {Array.from({ length: 12 }, (_, m) => {
+          const cells = getMonthGrid(year, m)
+          const monthEvents = events.filter((e) => e.date.startsWith(`${year}-${String(m + 1).padStart(2, '0')}`))
+          return (
+            <div key={m} className="bg-white rounded-xl p-3" style={{ border: '1.5px solid #E2E8F0' }}>
+              <div className="text-xs font-semibold text-slate-700 mb-2 text-center" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                {PT_MONTHS_SHORT[m]}
+              </div>
+              <div className="grid grid-cols-7 gap-0.5">
+                {PT_DAYS_SHORT.map((d) => (
+                  <div key={d} className="text-center" style={{ fontSize: 8, color: '#94A3B8' }}>{d[0]}</div>
+                ))}
+                {cells.map((day, i) => {
+                  if (!day) return <div key={i} />
+                  const ds = dateStr(day)
+                  const hasEv = eventsOnDate(ds).length > 0
+                  const isToday = ds === TODAY
+                  return (
+                    <button key={ds} onClick={() => { setView('month'); setNavDate(new Date(year, m, 1)) }}
+                      className="flex items-center justify-center rounded transition-all"
+                      style={{ height: 18, fontSize: 9, background: isToday ? '#6366F1' : hasEv ? '#EEF2FF' : 'transparent', color: isToday ? '#fff' : '#64748B', fontFamily: "'JetBrains Mono', monospace" }}>
+                      {day.getDate()}
+                    </button>
+                  )
+                })}
+              </div>
+              {monthEvents.length > 0 && (
+                <div className="mt-2 text-center">
+                  <span className="text-xs" style={{ color: '#6366F1', fontFamily: "'JetBrains Mono', monospace" }}>{monthEvents.length} evento{monthEvents.length > 1 ? 's' : ''}</span>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
+  const navLabel = view === 'week'
+    ? `${PT_MONTHS_SHORT[navDate.getMonth()]} ${navDate.getFullYear()}`
+    : view === 'month'
+    ? `${PT_MONTHS[navDate.getMonth()]} ${navDate.getFullYear()}`
+    : String(navDate.getFullYear())
+
+  return (
+    <div className="h-full overflow-auto p-5">
+      <div className="max-w-6xl mx-auto">
+        {/* Controls */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <button onClick={() => navigate(-1)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500"><ChevronLeft size={16} /></button>
+            <h2 className="text-base font-semibold text-slate-700 min-w-32 text-center" style={{ fontFamily: "'DM Sans', sans-serif" }}>{navLabel}</h2>
+            <button onClick={() => navigate(1)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500"><ChevronRight size={16} /></button>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex rounded-lg overflow-hidden" style={{ border: '1.5px solid #E2E8F0' }}>
+              {(['week', 'month', 'year'] as CalView[]).map((v) => (
+                <button key={v} onClick={() => setView(v)}
+                  className="text-xs px-3 py-1.5 font-medium transition-all capitalize"
+                  style={view === v ? { background: '#6366F1', color: '#fff' } : { color: '#64748B' }}>
+                  {v === 'week' ? 'Semana' : v === 'month' ? 'Mês' : 'Ano'}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {view === 'week' && <WeekView />}
+        {view === 'month' && <MonthView />}
+        {view === 'year' && <YearView />}
+      </div>
+
+      {/* Day detail modal */}
+      {dayDetail && <DayDetailModal date={dayDetail} />}
+
+      {/* Add event modal */}
+      {addModal && (
+        <Modal title="Novo evento" onClose={() => setAddModal(null)}>
+          <div className="px-6 py-4 space-y-4">
+            <FormField label="Título *">
+              <Inp value={form.title} onChange={(v) => setForm((f) => ({ ...f, title: v }))} placeholder="Ex: Reunião de planning" />
+            </FormField>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField label="Data">
+                <Inp type="date" value={form.date} onChange={(v) => setForm((f) => ({ ...f, date: v }))} />
+              </FormField>
+              <FormField label="Horário">
+                <Inp value={form.time} onChange={(v) => setForm((f) => ({ ...f, time: v }))} placeholder="09:00" />
+              </FormField>
+            </div>
+            <FormField label="Duração">
+              <Inp value={form.duration} onChange={(v) => setForm((f) => ({ ...f, duration: v }))} placeholder="Ex: 30min, 1h" />
+            </FormField>
+            <FormField label="Tipo">
+              <div className="flex gap-2">
+                {(['meeting', 'deadline', 'task'] as const).map((t) => {
+                  const s = typeStyle[t]
+                  const label = t === 'meeting' ? 'Reunião' : t === 'deadline' ? 'Deadline' : 'Task'
+                  return (
+                    <button key={t} onClick={() => setForm((f) => ({ ...f, type: t }))}
+                      className="flex-1 text-xs py-2 rounded-lg font-medium transition-all"
+                      style={form.type === t ? { background: s.border, color: '#fff' } : { background: s.bg, color: s.color }}>
+                      {label}
+                    </button>
+                  )
+                })}
+              </div>
+            </FormField>
+            <FormField label="Canal (opcional)">
+              <div className="flex gap-2 flex-wrap">
+                <button onClick={() => setForm((f) => ({ ...f, channel: '' }))}
+                  className="text-xs px-3 py-1 rounded-full font-medium transition-all"
+                  style={form.channel === '' ? { background: '#6366F1', color: '#fff' } : { background: '#F1F5F9', color: '#64748B' }}>
+                  Nenhum
+                </button>
+                {(['instagram', 'linkedin', 'site', 'email'] as ChannelType[]).map((ch) => (
+                  <button key={ch} onClick={() => setForm((f) => ({ ...f, channel: ch }))}
+                    className="text-xs px-3 py-1 rounded-full font-medium transition-all"
+                    style={form.channel === ch ? { background: CH[ch].dot, color: '#fff' } : { background: CH[ch].bg, color: CH[ch].color }}>
+                    {CH[ch].label}
+                  </button>
+                ))}
+              </div>
+            </FormField>
+          </div>
+          <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid #F1F5F9' }}>
+            <button onClick={saveEvent} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90"
+              style={{ background: 'linear-gradient(135deg, #6366F1, #818CF8)' }}>
+              Salvar evento
+            </button>
+            <button onClick={() => setAddModal(null)} className="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100">Cancelar</button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  )
+}
+
+// ─── Campaigns ────────────────────────────────────────────────────────────
+
+function ProgressBar({ value, target, color }: { value: number; target: number; color: string }) {
+  const pct = target > 0 ? Math.min(100, Math.round((value / target) * 100)) : 0
+  return (
+    <div>
+      <div className="flex justify-between text-xs mb-1">
+        <span style={{ color: '#64748B' }}>{value.toLocaleString('pt-BR')}</span>
+        <span style={{ color: '#94A3B8' }}>meta: {target.toLocaleString('pt-BR')}</span>
+      </div>
+      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#F1F5F9' }}>
+        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
+      </div>
+      <div className="text-xs mt-0.5" style={{ color: '#94A3B8', fontFamily: "'JetBrains Mono', monospace" }}>{pct}%</div>
+    </div>
+  )
+}
+
+const statusStyle = {
+  ativa: { label: 'Ativa', bg: '#ECFDF5', color: '#059669' },
+  planejada: { label: 'Planejada', bg: '#EEF2FF', color: '#6366F1' },
+  encerrada: { label: 'Encerrada', bg: '#F1F5F9', color: '#64748B' },
+}
+
+function CampaignsView({ channel }: { channel: Channel }) {
+  const [campaigns, setCampaigns] = useState<Campaign[]>(campaignsData)
+  const [showForm, setShowForm] = useState(false)
+  const [expandedMetrics, setExpandedMetrics] = useState<Record<number, boolean>>({})
+  const [metricForms, setMetricForms] = useState<Record<number, { date: string; reach: string; interactions: string }>>({})
+  const [form, setForm] = useState({ name: '', objective: '', audience: '', startDate: '', endDate: '', targetReach: '', targetInteractions: '', channels: [] as ChannelType[] })
+
+  const filtered = channel === 'todos' ? campaigns : campaigns.filter((c) => c.channels.includes(channel as ChannelType))
+
+  function toggleChannel(ch: ChannelType) {
+    setForm((f) => ({ ...f, channels: f.channels.includes(ch) ? f.channels.filter((c) => c !== ch) : [...f.channels, ch] }))
+  }
+
+  function submitCampaign() {
+    if (!form.name.trim()) return
+    const nc: Campaign = {
+      id: Date.now(), name: form.name, channels: form.channels.length ? form.channels : ['instagram'],
+      objective: form.objective, audience: form.audience, startDate: form.startDate, endDate: form.endDate,
+      reach: 0, targetReach: parseInt(form.targetReach) || 10000,
+      interactions: 0, targetInteractions: parseInt(form.targetInteractions) || 500,
+      status: 'planejada', daysRunning: 0, dailyEntries: [],
+    }
+    setCampaigns((prev) => [...prev, nc])
+    setShowForm(false)
+    setForm({ name: '', objective: '', audience: '', startDate: '', endDate: '', targetReach: '', targetInteractions: '', channels: [] })
+  }
+
+  function deleteCampaign(id: number) {
+    setCampaigns((prev) => prev.filter((c) => c.id !== id))
+  }
+
+  function addMetricEntry(campId: number) {
+    const mf = metricForms[campId]
+    if (!mf?.date) return
+    const entry: CampaignMetricEntry = { date: mf.date, reach: parseInt(mf.reach) || 0, interactions: parseInt(mf.interactions) || 0 }
+    setCampaigns((prev) => prev.map((c) => {
+      if (c.id !== campId) return c
+      const entries = [...c.dailyEntries, entry].sort((a, b) => a.date.localeCompare(b.date))
+      const lastEntry = entries[entries.length - 1]
+      return { ...c, dailyEntries: entries, reach: lastEntry.reach, interactions: lastEntry.interactions }
+    }))
+    setMetricForms((prev) => ({ ...prev, [campId]: { date: '', reach: '', interactions: '' } }))
+  }
+
+  function deleteMetricEntry(campId: number, date: string) {
+    setCampaigns((prev) => prev.map((c) => {
+      if (c.id !== campId) return c
+      const entries = c.dailyEntries.filter((e) => e.date !== date)
+      const lastEntry = entries[entries.length - 1]
+      return { ...c, dailyEntries: entries, reach: lastEntry?.reach ?? 0, interactions: lastEntry?.interactions ?? 0 }
+    }))
+  }
+
+  return (
+    <div className="h-full overflow-auto p-5">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h2 className="text-base font-semibold text-slate-800" style={{ fontFamily: "'DM Sans', sans-serif" }}>Campanhas</h2>
+            <p className="text-sm text-slate-500">{filtered.length} campanha{filtered.length !== 1 ? 's' : ''}</p>
+          </div>
+          <button onClick={() => setShowForm(true)} className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl text-white transition-all hover:opacity-90"
+            style={{ background: 'linear-gradient(135deg, #6366F1, #818CF8)' }}>
+            <Plus size={16} /> Nova Campanha
+          </button>
+        </div>
+
+        {showForm && (
+          <div className="bg-white rounded-2xl p-6 mb-5" style={{ border: '1.5px solid #E2E8F0', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-slate-800" style={{ fontFamily: "'DM Sans', sans-serif" }}>Nova Campanha</h3>
+              <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2"><FormField label="Nome *"><Inp value={form.name} onChange={(v) => setForm((f) => ({ ...f, name: v }))} placeholder="Ex: Lançamento Q4" /></FormField></div>
+              <div className="col-span-2"><FormField label="Objetivo"><Inp value={form.objective} onChange={(v) => setForm((f) => ({ ...f, objective: v }))} placeholder="Gerar awareness para o produto" /></FormField></div>
+              <div className="col-span-2"><FormField label="Público-alvo"><Inp value={form.audience} onChange={(v) => setForm((f) => ({ ...f, audience: v }))} placeholder="Gerentes de marketing B2B" /></FormField></div>
+              <FormField label="Início"><Inp type="date" value={form.startDate} onChange={(v) => setForm((f) => ({ ...f, startDate: v }))} /></FormField>
+              <FormField label="Término"><Inp type="date" value={form.endDate} onChange={(v) => setForm((f) => ({ ...f, endDate: v }))} /></FormField>
+              <FormField label="Meta de alcance"><Inp type="number" value={form.targetReach} onChange={(v) => setForm((f) => ({ ...f, targetReach: v }))} placeholder="50000" /></FormField>
+              <FormField label="Meta de interações"><Inp type="number" value={form.targetInteractions} onChange={(v) => setForm((f) => ({ ...f, targetInteractions: v }))} placeholder="3000" /></FormField>
+              <div className="col-span-2">
+                <label className="block text-xs font-medium text-slate-600 mb-2">Canais</label>
+                <div className="flex gap-2 flex-wrap">
+                  {(['instagram', 'linkedin', 'site', 'email'] as ChannelType[]).map((ch) => (
+                    <button key={ch} onClick={() => toggleChannel(ch)} className="text-xs px-3 py-1.5 rounded-full font-medium transition-all"
+                      style={form.channels.includes(ch) ? { background: CH[ch].dot, color: '#fff' } : { background: CH[ch].bg, color: CH[ch].color }}>
+                      {CH[ch].label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-5 pt-4" style={{ borderTop: '1px solid #F1F5F9' }}>
+              <button onClick={submitCampaign} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90"
+                style={{ background: 'linear-gradient(135deg, #6366F1, #818CF8)' }}>Criar Campanha</button>
+              <button onClick={() => setShowForm(false)} className="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100">Cancelar</button>
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-4">
+          {filtered.map((camp) => {
+            const st = statusStyle[camp.status]
+            const expanded = expandedMetrics[camp.id]
+            const mf = metricForms[camp.id] ?? { date: '', reach: '', interactions: '' }
+            const chartData = camp.dailyEntries.map((e) => ({
+              date: e.date.slice(5), reach: e.reach, interactions: e.interactions,
+            }))
+
+            return (
+              <div key={camp.id} className="bg-white rounded-2xl p-5" style={{ border: '1.5px solid #E2E8F0', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+                <div className="flex items-start justify-between gap-4 mb-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-semibold text-slate-800" style={{ fontFamily: "'DM Sans', sans-serif" }}>{camp.name}</h3>
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: st.bg, color: st.color }}>{st.label}</span>
+                    </div>
+                    <p className="text-sm text-slate-500">{camp.objective}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">Público: {camp.audience}</p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {camp.daysRunning > 0 && (
+                      <span className="text-xs" style={{ color: '#94A3B8' }}>
+                        <span style={{ fontFamily: "'JetBrains Mono', monospace", color: '#6366F1', fontWeight: 600 }}>{camp.daysRunning}</span>d no ar
+                      </span>
+                    )}
+                    <button onClick={() => deleteCampaign(camp.id)} className="p-1.5 rounded-lg text-slate-300 hover:text-red-400 hover:bg-red-50 transition-all">
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex gap-1.5 mb-4">
+                  {camp.channels.map((ch) => <ChannelBadge key={ch} ch={ch} small />)}
+                  <span className="text-xs text-slate-400 ml-1">{camp.startDate} → {camp.endDate}</span>
+                </div>
+
+                {camp.status !== 'planejada' && (
+                  <div className="grid grid-cols-2 gap-6 mb-4">
+                    <div><div className="text-xs font-medium text-slate-600 mb-1.5 flex items-center gap-1"><Target size={11} /> Alcance</div>
+                      <ProgressBar value={camp.reach} target={camp.targetReach} color="#6366F1" /></div>
+                    <div><div className="text-xs font-medium text-slate-600 mb-1.5 flex items-center gap-1"><BarChart2 size={11} /> Interações</div>
+                      <ProgressBar value={camp.interactions} target={camp.targetInteractions} color="#10B981" /></div>
+                  </div>
+                )}
+
+                {/* Daily metrics section */}
+                <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #E2E8F0' }}>
+                  <button onClick={() => setExpandedMetrics((p) => ({ ...p, [camp.id]: !expanded }))}
+                    className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+                    <span className="flex items-center gap-2"><BarChart2 size={14} className="text-indigo-400" /> Métricas diárias ({camp.dailyEntries.length} registros)</span>
+                    <ChevronRight size={14} className="text-slate-400 transition-transform" style={{ transform: expanded ? 'rotate(90deg)' : 'none' }} />
+                  </button>
+
+                  {expanded && (
+                    <div className="px-4 pb-4" style={{ borderTop: '1px solid #F1F5F9' }}>
+                      {/* Add entry form */}
+                      <div className="pt-3 pb-3 flex gap-3 items-end flex-wrap">
+                        <div className="flex-1 min-w-32">
+                          <label className="block text-xs text-slate-500 mb-1">Data</label>
+                          <input type="date" value={mf.date} onChange={(e) => setMetricForms((p) => ({ ...p, [camp.id]: { ...mf, date: e.target.value } }))}
+                            className="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-200 focus:outline-none focus:border-indigo-400" />
+                        </div>
+                        <div className="flex-1 min-w-24">
+                          <label className="block text-xs text-slate-500 mb-1">Alcance</label>
+                          <input type="number" value={mf.reach} onChange={(e) => setMetricForms((p) => ({ ...p, [camp.id]: { ...mf, reach: e.target.value } }))}
+                            placeholder="0" className="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-200 focus:outline-none focus:border-indigo-400" />
+                        </div>
+                        <div className="flex-1 min-w-24">
+                          <label className="block text-xs text-slate-500 mb-1">Interações</label>
+                          <input type="number" value={mf.interactions} onChange={(e) => setMetricForms((p) => ({ ...p, [camp.id]: { ...mf, interactions: e.target.value } }))}
+                            placeholder="0" className="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-200 focus:outline-none focus:border-indigo-400" />
+                        </div>
+                        <button onClick={() => addMetricEntry(camp.id)} className="flex items-center gap-1 text-xs px-3 py-2 rounded-xl font-medium text-white hover:opacity-90"
+                          style={{ background: '#6366F1' }}>
+                          <Plus size={12} /> Registrar
+                        </button>
+                      </div>
+
+                      {/* Chart */}
+                      {chartData.length > 0 && (
+                        <div style={{ height: 160, marginBottom: 12 }}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={chartData} margin={{ top: 4, right: 8, left: -24, bottom: 0 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+                              <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
+                              <YAxis tick={{ fontSize: 10, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
+                              <Tooltip contentStyle={{ border: '1px solid #E2E8F0', borderRadius: 10, fontSize: 11 }}
+                                formatter={(v) => Number(v ?? 0).toLocaleString('pt-BR')} />
+                              <ReferenceLine y={camp.targetReach} stroke="#6366F1" strokeDasharray="4 4" label={{ value: 'Meta alcance', fill: '#6366F1', fontSize: 10 }} />
+                              <Line type="monotone" dataKey="reach" name="Alcance" stroke="#6366F1" strokeWidth={2} dot={{ r: 3 }} />
+                              <Line type="monotone" dataKey="interactions" name="Interações" stroke="#10B981" strokeWidth={2} dot={{ r: 3 }} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      )}
+
+                      {/* Entries table */}
+                      {camp.dailyEntries.length > 0 && (
+                        <div className="rounded-lg overflow-hidden" style={{ border: '1px solid #F1F5F9' }}>
+                          {camp.dailyEntries.map((entry, i) => (
+                            <div key={entry.date} className="flex items-center justify-between px-3 py-2 text-xs group"
+                              style={{ background: i % 2 === 0 ? '#FAFAFA' : '#fff', borderTop: i > 0 ? '1px solid #F8FAFC' : undefined }}>
+                              <span style={{ fontFamily: "'JetBrains Mono', monospace", color: '#64748B' }}>{entry.date}</span>
+                              <span style={{ fontFamily: "'JetBrains Mono', monospace", color: '#6366F1' }}>Alcance: {entry.reach.toLocaleString('pt-BR')}</span>
+                              <span style={{ fontFamily: "'JetBrains Mono', monospace", color: '#10B981' }}>Interações: {entry.interactions.toLocaleString('pt-BR')}</span>
+                              <button onClick={() => deleteMetricEntry(camp.id, entry.date)} className="opacity-0 group-hover:opacity-100 text-red-300 hover:text-red-500">
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {camp.dailyEntries.length === 0 && (
+                        <p className="text-xs text-slate-400 text-center py-2">Nenhum registro ainda</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Engagement ────────────────────────────────────────────────────────────
+
+type NoteCategory = 'feedbacks' | 'alertas' | 'outros'
+interface MemberNotes { feedbacks: string; alertas: string; outros: string }
+
+function EngagementView({ columns }: { columns: KanbanColumn[] }) {
+  const [data, setData] = useState(engagementData)
+  const [editMode, setEditMode] = useState(false)
+  const [expandedMember, setExpandedMember] = useState<number | null>(null)
+  const [notes, setNotes] = useState<Record<number, MemberNotes>>(() =>
+    Object.fromEntries(engagementData.map((r) => [r.memberId, { feedbacks: '', alertas: '', outros: '' }]))
+  )
+  // null = use auto-calculated; number = manual override
+  const [qualityOverride, setQualityOverride] = useState<Record<number, number | null>>(
+    () => Object.fromEntries(engagementData.map((r) => [r.memberId, null]))
+  )
+
+  function calcQuality(memberId: number): number | null {
+    const rated: number[] = []
+    columns.forEach((col) => col.tasks.forEach((task) => {
+      const a = task.assignees.find((x) => x.memberId === memberId)
+      if (a && a.note !== null) rated.push(a.note)
+    }))
+    if (rated.length === 0) return null
+    return parseFloat((rated.reduce((s, v) => s + v, 0) / rated.length).toFixed(2))
+  }
+
+  function effectiveQuality(memberId: number): number {
+    const override = qualityOverride[memberId]
+    if (override !== null) return override
+    return calcQuality(memberId) ?? data.find((r) => r.memberId === memberId)!.quality
+  }
+
+  function updateScore(memberId: number, field: 'punctuality' | 'quality' | 'presence', value: string) {
+    const num = Math.max(0, Math.min(5, parseFloat(value) || 0))
+    setData((prev) => prev.map((r) => r.memberId !== memberId ? r : { ...r, [field]: num }))
+  }
+
+  function updateTasks(memberId: number, field: 'tasksCompleted' | 'tasksTotal', value: string) {
+    const num = Math.max(0, parseInt(value) || 0)
+    setData((prev) => prev.map((r) => r.memberId !== memberId ? r : { ...r, [field]: num }))
+  }
+
+  function updateNote(memberId: number, cat: NoteCategory, value: string) {
+    setNotes((prev) => ({ ...prev, [memberId]: { ...prev[memberId], [cat]: value } }))
+  }
+
+  function StarDisplay({ val, color }: { val: number; color: string }) {
+    const full = Math.floor(val)
+    const frac = val - full
+    return (
+      <div className="flex items-center gap-0.5">
+        {[1, 2, 3, 4, 5].map((s) => (
+          <svg key={s} width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M6 1l1.2 3.6H11L8.2 6.9l1 3.1L6 8.4 2.8 10l1-3.1L1 4.6h3.8z"
+              fill={s <= full ? color : s === full + 1 && frac >= 0.5 ? color : '#E2E8F0'}
+              opacity={s === full + 1 && frac > 0 && frac < 0.5 ? 0.4 : 1} />
+          </svg>
+        ))}
+      </div>
+    )
+  }
+
+  function StarScore({ memberId, field, color }: { memberId: number; field: 'punctuality' | 'quality' | 'presence'; color: string }) {
+    const row = data.find((r) => r.memberId === memberId)!
+    const isQuality = field === 'quality'
+    const val = isQuality ? effectiveQuality(memberId) : row[field]
+    const autoVal = isQuality ? calcQuality(memberId) : null
+    const isOverridden = isQuality && qualityOverride[memberId] !== null
+
+    if (editMode && isQuality) {
+      return (
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-1.5">
+            <input type="number" min={0} max={5} step={0.1} value={isOverridden ? qualityOverride[memberId]! : (autoVal ?? val)}
+              onChange={(e) => {
+                const n = Math.max(0, Math.min(5, parseFloat(e.target.value) || 0))
+                setQualityOverride((prev) => ({ ...prev, [memberId]: n }))
+              }}
+              className="w-16 text-xs px-2 py-1 rounded border border-indigo-200 focus:outline-none focus:border-indigo-400 text-center"
+              style={{ fontFamily: "'JetBrains Mono', monospace" }} />
+            <span className="text-xs text-slate-400">/ 5</span>
+            {isOverridden && (
+              <button onClick={() => setQualityOverride((prev) => ({ ...prev, [memberId]: null }))}
+                className="text-xs px-1.5 py-0.5 rounded text-amber-600 hover:bg-amber-50 border border-amber-200" title="Voltar ao cálculo automático">
+                <X size={10} />
+              </button>
+            )}
+          </div>
+          {autoVal !== null && (
+            <div className="text-xs text-slate-400">
+              auto: <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{autoVal.toFixed(1)}</span>
+              {isOverridden && <span className="ml-1 text-amber-500">(sobrescrito)</span>}
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    if (editMode) {
+      return (
+        <div className="flex items-center gap-1.5">
+          <input type="number" min={0} max={5} step={0.1} value={val}
+            onChange={(e) => updateScore(memberId, field, e.target.value)}
+            className="w-16 text-xs px-2 py-1 rounded border border-slate-200 focus:outline-none focus:border-indigo-400 text-center"
+            style={{ fontFamily: "'JetBrains Mono', monospace" }} />
+          <span className="text-xs text-slate-400">/ 5</span>
+        </div>
+      )
+    }
+
+    return (
+      <div className="flex flex-col gap-0.5">
+        <div className="flex items-center gap-1.5">
+          <StarDisplay val={val} color={color} />
+          <span className="text-xs" style={{ fontFamily: "'JetBrains Mono', monospace", color: '#64748B' }}>{val.toFixed(1)}</span>
+        </div>
+        {isQuality && (
+          <div className="text-xs">
+            {isOverridden ? (
+              <span className="text-amber-500">manual</span>
+            ) : autoVal !== null ? (
+              <span className="text-emerald-500">auto</span>
+            ) : null}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  const avgCommitment = (data.reduce((a, r) => a + r.punctuality, 0) / data.length).toFixed(1)
+  const avgQuality = (data.reduce((a, r) => a + effectiveQuality(r.memberId), 0) / data.length).toFixed(1)
+  const avgPresence = (data.reduce((a, r) => a + r.presence, 0) / data.length).toFixed(1)
+
+  const NOTE_CATS: { key: NoteCategory; label: string; color: string; bg: string }[] = [
+    { key: 'feedbacks', label: 'Feedbacks', color: '#4F46E5', bg: '#EEF2FF' },
+    { key: 'alertas', label: 'Alertas', color: '#B45309', bg: '#FFFBEB' },
+    { key: 'outros', label: 'Outros', color: '#374151', bg: '#F3F4F6' },
+  ]
+
+  return (
+    <div className="h-full overflow-auto p-5">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h2 className="text-base font-semibold text-slate-800 flex items-center gap-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+              <Users size={18} className="text-indigo-500" /> Engajamento do Time
+            </h2>
+            <p className="text-sm text-slate-500 mt-0.5">Visível apenas para a Gerente · Julho 2026 · Escala 0–5</p>
+          </div>
+          <button onClick={() => setEditMode((e) => !e)} className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl transition-all"
+            style={editMode ? { background: '#10B981', color: '#fff' } : { background: '#EEF2FF', color: '#4338CA' }}>
+            {editMode ? <><Check size={15} /> Salvar</> : <><Edit2 size={15} /> Editar</>}
+          </button>
+        </div>
+
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          {[
+            { label: 'Média Compromisso', value: avgCommitment, color: '#6366F1' },
+            { label: 'Média Qualidade', value: avgQuality, color: '#10B981' },
+            { label: 'Média Presença', value: avgPresence, color: '#F59E0B' },
+          ].map((kpi) => (
+            <div key={kpi.label} className="bg-white rounded-xl p-4" style={{ border: '1.5px solid #E2E8F0' }}>
+              <div className="text-2xl font-bold mb-1" style={{ color: kpi.color, fontFamily: "'DM Sans', sans-serif" }}>{kpi.value}<span className="text-sm font-normal text-slate-400">/5</span></div>
+              <div className="text-xs text-slate-500">{kpi.label}</div>
+            </div>
+          ))}
+        </div>
+
+        <div className="space-y-3">
+          {data.map((row) => {
+            const member = team.find((t) => t.id === row.memberId)!
+            const isExpanded = expandedMember === row.memberId
+            const memberNotes = notes[row.memberId]
+            const hasNotes = memberNotes.feedbacks || memberNotes.alertas || memberNotes.outros
+
+            return (
+              <div key={row.memberId} className="bg-white rounded-2xl overflow-hidden" style={{ border: '1.5px solid #E2E8F0' }}>
+                {/* Main row */}
+                <div className="px-5 py-4">
+                  <div className="flex items-center gap-4">
+                    {/* Avatar + name */}
+                    <div className="flex items-center gap-2.5 w-44 flex-shrink-0">
+                      <div className="flex items-center justify-center rounded-full text-white font-bold text-xs flex-shrink-0"
+                        style={{ width: 32, height: 32, background: member.color, fontFamily: "'DM Sans', sans-serif" }}>
+                        {member.initials}
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-slate-800">{member.name}</div>
+                        <div className="text-xs text-slate-400">{member.role}</div>
+                      </div>
+                    </div>
+
+                    {/* Scores */}
+                    <div className="flex items-center gap-6 flex-1">
+                      <div className="min-w-0">
+                        <div className="text-xs text-slate-400 mb-1">Compromisso</div>
+                        <StarScore memberId={row.memberId} field="punctuality" color="#6366F1" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs text-slate-400 mb-1">Qualidade</div>
+                        <StarScore memberId={row.memberId} field="quality" color="#10B981" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs text-slate-400 mb-1">Presença</div>
+                        <StarScore memberId={row.memberId} field="presence" color="#F59E0B" />
+                      </div>
+                    </div>
+
+                    {/* Tasks */}
+                    <div className="flex-shrink-0 w-36">
+                      <div className="text-xs text-slate-400 mb-1">Tasks</div>
+                      {editMode ? (
+                        <div className="flex items-center gap-1 text-xs">
+                          <input type="number" min={0} value={row.tasksCompleted} onChange={(e) => updateTasks(row.memberId, 'tasksCompleted', e.target.value)}
+                            className="w-12 px-1.5 py-1 rounded border border-slate-200 focus:outline-none focus:border-indigo-400 text-center"
+                            style={{ fontFamily: "'JetBrains Mono', monospace" }} />
+                          <span className="text-slate-400">/</span>
+                          <input type="number" min={0} value={row.tasksTotal} onChange={(e) => updateTasks(row.memberId, 'tasksTotal', e.target.value)}
+                            className="w-12 px-1.5 py-1 rounded border border-slate-200 focus:outline-none focus:border-indigo-400 text-center"
+                            style={{ fontFamily: "'JetBrains Mono', monospace" }} />
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <div className="h-1.5 w-20 rounded-full overflow-hidden" style={{ background: '#F1F5F9' }}>
+                            <div className="h-full rounded-full" style={{ width: `${(row.tasksCompleted / row.tasksTotal) * 100}%`, background: '#6366F1' }} />
+                          </div>
+                          <span className="text-xs" style={{ fontFamily: "'JetBrains Mono', monospace", color: '#64748B' }}>
+                            {row.tasksCompleted}/{row.tasksTotal}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Expand button */}
+                    <button
+                      onClick={() => setExpandedMember(isExpanded ? null : row.memberId)}
+                      className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium flex-shrink-0 transition-all"
+                      style={isExpanded ? { background: '#EEF2FF', color: '#4F46E5' } : { background: '#F8FAFC', color: '#64748B' }}>
+                      <Edit2 size={11} />
+                      Obs.
+                      {hasNotes && <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 ml-0.5" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Expandable observations panel */}
+                {isExpanded && (
+                  <div className="px-5 pb-5 pt-1" style={{ borderTop: '1px solid #F1F5F9' }}>
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Observações do gerente</p>
+                    <div className="grid grid-cols-3 gap-3">
+                      {NOTE_CATS.map((cat) => (
+                        <div key={cat.key}>
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: cat.bg, color: cat.color }}>
+                              {cat.label}
+                            </span>
+                          </div>
+                          <textarea
+                            value={memberNotes[cat.key]}
+                            onChange={(e) => updateNote(row.memberId, cat.key, e.target.value)}
+                            placeholder={`${cat.label} sobre ${member.name.split(' ')[0]}…`}
+                            rows={4}
+                            className="w-full text-xs px-3 py-2 rounded-xl border resize-none focus:outline-none transition-colors"
+                            style={{
+                              border: `1.5px solid ${memberNotes[cat.key] ? cat.color + '50' : '#E2E8F0'}`,
+                              background: memberNotes[cat.key] ? cat.bg : '#FAFAFA',
+                              color: '#374151',
+                              fontFamily: 'Inter, sans-serif',
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────
+
+interface Props {
+  profile: Profile
+  isManager: boolean
+  channel: Channel
+  setChannel: (c: Channel) => void
+}
+
+export default function Monitoramento({ profile, isManager, channel, setChannel }: Props) {
+  const [tab, setTab] = useState<Tab>('kanban')
+  const [columns, setColumns] = useState<KanbanColumn[]>(initialKanban)
+
+  const allTabs: { id: Tab; label: string; icon: React.ReactNode; gOnly?: boolean }[] = [
+    { id: 'kanban', label: 'Kanban', icon: <Columns3 size={14} /> },
+    { id: 'calendario', label: 'Calendário', icon: <Calendar size={14} /> },
+    { id: 'campanhas', label: 'Campanhas', icon: <Target size={14} /> },
+    { id: 'engajamento', label: 'Engajamento', icon: <Users size={14} />, gOnly: true },
+  ]
+
+  const tabs = allTabs.filter((t) => !t.gOnly || isManager)
+
+  return (
+    <div className="flex flex-col h-full">
+      <header className="bg-white flex-shrink-0" style={{ borderBottom: '1.5px solid #E2E8F0' }}>
+        <div className="px-4 md:px-6 pt-4 md:pt-5 pb-0 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
+          <div>
+            <h1 className="text-lg md:text-xl font-semibold text-slate-900 leading-tight" style={{ fontFamily: "'DM Sans', sans-serif" }}>Monitoramento</h1>
+            <p className="text-xs md:text-sm text-slate-500 mt-0.5 hidden sm:block">Gerencie tasks, calendário e campanhas do time</p>
+          </div>
+          {tab !== 'calendario' && <ChannelFilter channel={channel} setChannel={setChannel} />}
+        </div>
+        <div className="px-4 md:px-6 pt-2 md:pt-3 pb-0 overflow-x-auto">
+          <TabNav tabs={tabs} active={tab} setTab={setTab} />
+        </div>
+      </header>
+      <div className="flex-1 overflow-hidden">
+        {tab === 'kanban' && <KanbanBoard channel={channel} isManager={isManager} columns={columns} setColumns={setColumns} />}
+        {tab === 'calendario' && <CalendarView />}
+        {tab === 'campanhas' && <CampaignsView channel={channel} />}
+        {tab === 'engajamento' && isManager && <EngagementView columns={columns} />}
+      </div>
+    </div>
+  )
+}
