@@ -51,7 +51,7 @@ export default function App() {
   const profile: Profile = currentUser.role
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50 relative">
+    <div className="flex h-screen overflow-hidden bg-[#0A0A0F] relative">
 
       {/* Mobile backdrop */}
       {sidebarOpen && (
@@ -75,23 +75,23 @@ export default function App() {
       <div className="flex-1 min-w-0 overflow-hidden flex flex-col">
 
         {/* Mobile top bar */}
-        <div className="flex-shrink-0 flex items-center gap-3 px-4 bg-white md:hidden"
-          style={{ height: 52, borderBottom: '1.5px solid #E2E8F0' }}>
+        <div className="flex-shrink-0 flex items-center gap-3 px-4 bg-[#111118] md:hidden"
+          style={{ height: 52, borderBottom: '1.5px solid rgba(255,255,255,0.1)' }}>
           <button onClick={() => setSidebarOpen(true)}
-            className="p-2 rounded-xl hover:bg-slate-100 transition-colors flex-shrink-0"
+            className="p-2 rounded-xl hover:bg-[rgba(255,255,255,0.08)] transition-colors flex-shrink-0"
             aria-label="Abrir menu">
-            <Menu size={20} className="text-slate-600" />
+            <Menu size={20} className="text-[#8A8A9A]" />
           </button>
           <div className="flex items-center gap-2">
             <div className="flex items-center justify-center rounded-lg flex-shrink-0"
-              style={{ width: 26, height: 26, background: 'linear-gradient(135deg, #6366F1, #818CF8)' }}>
+              style={{ width: 26, height: 26, background: 'linear-gradient(135deg, #00E5C8, #00FFD9)' }}>
               <Sparkles size={12} className="text-white" />
             </div>
-            <span className="font-semibold text-slate-800 text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>MarketOps</span>
+            <span className="font-semibold text-[#F0F0F5] text-sm">MarketOps</span>
           </div>
           <div className="flex-1" />
           <div className="flex items-center justify-center rounded-full text-white text-xs font-bold flex-shrink-0"
-            style={{ width: 28, height: 28, background: currentUser.color, fontFamily: "'DM Sans', sans-serif" }}>
+            style={{ width: 28, height: 28, background: currentUser.color }}>
             {currentUser.initials}
           </div>
         </div>

@@ -55,7 +55,7 @@ function UserManagementModal({ users, setUsers, currentUserId, onClose }: UserMo
       return
     }
     const initials = form.name.trim().split(' ').filter(Boolean).map((w) => w[0].toUpperCase()).slice(0, 2).join('')
-    const colors = ['#6366F1', '#10B981', '#F59E0B', '#EC4899', '#3B82F6', '#8B5CF6', '#14B8A6']
+    const colors = ['#00E5C8', '#00C853', '#FFB300', '#E1306C', '#0A66C2', '#40C4FF', '#00B39E']
     const color = colors[users.length % colors.length]
     const newUser: AppUser = {
       id: Date.now(),
@@ -76,16 +76,16 @@ function UserManagementModal({ users, setUsers, currentUserId, onClose }: UserMo
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 px-0 sm:px-4"
       onClick={onClose}>
-      <div className="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden"
+      <div className="bg-[#111118] w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden"
         style={{ maxHeight: '90vh' }}
         onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid #F1F5F9' }}>
+        <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <div className="flex items-center gap-2">
-            <Users size={16} className="text-indigo-500" />
-            <h2 className="font-semibold text-slate-800" style={{ fontFamily: "'DM Sans', sans-serif" }}>Gerenciar usuários</h2>
+            <Users size={16} className="text-[#00E5C8]" />
+            <h2 className="font-semibold text-[#F0F0F5]">Gerenciar usuários</h2>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
+          <button onClick={onClose} className="text-[#555566] hover:text-[#8A8A9A]"><X size={18} /></button>
         </div>
 
         <div className="overflow-y-auto" style={{ maxHeight: 'calc(90vh - 64px)' }}>
@@ -96,26 +96,26 @@ function UserManagementModal({ users, setUsers, currentUserId, onClose }: UserMo
               const isConfirming = deleteConfirmId === u.id
               return (
                 <div key={u.id}>
-                  <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl" style={{ background: '#F8FAFC', border: '1px solid #E2E8F0' }}>
+                  <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl" style={{ background: '#1A1A25', border: '1px solid rgba(255,255,255,0.1)' }}>
                     <div className="flex items-center justify-center rounded-full text-white text-xs font-bold flex-shrink-0"
-                      style={{ width: 32, height: 32, background: u.color, fontFamily: "'DM Sans', sans-serif" }}>
+                      style={{ width: 32, height: 32, background: u.color }}>
                       {u.initials}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-slate-800 truncate">{u.name}{isSelf && <span className="ml-1.5 text-xs text-slate-400">(você)</span>}</div>
-                      <div className="text-xs text-slate-400 truncate">{u.email}</div>
+                      <div className="text-sm font-medium text-[#F0F0F5] truncate">{u.name}{isSelf && <span className="ml-1.5 text-xs text-[#555566]">(você)</span>}</div>
+                      <div className="text-xs text-[#555566] truncate">{u.email}</div>
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       {u.mustChangePassword && (
-                        <span className="text-xs px-1.5 py-0.5 rounded-full hidden sm:block" style={{ background: '#FFFBEB', color: '#B45309' }}>1º acesso</span>
+                        <span className="text-xs px-1.5 py-0.5 rounded-full hidden sm:block" style={{ background: 'rgba(255,179,0,0.15)', color: '#FFB300' }}>1º acesso</span>
                       )}
                       <span className="text-xs px-2 py-0.5 rounded-full font-medium"
-                        style={u.role === 'gerente' ? { background: '#EEF2FF', color: '#4F46E5' } : { background: '#F0FDF4', color: '#15803D' }}>
+                        style={u.role === 'gerente' ? { background: 'rgba(0,229,200,0.08)', color: '#00B39E' } : { background: 'rgba(0,200,83,0.15)', color: '#00C853' }}>
                         {u.role === 'gerente' ? 'Gerente' : 'Analista'}
                       </span>
                       {!isSelf && (
                         <button onClick={() => setDeleteConfirmId(u.id)}
-                          className="p-1.5 rounded-lg text-slate-300 hover:text-red-400 hover:bg-red-50 transition-all"
+                          className="p-1.5 rounded-lg text-[#555566] hover:text-[#FF5252] hover:bg-[rgba(255,82,82,0.12)] transition-all"
                           title="Apagar usuário">
                           <Trash2 size={13} />
                         </button>
@@ -123,11 +123,11 @@ function UserManagementModal({ users, setUsers, currentUserId, onClose }: UserMo
                     </div>
                   </div>
                   {isConfirming && (
-                    <div className="mt-1 px-3 py-2.5 rounded-xl flex items-center justify-between gap-3" style={{ background: '#FEF2F2', border: '1px solid #FCA5A5' }}>
-                      <p className="text-xs text-red-700 flex-1">Apagar <strong>{u.name}</strong> permanentemente?</p>
+                    <div className="mt-1 px-3 py-2.5 rounded-xl flex items-center justify-between gap-3" style={{ background: 'rgba(255,82,82,0.15)', border: '1px solid #FF5252' }}>
+                      <p className="text-xs text-[#FF5252] flex-1">Apagar <strong>{u.name}</strong> permanentemente?</p>
                       <div className="flex gap-1.5 flex-shrink-0">
-                        <button onClick={() => deleteUser(u.id)} className="text-xs px-2.5 py-1 rounded-lg font-medium text-white bg-red-500 hover:bg-red-600">Apagar</button>
-                        <button onClick={() => setDeleteConfirmId(null)} className="text-xs px-2.5 py-1 rounded-lg font-medium text-slate-600 hover:bg-slate-100">Cancelar</button>
+                        <button onClick={() => deleteUser(u.id)} className="text-xs px-2.5 py-1 rounded-lg font-medium text-white bg-[#FF5252] hover:bg-[#E64545]">Apagar</button>
+                        <button onClick={() => setDeleteConfirmId(null)} className="text-xs px-2.5 py-1 rounded-lg font-medium text-[#8A8A9A] hover:bg-[rgba(255,255,255,0.08)]">Cancelar</button>
                       </div>
                     </div>
                   )}
@@ -139,8 +139,8 @@ function UserManagementModal({ users, setUsers, currentUserId, onClose }: UserMo
           {/* Add user form toggle */}
           <div className="px-6 pb-2">
             <button onClick={() => { setShowForm((s) => !s); setError('') }}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all"
-              style={showForm ? { background: '#F1F5F9', color: '#64748B' } : { background: 'linear-gradient(135deg, #6366F1, #818CF8)', color: '#fff' }}>
+              className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all${showForm ? '' : ' btn-glow'}`}
+              style={showForm ? { background: 'rgba(255,255,255,0.06)', color: '#8A8A9A' } : { background: 'linear-gradient(135deg, #00E5C8, #00FFD9)', color: '#fff' }}>
               {showForm ? <><ChevronDown size={15} /> Cancelar</> : <><Plus size={15} /> Novo usuário</>}
             </button>
           </div>
@@ -148,48 +148,48 @@ function UserManagementModal({ users, setUsers, currentUserId, onClose }: UserMo
           {/* Add user form */}
           {showForm && (
             <div className="px-6 pb-6 space-y-3">
-              <div className="pt-3" style={{ borderTop: '1px solid #F1F5F9' }}>
+              <div className="pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">Nome completo *</label>
+                    <label className="block text-xs font-medium text-[#8A8A9A] mb-1">Nome completo *</label>
                     <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                       placeholder="João Silva"
-                      className="w-full text-sm px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-400" />
+                      className="w-full text-sm px-3 py-2 rounded-xl border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#00E5C8]" />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">E-mail *</label>
+                    <label className="block text-xs font-medium text-[#8A8A9A] mb-1">E-mail *</label>
                     <input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                       placeholder="joao@empresa.com"
-                      className="w-full text-sm px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-400" />
+                      className="w-full text-sm px-3 py-2 rounded-xl border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#00E5C8]" />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">Perfil *</label>
+                    <label className="block text-xs font-medium text-[#8A8A9A] mb-1">Perfil *</label>
                     <select value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value as 'gerente' | 'analista' }))}
-                      className="w-full text-sm px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-400 bg-white">
+                      className="w-full text-sm px-3 py-2 rounded-xl border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#00E5C8] bg-[#111118]">
                       <option value="analista">Analista</option>
                       <option value="gerente">Gerente</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">Senha inicial *</label>
+                    <label className="block text-xs font-medium text-[#8A8A9A] mb-1">Senha inicial *</label>
                     <div className="relative">
                       <input type={showPw ? 'text' : 'password'} value={form.password}
                         onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
                         placeholder="••••••"
-                        className="w-full text-sm px-3 py-2 pr-9 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-400" />
+                        className="w-full text-sm px-3 py-2 pr-9 rounded-xl border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#00E5C8]" />
                       <button type="button" onClick={() => setShowPw((s) => !s)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#555566] hover:text-[#8A8A9A]">
                         {showPw ? <EyeOff size={13} /> : <Eye size={13} />}
                       </button>
                     </div>
                   </div>
                 </div>
 
-                {error && <p className="text-xs text-red-500 mt-2 px-1">{error}</p>}
+                {error && <p className="text-xs text-[#FF5252] mt-2 px-1">{error}</p>}
 
                 <button onClick={saveUser}
-                  className="mt-4 w-full py-2.5 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-opacity"
-                  style={{ background: 'linear-gradient(135deg, #6366F1, #818CF8)' }}>
+                  className="mt-4 w-full py-2.5 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-opacity btn-glow"
+                  style={{ background: 'linear-gradient(135deg, #00E5C8, #00FFD9)' }}>
                   Criar conta
                 </button>
               </div>
@@ -223,16 +223,16 @@ export default function Sidebar({ currentUser, users, setUsers, activeModule, se
         <div className="flex items-center justify-between px-5 pt-5 pb-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
           <div className="flex items-center gap-2.5">
             <div className="flex items-center justify-center rounded-xl flex-shrink-0"
-              style={{ width: 34, height: 34, background: 'linear-gradient(135deg, #6366F1 0%, #818CF8 100%)' }}>
+              style={{ width: 34, height: 34, background: 'linear-gradient(135deg, #00E5C8 0%, #00FFD9 100%)' }}>
               <Sparkles size={16} className="text-white" />
             </div>
             <div>
-              <div className="text-white font-semibold text-sm tracking-tight" style={{ fontFamily: "'DM Sans', sans-serif" }}>MarketOps</div>
-              <div className="text-xs" style={{ color: '#4B5563' }}>Gestão de Marketing</div>
+              <div className="text-white font-semibold text-sm tracking-tight">MarketOps</div>
+              <div className="text-xs" style={{ color: '#555566' }}>Gestão de Marketing</div>
             </div>
           </div>
           <button onClick={onClose} className="md:hidden p-1.5 rounded-lg hover:bg-white/10 transition-colors">
-            <X size={16} className="text-slate-400" />
+            <X size={16} className="text-[#555566]" />
           </button>
         </div>
 
@@ -240,14 +240,14 @@ export default function Sidebar({ currentUser, users, setUsers, activeModule, se
         <div className="px-4 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
           <div className="flex items-center gap-2.5">
             <div className="flex items-center justify-center rounded-full text-white font-bold text-xs flex-shrink-0"
-              style={{ width: 36, height: 36, background: currentUser.color, fontFamily: "'DM Sans', sans-serif" }}>
+              style={{ width: 36, height: 36, background: currentUser.color }}>
               {currentUser.initials}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium truncate" style={{ color: '#E5E7EB', fontFamily: "'DM Sans', sans-serif" }}>{currentUser.name}</div>
+              <div className="text-sm font-medium truncate" style={{ color: '#F0F0F5' }}>{currentUser.name}</div>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span className="text-xs px-2 py-0.5 rounded-full font-medium"
-                  style={isManager ? { background: 'rgba(99,102,241,0.25)', color: '#A5B4FC' } : { background: 'rgba(16,185,129,0.2)', color: '#6EE7B7' }}>
+                  style={isManager ? { background: 'rgba(0,229,200,0.25)', color: '#00E5C8' } : { background: 'rgba(0,200,83,0.2)', color: '#00C853' }}>
                   {isManager ? 'Gerente' : 'Analista'}
                 </span>
               </div>
@@ -257,7 +257,7 @@ export default function Sidebar({ currentUser, users, setUsers, activeModule, se
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-3 overflow-y-auto">
-          <p className="text-xs font-medium uppercase tracking-widest mb-2 px-2" style={{ color: '#374151' }}>Módulos</p>
+          <p className="text-xs font-medium uppercase tracking-widest mb-2 px-2" style={{ color: '#555566' }}>Módulos</p>
           <div className="space-y-0.5">
             {navItems.map(({ id, label, desc, Icon }) => {
               const active = activeModule === id
@@ -265,16 +265,16 @@ export default function Sidebar({ currentUser, users, setUsers, activeModule, se
                 <button key={id} onClick={() => setModule(id)}
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all"
                   style={active
-                    ? { background: 'rgba(99,102,241,0.18)', borderLeft: '2px solid #6366F1' }
+                    ? { background: 'rgba(0,229,200,0.18)', borderLeft: '2px solid #00E5C8' }
                     : { background: 'transparent', borderLeft: '2px solid transparent' }}>
-                  <Icon size={17} className="flex-shrink-0" style={{ color: active ? '#818CF8' : '#4B5563' }} />
+                  <Icon size={17} className="flex-shrink-0" style={{ color: active ? '#00FFD9' : '#555566' }} />
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium leading-tight" style={{ color: active ? '#E5E7EB' : '#9CA3AF', fontFamily: "'DM Sans', sans-serif" }}>
+                    <div className="text-sm font-medium leading-tight" style={{ color: active ? '#F0F0F5' : '#8A8A9A' }}>
                       {label}
                     </div>
-                    <div className="text-xs truncate mt-0.5" style={{ color: active ? '#6366F1' : '#374151' }}>{desc}</div>
+                    <div className="text-xs truncate mt-0.5" style={{ color: active ? '#00E5C8' : '#555566' }}>{desc}</div>
                   </div>
-                  {active && <ChevronRight size={12} style={{ color: '#6366F1', flexShrink: 0 }} />}
+                  {active && <ChevronRight size={12} style={{ color: '#00E5C8', flexShrink: 0 }} />}
                 </button>
               )
             })}
@@ -286,22 +286,22 @@ export default function Sidebar({ currentUser, users, setUsers, activeModule, se
           {isManager && (
             <button onClick={() => setUserModalOpen(true)}
               className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left transition-all hover:bg-white/10">
-              <Users size={15} style={{ color: '#6B7280' }} />
-              <span className="text-sm" style={{ color: '#9CA3AF' }}>Gerenciar usuários</span>
+              <Users size={15} style={{ color: '#555566' }} />
+              <span className="text-sm" style={{ color: '#8A8A9A' }}>Gerenciar usuários</span>
             </button>
           )}
           <button onClick={onChangePassword}
             className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left transition-all hover:bg-white/10">
-            <KeyRound size={15} style={{ color: '#6B7280' }} />
-            <span className="text-sm" style={{ color: '#9CA3AF' }}>Alterar senha</span>
+            <KeyRound size={15} style={{ color: '#555566' }} />
+            <span className="text-sm" style={{ color: '#8A8A9A' }}>Alterar senha</span>
           </button>
           <button onClick={onLogout}
-            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left transition-all hover:bg-red-500/15 group">
-            <LogOut size={15} style={{ color: '#6B7280' }} className="group-hover:text-red-400" />
-            <span className="text-sm group-hover:text-red-400 transition-colors" style={{ color: '#9CA3AF' }}>Sair</span>
+            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left transition-all hover:bg-[#FF5252]/15 group">
+            <LogOut size={15} style={{ color: '#555566' }} className="group-hover:text-[#FF5252]" />
+            <span className="text-sm group-hover:text-[#FF5252] transition-colors" style={{ color: '#8A8A9A' }}>Sair</span>
           </button>
           <div className="pt-1 text-center">
-            <span className="text-xs" style={{ color: '#374151', fontFamily: "'JetBrains Mono', monospace" }}>v1.0.0 · Beta interno</span>
+            <span className="text-xs" style={{ color: '#555566' }}>v1.0.0 · Beta interno</span>
           </div>
         </div>
       </aside>

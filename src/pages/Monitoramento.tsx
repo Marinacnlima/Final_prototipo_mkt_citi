@@ -13,16 +13,16 @@ import { initialKanban, campaignsData, calendarEventsData, engagementData, team,
 // ─── Shared ────────────────────────────────────────────────────────────────
 
 const CH: Record<ChannelType, { label: string; color: string; bg: string; dot: string }> = {
-  instagram: { label: 'Instagram', color: '#BE185D', bg: '#FDF2F8', dot: '#EC4899' },
-  linkedin: { label: 'LinkedIn', color: '#1E40AF', bg: '#EFF6FF', dot: '#3B82F6' },
-  site: { label: 'Site', color: '#6D28D9', bg: '#F5F3FF', dot: '#7C3AED' },
-  email: { label: 'Email', color: '#92400E', bg: '#FFFBEB', dot: '#F59E0B' },
+  instagram: { label: 'Instagram', color: '#E1306C', bg: 'rgba(225,48,108,0.15)', dot: '#E1306C' },
+  linkedin: { label: 'LinkedIn', color: '#0A66C2', bg: 'rgba(10,102,194,0.15)', dot: '#0A66C2' },
+  site: { label: 'Site', color: '#00C853', bg: 'rgba(0,200,83,0.15)', dot: '#00C853' },
+  email: { label: 'Email', color: '#FFB300', bg: 'rgba(255,179,0,0.15)', dot: '#FFB300' },
 }
 
 const DIFF: Record<Difficulty, { label: string; bg: string; color: string }> = {
-  fácil: { label: 'Fácil', bg: '#ECFDF5', color: '#065F46' },
-  médio: { label: 'Médio', bg: '#FFFBEB', color: '#92400E' },
-  difícil: { label: 'Difícil', bg: '#FEF2F2', color: '#991B1B' },
+  fácil: { label: 'Fácil', bg: 'rgba(0,200,83,0.15)', color: '#00C853' },
+  médio: { label: 'Médio', bg: 'rgba(255,179,0,0.15)', color: '#FFB300' },
+  difícil: { label: 'Difícil', bg: 'rgba(255,82,82,0.15)', color: '#FF5252' },
 }
 
 function ChannelBadge({ ch, small }: { ch: ChannelType; small?: boolean }) {
@@ -47,7 +47,7 @@ function ChannelFilter({ channel, setChannel }: { channel: Channel; setChannel: 
         const c = o.id !== 'todos' ? CH[o.id as ChannelType] : null
         return (
           <button key={o.id} onClick={() => setChannel(o.id)} className="text-xs px-3 py-1.5 rounded-full font-medium transition-all"
-            style={active ? { background: c ? c.dot : '#6366F1', color: '#fff' } : { background: '#F1F5F9', color: '#64748B' }}>
+            style={active ? { background: c ? c.dot : '#00E5C8', color: '#fff' } : { background: 'rgba(255,255,255,0.06)', color: '#8A8A9A' }}>
             {o.label}
           </button>
         )
@@ -62,7 +62,7 @@ function MemberAvatar({ memberId, size = 'sm' }: { memberId: number; size?: 'sm'
   const dim = size === 'sm' ? 22 : 28
   return (
     <div title={member.name} className="flex-shrink-0 flex items-center justify-center rounded-full text-white font-bold"
-      style={{ width: dim, height: dim, background: member.color, fontSize: size === 'sm' ? 9 : 11, fontFamily: "'DM Sans', sans-serif" }}>
+      style={{ width: dim, height: dim, background: member.color, fontSize: size === 'sm' ? 9 : 11 }}>
       {member.initials}
     </div>
   )
@@ -76,15 +76,15 @@ function AvatarStack({ assignees }: { assignees: TaskAssignee[] }) {
         if (!member) return null
         return (
           <div key={a.memberId} title={`${member.name}${a.note !== null ? ` — nota: ${a.note}` : ''}`}
-            className="flex items-center justify-center rounded-full text-white font-bold ring-2 ring-white flex-shrink-0"
-            style={{ width: 22, height: 22, background: member.color, fontSize: 9, fontFamily: "'DM Sans', sans-serif", marginLeft: i > 0 ? -6 : 0 }}>
+            className="flex items-center justify-center rounded-full text-white font-bold ring-2 ring-[#111118] flex-shrink-0"
+            style={{ width: 22, height: 22, background: member.color, fontSize: 9, marginLeft: i > 0 ? -6 : 0 }}>
             {member.initials}
           </div>
         )
       })}
       {assignees.length > 4 && (
-        <div className="flex items-center justify-center rounded-full ring-2 ring-white flex-shrink-0 text-slate-500 font-bold"
-          style={{ width: 22, height: 22, fontSize: 9, background: '#E2E8F0', marginLeft: -6 }}>
+        <div className="flex items-center justify-center rounded-full ring-2 ring-[#111118] flex-shrink-0 text-[#8A8A9A] font-bold"
+          style={{ width: 22, height: 22, fontSize: 9, background: 'rgba(255,255,255,0.1)', marginLeft: -6 }}>
           +{assignees.length - 4}
         </div>
       )}
@@ -96,13 +96,13 @@ function Modal({ title, onClose, children, wide }: { title: string; onClose: () 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
       <div
-        className={`bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden ${wide ? 'w-full max-w-2xl' : 'w-full max-w-md'}`}
+        className={`bg-[#111118] rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden ${wide ? 'w-full max-w-2xl' : 'w-full max-w-md'}`}
         style={{ margin: 16 }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 py-4 flex-shrink-0" style={{ borderBottom: '1px solid #F1F5F9' }}>
-          <h3 className="font-semibold text-slate-800" style={{ fontFamily: "'DM Sans', sans-serif" }}>{title}</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
+        <div className="flex items-center justify-between px-6 py-4 flex-shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <h3 className="font-semibold text-[#F0F0F5]">{title}</h3>
+          <button onClick={onClose} className="text-[#555566] hover:text-[#8A8A9A]"><X size={18} /></button>
         </div>
         <div className="overflow-y-auto flex-1">{children}</div>
       </div>
@@ -113,7 +113,7 @@ function Modal({ title, onClose, children, wide }: { title: string; onClose: () 
 function FormField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-slate-600 mb-1">{label}</label>
+      <label className="block text-xs font-medium text-[#8A8A9A] mb-1">{label}</label>
       {children}
     </div>
   )
@@ -122,7 +122,7 @@ function FormField({ label, children }: { label: string; children: React.ReactNo
 function Inp({ value, onChange, placeholder, type = 'text' }: { value: string; onChange: (v: string) => void; placeholder?: string; type?: string }) {
   return (
     <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
-      className="w-full text-sm px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
+      className="w-full text-sm px-3 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#00E5C8] focus:ring-2 focus:ring-[rgba(0,229,200,0.1)]" />
   )
 }
 
@@ -133,7 +133,7 @@ function TabNav({ tabs, active, setTab }: { tabs: { id: Tab; label: string; icon
     <div className="flex gap-1">
       {tabs.map((t) => (
         <button key={t.id} onClick={() => setTab(t.id)} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-all"
-          style={active === t.id ? { background: '#EEF2FF', color: '#4F46E5' } : { color: '#64748B', background: 'transparent' }}>
+          style={active === t.id ? { background: 'rgba(0,229,200,0.08)', color: '#00B39E' } : { color: '#8A8A9A', background: 'transparent' }}>
           {t.icon}{t.label}
         </button>
       ))}
@@ -205,35 +205,34 @@ function TaskModal({ initial, colId, isManager, onSave, onClose }: {
               const selected = !!a
               return (
                 <div key={m.id} className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all"
-                  style={{ background: selected ? '#F5F3FF' : '#F8FAFC', border: `1.5px solid ${selected ? '#A5B4FC' : '#E2E8F0'}` }}>
+                  style={{ background: selected ? 'rgba(0,229,200,0.08)' : '#1A1A25', border: `1.5px solid ${selected ? '#00E5C8' : 'rgba(255,255,255,0.1)'}` }}>
                   <button onClick={() => toggleMember(m.id)} className="flex items-center gap-2.5 flex-1 min-w-0 text-left">
                     <div className="flex items-center justify-center rounded-full text-white font-bold flex-shrink-0"
-                      style={{ width: 28, height: 28, background: m.color, fontSize: 10, fontFamily: "'DM Sans', sans-serif" }}>
+                      style={{ width: 28, height: 28, background: m.color, fontSize: 10 }}>
                       {m.initials}
                     </div>
                     <div className="min-w-0">
-                      <div className="text-sm font-medium text-slate-800">{m.name}</div>
-                      <div className="text-xs text-slate-400">{m.role}</div>
+                      <div className="text-sm font-medium text-[#F0F0F5]">{m.name}</div>
+                      <div className="text-xs text-[#555566]">{m.role}</div>
                     </div>
                   </button>
                   {selected ? (
                     <div className="flex items-center gap-2 flex-shrink-0">
                       {isManager && (
                         <>
-                          <label className="text-xs text-slate-500 whitespace-nowrap">Nota:</label>
+                          <label className="text-xs text-[#8A8A9A] whitespace-nowrap">Nota:</label>
                           <input type="number" min={0} max={5} step={0.1}
                             value={a!.note ?? ''} placeholder="—"
                             onChange={(e) => setNote(m.id, e.target.value)}
                             onClick={(e) => e.stopPropagation()}
-                            className="w-16 text-xs px-2 py-1 rounded-lg border border-indigo-200 focus:outline-none focus:border-indigo-400 text-center bg-white"
-                            style={{ fontFamily: "'JetBrains Mono', monospace" }} />
-                          <span className="text-xs text-slate-400">/5</span>
+                            className="w-16 text-xs px-2 py-1 rounded-lg border border-[rgba(0,229,200,0.2)] focus:outline-none focus:border-[#00E5C8] text-center bg-[#111118]" />
+                          <span className="text-xs text-[#555566]">/5</span>
                         </>
                       )}
-                      <button onClick={() => toggleMember(m.id)} className="text-slate-300 hover:text-red-400 ml-1"><X size={14} /></button>
+                      <button onClick={() => toggleMember(m.id)} className="text-[#555566] hover:text-[#FF5252] ml-1"><X size={14} /></button>
                     </div>
                   ) : (
-                    <span className="text-xs text-slate-400 flex-shrink-0">clique para atribuir</span>
+                    <span className="text-xs text-[#555566] flex-shrink-0">clique para atribuir</span>
                   )}
                 </div>
               )
@@ -257,12 +256,12 @@ function TaskModal({ initial, colId, isManager, onSave, onClose }: {
           </FormField>
         </div>
       </div>
-      <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid #F1F5F9' }}>
-        <button onClick={save} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90"
-          style={{ background: 'linear-gradient(135deg, #6366F1, #818CF8)' }}>
+      <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <button onClick={save} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90 btn-glow"
+          style={{ background: 'linear-gradient(135deg, #00E5C8, #00FFD9)' }}>
           {initial ? 'Salvar alterações' : 'Criar task'}
         </button>
-        <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100">Cancelar</button>
+        <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-medium text-[#8A8A9A] hover:bg-[rgba(255,255,255,0.08)]">Cancelar</button>
       </div>
     </Modal>
   )
@@ -329,7 +328,7 @@ function KanbanBoard({ channel, isManager, columns, setColumns }: { channel: Cha
   }
 
   const filterTasks = (tasks: Task[]) => channel === 'todos' ? tasks : tasks.filter((t) => t.channel === channel)
-  const colColors = ['#6366F1', '#3B82F6', '#F59E0B', '#10B981', '#8B5CF6', '#EC4899', '#14B8A6']
+  const colColors = ['#00E5C8', '#0A66C2', '#FFB300', '#00C853', '#40C4FF', '#E1306C', '#00B39E']
 
   return (
     <>
@@ -340,30 +339,29 @@ function KanbanBoard({ channel, isManager, columns, setColumns }: { channel: Cha
             const isOver = dragOverColId === col.id
             return (
               <div key={col.id} className="flex flex-col rounded-xl flex-shrink-0 transition-all"
-                style={{ width: 276, background: isOver ? '#EEF2FF' : '#F8FAFC', border: `1.5px solid ${isOver ? '#A5B4FC' : '#E2E8F0'}`, minHeight: 400 }}
+                style={{ width: 276, background: isOver ? 'rgba(0,229,200,0.08)' : '#1A1A25', border: `1.5px solid ${isOver ? '#00E5C8' : 'rgba(255,255,255,0.1)'}`, minHeight: 400 }}
                 onDragOver={(e) => { e.preventDefault(); setDragOverColId(col.id) }}
                 onDrop={() => handleDrop(col.id)}
                 onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverColId(null) }}>
 
                 {/* Header */}
-                <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: '1px solid #E2E8F0' }}>
+                <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
                   <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: colColors[ci % colColors.length] }} />
                   {editingColId === col.id ? (
                     <input value={editingColName} onChange={(e) => setEditingColName(e.target.value)}
                       onBlur={commitRename} onKeyDown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') setEditingColId(null) }}
-                      className="flex-1 text-sm font-semibold text-slate-800 bg-white border border-indigo-300 rounded px-2 py-0.5 focus:outline-none" autoFocus />
+                      className="flex-1 text-sm font-semibold text-[#F0F0F5] bg-[#111118] border border-[rgba(0,229,200,0.3)] rounded px-2 py-0.5 focus:outline-none" autoFocus />
                   ) : (
-                    <button className="flex-1 text-sm font-semibold text-left text-slate-700 hover:text-slate-900 truncate"
-                      style={{ fontFamily: "'DM Sans', sans-serif" }} onClick={() => { setEditingColId(col.id); setEditingColName(col.name) }}>
+                    <button className="flex-1 text-sm font-semibold text-left text-[#F0F0F5] hover:text-[#F0F0F5] truncate" onClick={() => { setEditingColId(col.id); setEditingColName(col.name) }}>
                       {col.name}
                     </button>
                   )}
                   <span className="text-xs rounded-full px-2 py-0.5 flex-shrink-0"
-                    style={{ background: colColors[ci % colColors.length] + '18', color: colColors[ci % colColors.length], fontFamily: "'JetBrains Mono', monospace" }}>
+                    style={{ background: colColors[ci % colColors.length] + '18', color: colColors[ci % colColors.length] }}>
                     {tasks.length}
                   </span>
                   <button onClick={() => setDeleteConfirm({ type: 'col', id: col.id })}
-                    className="flex-shrink-0 text-slate-300 hover:text-red-400 transition-colors ml-1">
+                    className="flex-shrink-0 text-[#555566] hover:text-[#FF5252] transition-colors ml-1">
                     <Trash2 size={13} />
                   </button>
                 </div>
@@ -372,8 +370,8 @@ function KanbanBoard({ channel, isManager, columns, setColumns }: { channel: Cha
                 <div className="flex-1 p-3 space-y-2 overflow-y-auto">
                   {tasks.map((task) => (
                     <div key={task.id} draggable onDragStart={() => setDragging({ taskId: task.id, fromColId: col.id })}
-                      className="bg-white rounded-xl p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-all group"
-                      style={{ border: '1.5px solid #F1F5F9', opacity: dragging?.taskId === task.id ? 0.4 : 1, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                      className="bg-[#111118] rounded-xl p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-all group"
+                      style={{ border: '1.5px solid rgba(255,255,255,0.06)', opacity: dragging?.taskId === task.id ? 0.4 : 1, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <ChannelBadge ch={task.channel} small />
                         <span className="text-xs px-1.5 py-0.5 rounded font-medium flex-shrink-0"
@@ -381,19 +379,19 @@ function KanbanBoard({ channel, isManager, columns, setColumns }: { channel: Cha
                           {DIFF[task.difficulty].label}
                         </span>
                       </div>
-                      <p className="text-sm font-medium text-slate-800 leading-snug mb-3">{task.title}</p>
+                      <p className="text-sm font-medium text-[#F0F0F5] leading-snug mb-3">{task.title}</p>
                       <div className="flex items-center justify-between">
                         <AvatarStack assignees={task.assignees} />
                         <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => setTaskModal({ colId: col.id, task })} className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-indigo-600">
+                          <button onClick={() => setTaskModal({ colId: col.id, task })} className="p-1 rounded hover:bg-[rgba(255,255,255,0.08)] text-[#555566] hover:text-[#00E5C8]">
                             <Edit2 size={12} />
                           </button>
-                          <button onClick={() => setDeleteConfirm({ type: 'task', id: task.id })} className="p-1 rounded hover:bg-red-50 text-slate-400 hover:text-red-500">
+                          <button onClick={() => setDeleteConfirm({ type: 'task', id: task.id })} className="p-1 rounded hover:bg-[rgba(255,82,82,0.12)] text-[#555566] hover:text-[#FF5252]">
                             <Trash2 size={12} />
                           </button>
                         </div>
                         {task.dueDate && (
-                          <span className="text-xs" style={{ color: '#94A3B8', fontFamily: "'JetBrains Mono', monospace" }}>
+                          <span className="text-xs" style={{ color: '#555566' }}>
                             {task.dueDate.slice(5).split('-').reverse().join('/')}
                           </span>
                         )}
@@ -401,19 +399,19 @@ function KanbanBoard({ channel, isManager, columns, setColumns }: { channel: Cha
                     </div>
                   ))}
                   {tasks.length === 0 && (
-                    <div className="text-center py-6 text-slate-400 text-sm">Solte aqui</div>
+                    <div className="text-center py-6 text-[#555566] text-sm">Solte aqui</div>
                   )}
                 </div>
 
                 <button onClick={() => setTaskModal({ colId: col.id })}
-                  className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl mx-3 mb-3 px-3 py-2.5 transition-colors font-medium border border-dashed border-slate-200 hover:border-indigo-300">
+                  className="flex items-center gap-1.5 text-xs text-[#555566] hover:text-[#00E5C8] hover:bg-[rgba(0,229,200,0.08)] rounded-xl mx-3 mb-3 px-3 py-2.5 transition-colors font-medium border border-dashed border-[rgba(255,255,255,0.1)] hover:border-[rgba(0,229,200,0.3)]">
                   <Plus size={13} /> Adicionar task
                 </button>
               </div>
             )
           })}
-          <button onClick={addColumn} className="flex-shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium text-slate-400 hover:text-slate-600 transition-all"
-            style={{ border: '1.5px dashed #CBD5E1', background: 'transparent', minWidth: 160 }}>
+          <button onClick={addColumn} className="flex-shrink-0 flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium text-[#555566] hover:text-[#8A8A9A] transition-all"
+            style={{ border: '1.5px dashed #555566', background: 'transparent', minWidth: 160 }}>
             <Plus size={16} /> Nova coluna
           </button>
         </div>
@@ -427,15 +425,15 @@ function KanbanBoard({ channel, isManager, columns, setColumns }: { channel: Cha
       {/* Delete confirm */}
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setDeleteConfirm(null)}>
-          <div className="bg-white rounded-2xl p-6 shadow-2xl max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
-            <p className="font-semibold text-slate-800 mb-1" style={{ fontFamily: "'DM Sans', sans-serif" }}>Confirmar exclusão</p>
-            <p className="text-sm text-slate-500 mb-4">
+          <div className="bg-[#111118] rounded-2xl p-6 shadow-2xl max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <p className="font-semibold text-[#F0F0F5] mb-1">Confirmar exclusão</p>
+            <p className="text-sm text-[#8A8A9A] mb-4">
               {deleteConfirm.type === 'col' ? 'Apagar esta coluna e todas as tasks nela?' : 'Apagar esta task permanentemente?'}
             </p>
             <div className="flex gap-2">
               <button onClick={() => deleteConfirm.type === 'task' ? deleteTask(deleteConfirm.id) : deleteColumn(deleteConfirm.id)}
-                className="px-4 py-2 rounded-xl text-sm font-medium text-white bg-red-500 hover:bg-red-600">Apagar</button>
-              <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100">Cancelar</button>
+                className="px-4 py-2 rounded-xl text-sm font-medium text-white bg-[#FF5252] hover:bg-[#E64545]">Apagar</button>
+              <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 rounded-xl text-sm font-medium text-[#8A8A9A] hover:bg-[rgba(255,255,255,0.08)]">Cancelar</button>
             </div>
           </div>
         </div>
@@ -468,9 +466,9 @@ function getMonthGrid(year: number, month: number): (Date | null)[] {
 }
 
 const typeStyle = {
-  meeting: { bg: '#EEF2FF', border: '#A5B4FC', color: '#4338CA', icon: <Clock size={11} /> },
-  deadline: { bg: '#FEF2F2', border: '#FCA5A5', color: '#B91C1C', icon: <Flame size={11} /> },
-  task: { bg: '#F0FDF4', border: '#86EFAC', color: '#166534', icon: <Check size={11} /> },
+  meeting: { bg: 'rgba(0,229,200,0.08)', border: '#00E5C8', color: '#00B39E', icon: <Clock size={11} /> },
+  deadline: { bg: 'rgba(255,82,82,0.15)', border: '#FF5252', color: '#FF5252', icon: <Flame size={11} /> },
+  task: { bg: 'rgba(0,200,83,0.15)', border: '#00C853', color: '#00C853', icon: <Check size={11} /> },
 }
 
 interface EventForm {
@@ -533,17 +531,17 @@ function CalendarView() {
     ]
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setDayDetail(null)}>
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm flex flex-col max-h-[85vh] overflow-hidden" style={{ margin: 16 }} onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-center justify-between px-6 py-4 flex-shrink-0" style={{ borderBottom: '1px solid #F1F5F9' }}>
+        <div className="bg-[#111118] rounded-2xl shadow-2xl w-full max-w-sm flex flex-col max-h-[85vh] overflow-hidden" style={{ margin: 16 }} onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-between px-6 py-4 flex-shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
             <div>
-              <h3 className="font-semibold text-slate-800" style={{ fontFamily: "'DM Sans', sans-serif" }}>{d} de {m}</h3>
-              <p className="text-xs text-slate-400">{y} · {dayEvents.length} evento{dayEvents.length !== 1 ? 's' : ''}</p>
+              <h3 className="font-semibold text-[#F0F0F5]">{d} de {m}</h3>
+              <p className="text-xs text-[#555566]">{y} · {dayEvents.length} evento{dayEvents.length !== 1 ? 's' : ''}</p>
             </div>
-            <button onClick={() => setDayDetail(null)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
+            <button onClick={() => setDayDetail(null)} className="text-[#555566] hover:text-[#8A8A9A]"><X size={18} /></button>
           </div>
           <div className="overflow-y-auto flex-1 px-6 py-4 space-y-2">
             {dayEvents.length === 0 && (
-              <p className="text-sm text-slate-400 text-center py-4">Nenhum evento neste dia.</p>
+              <p className="text-sm text-[#555566] text-center py-4">Nenhum evento neste dia.</p>
             )}
             {dayEvents.map((ev) => {
               const s = typeStyle[ev.type]
@@ -552,23 +550,23 @@ function CalendarView() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 mb-0.5">
                       <span style={{ color: s.color }}>{s.icon}</span>
-                      <span className="text-xs font-semibold" style={{ color: s.color, fontFamily: "'JetBrains Mono', monospace" }}>{ev.time}</span>
-                      {ev.duration && <span className="text-xs text-slate-400">· {ev.duration}</span>}
+                      <span className="text-xs font-semibold" style={{ color: s.color }}>{ev.time}</span>
+                      {ev.duration && <span className="text-xs text-[#555566]">· {ev.duration}</span>}
                     </div>
-                    <p className="text-sm font-medium text-slate-700 leading-snug">{ev.title}</p>
+                    <p className="text-sm font-medium text-[#F0F0F5] leading-snug">{ev.title}</p>
                     {ev.channel && <div className="mt-1"><ChannelBadge ch={ev.channel} small /></div>}
                   </div>
-                  <button onClick={() => deleteEvent(ev.id)} className="flex-shrink-0 opacity-0 group-hover:opacity-100 text-red-300 hover:text-red-500 transition-all mt-0.5">
+                  <button onClick={() => deleteEvent(ev.id)} className="flex-shrink-0 opacity-0 group-hover:opacity-100 text-[#FF5252] hover:text-[#FF5252] transition-all mt-0.5">
                     <X size={13} />
                   </button>
                 </div>
               )
             })}
           </div>
-          <div className="px-6 py-4 flex-shrink-0" style={{ borderTop: '1px solid #F1F5F9' }}>
+          <div className="px-6 py-4 flex-shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
             <button onClick={() => { setDayDetail(null); openAdd(date) }}
               className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium text-white hover:opacity-90 transition-opacity"
-              style={{ background: 'linear-gradient(135deg, #6366F1, #818CF8)' }}>
+              style={{ background: 'linear-gradient(135deg, #00E5C8, #00FFD9)' }}>
               <Plus size={15} /> Adicionar evento
             </button>
           </div>
@@ -593,21 +591,21 @@ function CalendarView() {
             const isToday = ds === TODAY
             return (
               <div key={ds} className="rounded-xl overflow-hidden"
-                style={{ background: '#fff', border: isToday ? '2px solid #6366F1' : '1.5px solid #E2E8F0', minHeight: 180 }}>
-                <button className="w-full px-3 py-2.5 flex items-center gap-2 text-left hover:bg-indigo-50/60 transition-colors"
-                  style={{ background: isToday ? '#EEF2FF' : '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}
+                style={{ background: isToday ? '#1A1A25' : '#111118', border: isToday ? '2px solid #00E5C8' : '1.5px solid rgba(255,255,255,0.1)', minHeight: 180 }}>
+                <button className="w-full px-3 py-2.5 flex items-center gap-2 text-left hover:bg-[rgba(0,229,200,0.08)]/60 transition-colors"
+                  style={{ background: isToday ? 'rgba(0,229,200,0.08)' : '#1A1A25', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
                   onClick={() => openDayDetail(ds)}>
                   <div className="text-sm font-bold flex items-center justify-center rounded-lg flex-shrink-0"
-                    style={{ width: 28, height: 28, background: isToday ? '#6366F1' : 'transparent', color: isToday ? '#fff' : '#1E293B', fontFamily: "'DM Sans', sans-serif" }}>
+                    style={{ width: 28, height: 28, background: isToday ? '#00E5C8' : 'transparent', color: isToday ? '#fff' : '#F0F0F5' }}>
                     {day.getDate()}
                   </div>
                   <div>
-                    <div className="text-xs font-semibold" style={{ color: isToday ? '#4F46E5' : '#64748B', fontFamily: "'DM Sans', sans-serif" }}>
+                    <div className="text-xs font-semibold" style={{ color: isToday ? '#00B39E' : '#8A8A9A' }}>
                       {PT_DAYS_SHORT[(day.getDay() + 6) % 7]}
                     </div>
-                    <div className="text-xs text-slate-400">{PT_MONTHS_SHORT[day.getMonth()]}</div>
+                    <div className="text-xs text-[#555566]">{PT_MONTHS_SHORT[day.getMonth()]}</div>
                   </div>
-                  {isToday && <span className="ml-auto text-xs px-1.5 py-0.5 rounded font-medium" style={{ background: '#6366F1', color: '#fff' }}>Hoje</span>}
+                  {isToday && <span className="ml-auto text-xs px-1.5 py-0.5 rounded font-medium" style={{ background: '#00E5C8', color: '#fff' }}>Hoje</span>}
                 </button>
                 <div className="p-2 space-y-1.5">
                   {dayEvents.map((ev) => {
@@ -616,18 +614,18 @@ function CalendarView() {
                       <div key={ev.id} className="group rounded-lg px-2.5 py-1.5" style={{ background: s.bg, borderLeft: `3px solid ${s.border}` }}>
                         <div className="flex items-center gap-1 mb-0.5">
                           <span style={{ color: s.color }}>{s.icon}</span>
-                          <span className="text-xs font-medium" style={{ color: s.color, fontFamily: "'JetBrains Mono', monospace" }}>{ev.time}</span>
+                          <span className="text-xs font-medium" style={{ color: s.color }}>{ev.time}</span>
                         </div>
                         <div className="flex items-start justify-between gap-1">
-                          <p className="text-xs font-medium text-slate-700 leading-snug flex-1">{ev.title}</p>
-                          <button onClick={() => deleteEvent(ev.id)} className="flex-shrink-0 opacity-0 group-hover:opacity-100 text-red-300 hover:text-red-500 transition-all">
+                          <p className="text-xs font-medium text-[#F0F0F5] leading-snug flex-1">{ev.title}</p>
+                          <button onClick={() => deleteEvent(ev.id)} className="flex-shrink-0 opacity-0 group-hover:opacity-100 text-[#FF5252] hover:text-[#FF5252] transition-all">
                             <X size={11} />
                           </button>
                         </div>
                       </div>
                     )
                   })}
-                  <button onClick={() => openAdd(ds)} className="w-full text-xs text-slate-300 hover:text-indigo-400 hover:bg-indigo-50 rounded-lg py-1 transition-colors text-center border border-dashed border-slate-200 hover:border-indigo-300">
+                  <button onClick={() => openAdd(ds)} className="w-full text-xs text-[#555566] hover:text-[#00E5C8] hover:bg-[rgba(0,229,200,0.08)] rounded-lg py-1 transition-colors text-center border border-dashed border-[rgba(255,255,255,0.1)] hover:border-[rgba(0,229,200,0.3)]">
                     + Evento
                   </button>
                 </div>
@@ -648,7 +646,7 @@ function CalendarView() {
       <div>
         <div className="grid grid-cols-7 mb-1">
           {PT_DAYS_SHORT.map((d) => (
-            <div key={d} className="text-center text-xs font-semibold text-slate-400 py-2">{d}</div>
+            <div key={d} className="text-center text-xs font-semibold text-[#555566] py-2">{d}</div>
           ))}
         </div>
         <div className="grid grid-cols-7 gap-1">
@@ -660,12 +658,12 @@ function CalendarView() {
             const isCurrentMonth = day.getMonth() === month
             return (
               <div key={ds} className="rounded-lg overflow-hidden cursor-pointer hover:shadow-sm transition-all group"
-                style={{ minHeight: 80, background: isToday ? '#EEF2FF' : '#fff', border: isToday ? '1.5px solid #6366F1' : '1.5px solid #F1F5F9', opacity: isCurrentMonth ? 1 : 0.4 }}
+                style={{ minHeight: 80, background: isToday ? 'rgba(0,229,200,0.08)' : '#111118', border: isToday ? '1.5px solid #00E5C8' : '1.5px solid rgba(255,255,255,0.06)', opacity: isCurrentMonth ? 1 : 0.4 }}
                 onClick={() => openDayDetail(ds)}>
                 <div className="flex items-center justify-between px-2 pt-2 pb-1">
-                  <span className="text-xs font-bold" style={{ color: isToday ? '#6366F1' : '#64748B', fontFamily: "'DM Sans', sans-serif" }}>{day.getDate()}</span>
+                  <span className="text-xs font-bold" style={{ color: isToday ? '#00E5C8' : '#8A8A9A' }}>{day.getDate()}</span>
                   {dayEvents.length > 0 && (
-                    <span className="text-xs font-medium rounded-full px-1.5" style={{ background: '#6366F1', color: '#fff', fontFamily: "'JetBrains Mono', monospace", fontSize: 10 }}>
+                    <span className="text-xs font-medium rounded-full px-1.5" style={{ background: '#00E5C8', color: '#fff', fontSize: 10 }}>
                       {dayEvents.length}
                     </span>
                   )}
@@ -676,13 +674,13 @@ function CalendarView() {
                     return (
                       <div key={ev.id} className="flex items-center justify-between group/ev rounded px-1.5 py-0.5" style={{ background: s.bg }}>
                         <p className="text-xs truncate leading-snug flex-1" style={{ color: s.color }}>{ev.title}</p>
-                        <button onClick={(e) => { e.stopPropagation(); deleteEvent(ev.id) }} className="flex-shrink-0 opacity-0 group-hover/ev:opacity-100 ml-1 text-red-400">
+                        <button onClick={(e) => { e.stopPropagation(); deleteEvent(ev.id) }} className="flex-shrink-0 opacity-0 group-hover/ev:opacity-100 ml-1 text-[#FF5252]">
                           <X size={9} />
                         </button>
                       </div>
                     )
                   })}
-                  {dayEvents.length > 2 && <p className="text-xs text-slate-400 px-1">+{dayEvents.length - 2}</p>}
+                  {dayEvents.length > 2 && <p className="text-xs text-[#555566] px-1">+{dayEvents.length - 2}</p>}
                 </div>
               </div>
             )
@@ -701,13 +699,13 @@ function CalendarView() {
           const cells = getMonthGrid(year, m)
           const monthEvents = events.filter((e) => e.date.startsWith(`${year}-${String(m + 1).padStart(2, '0')}`))
           return (
-            <div key={m} className="bg-white rounded-xl p-3" style={{ border: '1.5px solid #E2E8F0' }}>
-              <div className="text-xs font-semibold text-slate-700 mb-2 text-center" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+            <div key={m} className="bg-[#111118] rounded-xl p-3" style={{ border: '1.5px solid rgba(255,255,255,0.1)' }}>
+              <div className="text-xs font-semibold text-[#F0F0F5] mb-2 text-center">
                 {PT_MONTHS_SHORT[m]}
               </div>
               <div className="grid grid-cols-7 gap-0.5">
                 {PT_DAYS_SHORT.map((d) => (
-                  <div key={d} className="text-center" style={{ fontSize: 8, color: '#94A3B8' }}>{d[0]}</div>
+                  <div key={d} className="text-center" style={{ fontSize: 8, color: '#555566' }}>{d[0]}</div>
                 ))}
                 {cells.map((day, i) => {
                   if (!day) return <div key={i} />
@@ -717,7 +715,7 @@ function CalendarView() {
                   return (
                     <button key={ds} onClick={() => { setView('month'); setNavDate(new Date(year, m, 1)) }}
                       className="flex items-center justify-center rounded transition-all"
-                      style={{ height: 18, fontSize: 9, background: isToday ? '#6366F1' : hasEv ? '#EEF2FF' : 'transparent', color: isToday ? '#fff' : '#64748B', fontFamily: "'JetBrains Mono', monospace" }}>
+                      style={{ height: 18, fontSize: 9, background: isToday ? '#00E5C8' : hasEv ? 'rgba(0,229,200,0.08)' : 'transparent', color: isToday ? '#fff' : '#8A8A9A' }}>
                       {day.getDate()}
                     </button>
                   )
@@ -725,7 +723,7 @@ function CalendarView() {
               </div>
               {monthEvents.length > 0 && (
                 <div className="mt-2 text-center">
-                  <span className="text-xs" style={{ color: '#6366F1', fontFamily: "'JetBrains Mono', monospace" }}>{monthEvents.length} evento{monthEvents.length > 1 ? 's' : ''}</span>
+                  <span className="text-xs" style={{ color: '#00E5C8' }}>{monthEvents.length} evento{monthEvents.length > 1 ? 's' : ''}</span>
                 </div>
               )}
             </div>
@@ -747,16 +745,16 @@ function CalendarView() {
         {/* Controls */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <button onClick={() => navigate(-1)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500"><ChevronLeft size={16} /></button>
-            <h2 className="text-base font-semibold text-slate-700 min-w-32 text-center" style={{ fontFamily: "'DM Sans', sans-serif" }}>{navLabel}</h2>
-            <button onClick={() => navigate(1)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500"><ChevronRight size={16} /></button>
+            <button onClick={() => navigate(-1)} className="p-1.5 rounded-lg hover:bg-[rgba(255,255,255,0.08)] text-[#8A8A9A]"><ChevronLeft size={16} /></button>
+            <h2 className="text-base font-semibold text-[#F0F0F5] min-w-32 text-center">{navLabel}</h2>
+            <button onClick={() => navigate(1)} className="p-1.5 rounded-lg hover:bg-[rgba(255,255,255,0.08)] text-[#8A8A9A]"><ChevronRight size={16} /></button>
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex rounded-lg overflow-hidden" style={{ border: '1.5px solid #E2E8F0' }}>
+            <div className="flex rounded-lg overflow-hidden" style={{ border: '1.5px solid rgba(255,255,255,0.1)' }}>
               {(['week', 'month', 'year'] as CalView[]).map((v) => (
                 <button key={v} onClick={() => setView(v)}
                   className="text-xs px-3 py-1.5 font-medium transition-all capitalize"
-                  style={view === v ? { background: '#6366F1', color: '#fff' } : { color: '#64748B' }}>
+                  style={view === v ? { background: '#00E5C8', color: '#fff' } : { color: '#8A8A9A' }}>
                   {v === 'week' ? 'Semana' : v === 'month' ? 'Mês' : 'Ano'}
                 </button>
               ))}
@@ -809,7 +807,7 @@ function CalendarView() {
               <div className="flex gap-2 flex-wrap">
                 <button onClick={() => setForm((f) => ({ ...f, channel: '' }))}
                   className="text-xs px-3 py-1 rounded-full font-medium transition-all"
-                  style={form.channel === '' ? { background: '#6366F1', color: '#fff' } : { background: '#F1F5F9', color: '#64748B' }}>
+                  style={form.channel === '' ? { background: '#00E5C8', color: '#fff' } : { background: 'rgba(255,255,255,0.06)', color: '#8A8A9A' }}>
                   Nenhum
                 </button>
                 {(['instagram', 'linkedin', 'site', 'email'] as ChannelType[]).map((ch) => (
@@ -822,12 +820,12 @@ function CalendarView() {
               </div>
             </FormField>
           </div>
-          <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid #F1F5F9' }}>
-            <button onClick={saveEvent} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90"
-              style={{ background: 'linear-gradient(135deg, #6366F1, #818CF8)' }}>
+          <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+            <button onClick={saveEvent} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90 btn-glow"
+              style={{ background: 'linear-gradient(135deg, #00E5C8, #00FFD9)' }}>
               Salvar evento
             </button>
-            <button onClick={() => setAddModal(null)} className="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100">Cancelar</button>
+            <button onClick={() => setAddModal(null)} className="px-4 py-2 rounded-xl text-sm font-medium text-[#8A8A9A] hover:bg-[rgba(255,255,255,0.08)]">Cancelar</button>
           </div>
         </Modal>
       )}
@@ -842,21 +840,21 @@ function ProgressBar({ value, target, color }: { value: number; target: number; 
   return (
     <div>
       <div className="flex justify-between text-xs mb-1">
-        <span style={{ color: '#64748B' }}>{value.toLocaleString('pt-BR')}</span>
-        <span style={{ color: '#94A3B8' }}>meta: {target.toLocaleString('pt-BR')}</span>
+        <span style={{ color: '#8A8A9A' }}>{value.toLocaleString('pt-BR')}</span>
+        <span style={{ color: '#555566' }}>meta: {target.toLocaleString('pt-BR')}</span>
       </div>
-      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#F1F5F9' }}>
+      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
         <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
       </div>
-      <div className="text-xs mt-0.5" style={{ color: '#94A3B8', fontFamily: "'JetBrains Mono', monospace" }}>{pct}%</div>
+      <div className="text-xs mt-0.5" style={{ color: '#555566' }}>{pct}%</div>
     </div>
   )
 }
 
 const statusStyle = {
-  ativa: { label: 'Ativa', bg: '#ECFDF5', color: '#059669' },
-  planejada: { label: 'Planejada', bg: '#EEF2FF', color: '#6366F1' },
-  encerrada: { label: 'Encerrada', bg: '#F1F5F9', color: '#64748B' },
+  ativa: { label: 'Ativa', bg: 'rgba(0,200,83,0.15)', color: '#00C853' },
+  planejada: { label: 'Planejada', bg: 'rgba(0,229,200,0.08)', color: '#00E5C8' },
+  encerrada: { label: 'Encerrada', bg: 'rgba(255,255,255,0.06)', color: '#8A8A9A' },
 }
 
 function CampaignsView({ channel }: { channel: Channel }) {
@@ -917,20 +915,20 @@ function CampaignsView({ channel }: { channel: Channel }) {
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h2 className="text-base font-semibold text-slate-800" style={{ fontFamily: "'DM Sans', sans-serif" }}>Campanhas</h2>
-            <p className="text-sm text-slate-500">{filtered.length} campanha{filtered.length !== 1 ? 's' : ''}</p>
+            <h2 className="text-base font-semibold text-[#F0F0F5]">Campanhas</h2>
+            <p className="text-sm text-[#8A8A9A]">{filtered.length} campanha{filtered.length !== 1 ? 's' : ''}</p>
           </div>
-          <button onClick={() => setShowForm(true)} className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl text-white transition-all hover:opacity-90"
-            style={{ background: 'linear-gradient(135deg, #6366F1, #818CF8)' }}>
+          <button onClick={() => setShowForm(true)} className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl text-white transition-all hover:opacity-90 btn-glow"
+            style={{ background: 'linear-gradient(135deg, #00E5C8, #00FFD9)' }}>
             <Plus size={16} /> Nova Campanha
           </button>
         </div>
 
         {showForm && (
-          <div className="bg-white rounded-2xl p-6 mb-5" style={{ border: '1.5px solid #E2E8F0', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+          <div className="bg-[#111118] rounded-2xl p-6 mb-5" style={{ border: '1.5px solid rgba(255,255,255,0.1)', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-slate-800" style={{ fontFamily: "'DM Sans', sans-serif" }}>Nova Campanha</h3>
-              <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
+              <h3 className="font-semibold text-[#F0F0F5]">Nova Campanha</h3>
+              <button onClick={() => setShowForm(false)} className="text-[#555566] hover:text-[#8A8A9A]"><X size={18} /></button>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2"><FormField label="Nome *"><Inp value={form.name} onChange={(v) => setForm((f) => ({ ...f, name: v }))} placeholder="Ex: Lançamento Q4" /></FormField></div>
@@ -941,7 +939,7 @@ function CampaignsView({ channel }: { channel: Channel }) {
               <FormField label="Meta de alcance"><Inp type="number" value={form.targetReach} onChange={(v) => setForm((f) => ({ ...f, targetReach: v }))} placeholder="50000" /></FormField>
               <FormField label="Meta de interações"><Inp type="number" value={form.targetInteractions} onChange={(v) => setForm((f) => ({ ...f, targetInteractions: v }))} placeholder="3000" /></FormField>
               <div className="col-span-2">
-                <label className="block text-xs font-medium text-slate-600 mb-2">Canais</label>
+                <label className="block text-xs font-medium text-[#8A8A9A] mb-2">Canais</label>
                 <div className="flex gap-2 flex-wrap">
                   {(['instagram', 'linkedin', 'site', 'email'] as ChannelType[]).map((ch) => (
                     <button key={ch} onClick={() => toggleChannel(ch)} className="text-xs px-3 py-1.5 rounded-full font-medium transition-all"
@@ -952,10 +950,10 @@ function CampaignsView({ channel }: { channel: Channel }) {
                 </div>
               </div>
             </div>
-            <div className="flex gap-3 mt-5 pt-4" style={{ borderTop: '1px solid #F1F5F9' }}>
-              <button onClick={submitCampaign} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90"
-                style={{ background: 'linear-gradient(135deg, #6366F1, #818CF8)' }}>Criar Campanha</button>
-              <button onClick={() => setShowForm(false)} className="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100">Cancelar</button>
+            <div className="flex gap-3 mt-5 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+              <button onClick={submitCampaign} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90 btn-glow"
+                style={{ background: 'linear-gradient(135deg, #00E5C8, #00FFD9)' }}>Criar Campanha</button>
+              <button onClick={() => setShowForm(false)} className="px-4 py-2 rounded-xl text-sm font-medium text-[#8A8A9A] hover:bg-[rgba(255,255,255,0.08)]">Cancelar</button>
             </div>
           </div>
         )}
@@ -970,23 +968,23 @@ function CampaignsView({ channel }: { channel: Channel }) {
             }))
 
             return (
-              <div key={camp.id} className="bg-white rounded-2xl p-5" style={{ border: '1.5px solid #E2E8F0', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+              <div key={camp.id} className="bg-[#111118] rounded-2xl p-5" style={{ border: '1.5px solid rgba(255,255,255,0.1)', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
                 <div className="flex items-start justify-between gap-4 mb-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-slate-800" style={{ fontFamily: "'DM Sans', sans-serif" }}>{camp.name}</h3>
+                      <h3 className="font-semibold text-[#F0F0F5]">{camp.name}</h3>
                       <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: st.bg, color: st.color }}>{st.label}</span>
                     </div>
-                    <p className="text-sm text-slate-500">{camp.objective}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">Público: {camp.audience}</p>
+                    <p className="text-sm text-[#8A8A9A]">{camp.objective}</p>
+                    <p className="text-xs text-[#555566] mt-0.5">Público: {camp.audience}</p>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {camp.daysRunning > 0 && (
-                      <span className="text-xs" style={{ color: '#94A3B8' }}>
-                        <span style={{ fontFamily: "'JetBrains Mono', monospace", color: '#6366F1', fontWeight: 600 }}>{camp.daysRunning}</span>d no ar
+                      <span className="text-xs" style={{ color: '#555566' }}>
+                        <span style={{ color: '#00E5C8', fontWeight: 600 }}>{camp.daysRunning}</span>d no ar
                       </span>
                     )}
-                    <button onClick={() => deleteCampaign(camp.id)} className="p-1.5 rounded-lg text-slate-300 hover:text-red-400 hover:bg-red-50 transition-all">
+                    <button onClick={() => deleteCampaign(camp.id)} className="p-1.5 rounded-lg text-[#555566] hover:text-[#FF5252] hover:bg-[rgba(255,82,82,0.12)] transition-all">
                       <Trash2 size={15} />
                     </button>
                   </div>
@@ -994,47 +992,47 @@ function CampaignsView({ channel }: { channel: Channel }) {
 
                 <div className="flex gap-1.5 mb-4">
                   {camp.channels.map((ch) => <ChannelBadge key={ch} ch={ch} small />)}
-                  <span className="text-xs text-slate-400 ml-1">{camp.startDate} → {camp.endDate}</span>
+                  <span className="text-xs text-[#555566] ml-1">{camp.startDate} → {camp.endDate}</span>
                 </div>
 
                 {camp.status !== 'planejada' && (
                   <div className="grid grid-cols-2 gap-6 mb-4">
-                    <div><div className="text-xs font-medium text-slate-600 mb-1.5 flex items-center gap-1"><Target size={11} /> Alcance</div>
-                      <ProgressBar value={camp.reach} target={camp.targetReach} color="#6366F1" /></div>
-                    <div><div className="text-xs font-medium text-slate-600 mb-1.5 flex items-center gap-1"><BarChart2 size={11} /> Interações</div>
-                      <ProgressBar value={camp.interactions} target={camp.targetInteractions} color="#10B981" /></div>
+                    <div><div className="text-xs font-medium text-[#8A8A9A] mb-1.5 flex items-center gap-1"><Target size={11} /> Alcance</div>
+                      <ProgressBar value={camp.reach} target={camp.targetReach} color="#00E5C8" /></div>
+                    <div><div className="text-xs font-medium text-[#8A8A9A] mb-1.5 flex items-center gap-1"><BarChart2 size={11} /> Interações</div>
+                      <ProgressBar value={camp.interactions} target={camp.targetInteractions} color="#00C853" /></div>
                   </div>
                 )}
 
                 {/* Daily metrics section */}
-                <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #E2E8F0' }}>
+                <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
                   <button onClick={() => setExpandedMetrics((p) => ({ ...p, [camp.id]: !expanded }))}
-                    className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
-                    <span className="flex items-center gap-2"><BarChart2 size={14} className="text-indigo-400" /> Métricas diárias ({camp.dailyEntries.length} registros)</span>
-                    <ChevronRight size={14} className="text-slate-400 transition-transform" style={{ transform: expanded ? 'rotate(90deg)' : 'none' }} />
+                    className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium text-[#F0F0F5] hover:bg-[#1A1A25] transition-colors">
+                    <span className="flex items-center gap-2"><BarChart2 size={14} className="text-[#00E5C8]" /> Métricas diárias ({camp.dailyEntries.length} registros)</span>
+                    <ChevronRight size={14} className="text-[#555566] transition-transform" style={{ transform: expanded ? 'rotate(90deg)' : 'none' }} />
                   </button>
 
                   {expanded && (
-                    <div className="px-4 pb-4" style={{ borderTop: '1px solid #F1F5F9' }}>
+                    <div className="px-4 pb-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                       {/* Add entry form */}
                       <div className="pt-3 pb-3 flex gap-3 items-end flex-wrap">
                         <div className="flex-1 min-w-32">
-                          <label className="block text-xs text-slate-500 mb-1">Data</label>
+                          <label className="block text-xs text-[#8A8A9A] mb-1">Data</label>
                           <input type="date" value={mf.date} onChange={(e) => setMetricForms((p) => ({ ...p, [camp.id]: { ...mf, date: e.target.value } }))}
-                            className="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-200 focus:outline-none focus:border-indigo-400" />
+                            className="w-full text-xs px-2.5 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#00E5C8]" />
                         </div>
                         <div className="flex-1 min-w-24">
-                          <label className="block text-xs text-slate-500 mb-1">Alcance</label>
+                          <label className="block text-xs text-[#8A8A9A] mb-1">Alcance</label>
                           <input type="number" value={mf.reach} onChange={(e) => setMetricForms((p) => ({ ...p, [camp.id]: { ...mf, reach: e.target.value } }))}
-                            placeholder="0" className="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-200 focus:outline-none focus:border-indigo-400" />
+                            placeholder="0" className="w-full text-xs px-2.5 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#00E5C8]" />
                         </div>
                         <div className="flex-1 min-w-24">
-                          <label className="block text-xs text-slate-500 mb-1">Interações</label>
+                          <label className="block text-xs text-[#8A8A9A] mb-1">Interações</label>
                           <input type="number" value={mf.interactions} onChange={(e) => setMetricForms((p) => ({ ...p, [camp.id]: { ...mf, interactions: e.target.value } }))}
-                            placeholder="0" className="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-200 focus:outline-none focus:border-indigo-400" />
+                            placeholder="0" className="w-full text-xs px-2.5 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#00E5C8]" />
                         </div>
-                        <button onClick={() => addMetricEntry(camp.id)} className="flex items-center gap-1 text-xs px-3 py-2 rounded-xl font-medium text-white hover:opacity-90"
-                          style={{ background: '#6366F1' }}>
+                        <button onClick={() => addMetricEntry(camp.id)} className="flex items-center gap-1 text-xs px-3 py-2 rounded-xl font-medium text-white hover:opacity-90 btn-glow"
+                          style={{ background: '#00E5C8' }}>
                           <Plus size={12} /> Registrar
                         </button>
                       </div>
@@ -1044,14 +1042,14 @@ function CampaignsView({ channel }: { channel: Channel }) {
                         <div style={{ height: 160, marginBottom: 12 }}>
                           <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={chartData} margin={{ top: 4, right: 8, left: -24, bottom: 0 }}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                              <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
-                              <YAxis tick={{ fontSize: 10, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
-                              <Tooltip contentStyle={{ border: '1px solid #E2E8F0', borderRadius: 10, fontSize: 11 }}
+                              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                              <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#555566' }} axisLine={false} tickLine={false} />
+                              <YAxis tick={{ fontSize: 10, fill: '#555566' }} axisLine={false} tickLine={false} />
+                              <Tooltip contentStyle={{ background: '#111118', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, fontSize: 11, color: '#F0F0F5' }}
                                 formatter={(v) => Number(v ?? 0).toLocaleString('pt-BR')} />
-                              <ReferenceLine y={camp.targetReach} stroke="#6366F1" strokeDasharray="4 4" label={{ value: 'Meta alcance', fill: '#6366F1', fontSize: 10 }} />
-                              <Line type="monotone" dataKey="reach" name="Alcance" stroke="#6366F1" strokeWidth={2} dot={{ r: 3 }} />
-                              <Line type="monotone" dataKey="interactions" name="Interações" stroke="#10B981" strokeWidth={2} dot={{ r: 3 }} />
+                              <ReferenceLine y={camp.targetReach} stroke="#00E5C8" strokeDasharray="4 4" label={{ value: 'Meta alcance', fill: '#00E5C8', fontSize: 10 }} />
+                              <Line type="monotone" dataKey="reach" name="Alcance" stroke="#00E5C8" strokeWidth={2} dot={{ r: 3 }} />
+                              <Line type="monotone" dataKey="interactions" name="Interações" stroke="#00C853" strokeWidth={2} dot={{ r: 3 }} />
                             </LineChart>
                           </ResponsiveContainer>
                         </div>
@@ -1059,14 +1057,14 @@ function CampaignsView({ channel }: { channel: Channel }) {
 
                       {/* Entries table */}
                       {camp.dailyEntries.length > 0 && (
-                        <div className="rounded-lg overflow-hidden" style={{ border: '1px solid #F1F5F9' }}>
+                        <div className="rounded-lg overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
                           {camp.dailyEntries.map((entry, i) => (
                             <div key={entry.date} className="flex items-center justify-between px-3 py-2 text-xs group"
-                              style={{ background: i % 2 === 0 ? '#FAFAFA' : '#fff', borderTop: i > 0 ? '1px solid #F8FAFC' : undefined }}>
-                              <span style={{ fontFamily: "'JetBrains Mono', monospace", color: '#64748B' }}>{entry.date}</span>
-                              <span style={{ fontFamily: "'JetBrains Mono', monospace", color: '#6366F1' }}>Alcance: {entry.reach.toLocaleString('pt-BR')}</span>
-                              <span style={{ fontFamily: "'JetBrains Mono', monospace", color: '#10B981' }}>Interações: {entry.interactions.toLocaleString('pt-BR')}</span>
-                              <button onClick={() => deleteMetricEntry(camp.id, entry.date)} className="opacity-0 group-hover:opacity-100 text-red-300 hover:text-red-500">
+                              style={{ background: i % 2 === 0 ? '#1A1A25' : '#111118', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.06)' : undefined }}>
+                              <span style={{ color: '#8A8A9A' }}>{entry.date}</span>
+                              <span style={{ color: '#00E5C8' }}>Alcance: {entry.reach.toLocaleString('pt-BR')}</span>
+                              <span style={{ color: '#00C853' }}>Interações: {entry.interactions.toLocaleString('pt-BR')}</span>
+                              <button onClick={() => deleteMetricEntry(camp.id, entry.date)} className="opacity-0 group-hover:opacity-100 text-[#FF5252] hover:text-[#FF5252]">
                                 <Trash2 size={12} />
                               </button>
                             </div>
@@ -1074,7 +1072,7 @@ function CampaignsView({ channel }: { channel: Channel }) {
                         </div>
                       )}
                       {camp.dailyEntries.length === 0 && (
-                        <p className="text-xs text-slate-400 text-center py-2">Nenhum registro ainda</p>
+                        <p className="text-xs text-[#555566] text-center py-2">Nenhum registro ainda</p>
                       )}
                     </div>
                   )}
@@ -1143,7 +1141,7 @@ function EngagementView({ columns }: { columns: KanbanColumn[] }) {
         {[1, 2, 3, 4, 5].map((s) => (
           <svg key={s} width="12" height="12" viewBox="0 0 12 12" fill="none">
             <path d="M6 1l1.2 3.6H11L8.2 6.9l1 3.1L6 8.4 2.8 10l1-3.1L1 4.6h3.8z"
-              fill={s <= full ? color : s === full + 1 && frac >= 0.5 ? color : '#E2E8F0'}
+              fill={s <= full ? color : s === full + 1 && frac >= 0.5 ? color : 'rgba(255,255,255,0.1)'}
               opacity={s === full + 1 && frac > 0 && frac < 0.5 ? 0.4 : 1} />
           </svg>
         ))}
@@ -1167,20 +1165,19 @@ function EngagementView({ columns }: { columns: KanbanColumn[] }) {
                 const n = Math.max(0, Math.min(5, parseFloat(e.target.value) || 0))
                 setQualityOverride((prev) => ({ ...prev, [memberId]: n }))
               }}
-              className="w-16 text-xs px-2 py-1 rounded border border-indigo-200 focus:outline-none focus:border-indigo-400 text-center"
-              style={{ fontFamily: "'JetBrains Mono', monospace" }} />
-            <span className="text-xs text-slate-400">/ 5</span>
+              className="w-16 text-xs px-2 py-1 rounded border border-[rgba(0,229,200,0.2)] focus:outline-none focus:border-[#00E5C8] text-center" />
+            <span className="text-xs text-[#555566]">/ 5</span>
             {isOverridden && (
               <button onClick={() => setQualityOverride((prev) => ({ ...prev, [memberId]: null }))}
-                className="text-xs px-1.5 py-0.5 rounded text-amber-600 hover:bg-amber-50 border border-amber-200" title="Voltar ao cálculo automático">
+                className="text-xs px-1.5 py-0.5 rounded text-[#FFB300] hover:bg-[rgba(255,179,0,0.15)] border border-[rgba(255,179,0,0.3)]" title="Voltar ao cálculo automático">
                 <X size={10} />
               </button>
             )}
           </div>
           {autoVal !== null && (
-            <div className="text-xs text-slate-400">
-              auto: <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{autoVal.toFixed(1)}</span>
-              {isOverridden && <span className="ml-1 text-amber-500">(sobrescrito)</span>}
+            <div className="text-xs text-[#555566]">
+              auto: <span>{autoVal.toFixed(1)}</span>
+              {isOverridden && <span className="ml-1 text-[#FFB300]">(sobrescrito)</span>}
             </div>
           )}
         </div>
@@ -1192,9 +1189,8 @@ function EngagementView({ columns }: { columns: KanbanColumn[] }) {
         <div className="flex items-center gap-1.5">
           <input type="number" min={0} max={5} step={0.1} value={val}
             onChange={(e) => updateScore(memberId, field, e.target.value)}
-            className="w-16 text-xs px-2 py-1 rounded border border-slate-200 focus:outline-none focus:border-indigo-400 text-center"
-            style={{ fontFamily: "'JetBrains Mono', monospace" }} />
-          <span className="text-xs text-slate-400">/ 5</span>
+            className="w-16 text-xs px-2 py-1 rounded border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#00E5C8] text-center" />
+          <span className="text-xs text-[#555566]">/ 5</span>
         </div>
       )
     }
@@ -1203,14 +1199,14 @@ function EngagementView({ columns }: { columns: KanbanColumn[] }) {
       <div className="flex flex-col gap-0.5">
         <div className="flex items-center gap-1.5">
           <StarDisplay val={val} color={color} />
-          <span className="text-xs" style={{ fontFamily: "'JetBrains Mono', monospace", color: '#64748B' }}>{val.toFixed(1)}</span>
+          <span className="text-xs" style={{ color: '#8A8A9A' }}>{val.toFixed(1)}</span>
         </div>
         {isQuality && (
           <div className="text-xs">
             {isOverridden ? (
-              <span className="text-amber-500">manual</span>
+              <span className="text-[#FFB300]">manual</span>
             ) : autoVal !== null ? (
-              <span className="text-emerald-500">auto</span>
+              <span className="text-[#00C853]">auto</span>
             ) : null}
           </div>
         )}
@@ -1223,9 +1219,9 @@ function EngagementView({ columns }: { columns: KanbanColumn[] }) {
   const avgPresence = (data.reduce((a, r) => a + r.presence, 0) / data.length).toFixed(1)
 
   const NOTE_CATS: { key: NoteCategory; label: string; color: string; bg: string }[] = [
-    { key: 'feedbacks', label: 'Feedbacks', color: '#4F46E5', bg: '#EEF2FF' },
-    { key: 'alertas', label: 'Alertas', color: '#B45309', bg: '#FFFBEB' },
-    { key: 'outros', label: 'Outros', color: '#374151', bg: '#F3F4F6' },
+    { key: 'feedbacks', label: 'Feedbacks', color: '#00B39E', bg: 'rgba(0,229,200,0.08)' },
+    { key: 'alertas', label: 'Alertas', color: '#FFB300', bg: 'rgba(255,179,0,0.15)' },
+    { key: 'outros', label: 'Outros', color: '#555566', bg: 'rgba(255,255,255,0.08)' },
   ]
 
   return (
@@ -1233,26 +1229,26 @@ function EngagementView({ columns }: { columns: KanbanColumn[] }) {
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h2 className="text-base font-semibold text-slate-800 flex items-center gap-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-              <Users size={18} className="text-indigo-500" /> Engajamento do Time
+            <h2 className="text-base font-semibold text-[#F0F0F5] flex items-center gap-2">
+              <Users size={18} className="text-[#00E5C8]" /> Engajamento do Time
             </h2>
-            <p className="text-sm text-slate-500 mt-0.5">Visível apenas para a Gerente · Julho 2026 · Escala 0–5</p>
+            <p className="text-sm text-[#8A8A9A] mt-0.5">Visível apenas para a Gerente · Julho 2026 · Escala 0–5</p>
           </div>
           <button onClick={() => setEditMode((e) => !e)} className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl transition-all"
-            style={editMode ? { background: '#10B981', color: '#fff' } : { background: '#EEF2FF', color: '#4338CA' }}>
+            style={editMode ? { background: '#00C853', color: '#fff' } : { background: 'rgba(0,229,200,0.08)', color: '#00B39E' }}>
             {editMode ? <><Check size={15} /> Salvar</> : <><Edit2 size={15} /> Editar</>}
           </button>
         </div>
 
         <div className="grid grid-cols-3 gap-4 mb-6">
           {[
-            { label: 'Média Compromisso', value: avgCommitment, color: '#6366F1' },
-            { label: 'Média Qualidade', value: avgQuality, color: '#10B981' },
-            { label: 'Média Presença', value: avgPresence, color: '#F59E0B' },
+            { label: 'Média Compromisso', value: avgCommitment, color: '#00E5C8' },
+            { label: 'Média Qualidade', value: avgQuality, color: '#00C853' },
+            { label: 'Média Presença', value: avgPresence, color: '#FFB300' },
           ].map((kpi) => (
-            <div key={kpi.label} className="bg-white rounded-xl p-4" style={{ border: '1.5px solid #E2E8F0' }}>
-              <div className="text-2xl font-bold mb-1" style={{ color: kpi.color, fontFamily: "'DM Sans', sans-serif" }}>{kpi.value}<span className="text-sm font-normal text-slate-400">/5</span></div>
-              <div className="text-xs text-slate-500">{kpi.label}</div>
+            <div key={kpi.label} className="bg-[#111118] rounded-xl p-4" style={{ border: '1.5px solid rgba(255,255,255,0.1)' }}>
+              <div className="text-2xl font-bold mb-1" style={{ color: kpi.color }}>{kpi.value}<span className="text-sm font-normal text-[#555566]">/5</span></div>
+              <div className="text-xs text-[#8A8A9A]">{kpi.label}</div>
             </div>
           ))}
         </div>
@@ -1265,57 +1261,55 @@ function EngagementView({ columns }: { columns: KanbanColumn[] }) {
             const hasNotes = memberNotes.feedbacks || memberNotes.alertas || memberNotes.outros
 
             return (
-              <div key={row.memberId} className="bg-white rounded-2xl overflow-hidden" style={{ border: '1.5px solid #E2E8F0' }}>
+              <div key={row.memberId} className="bg-[#111118] rounded-2xl overflow-hidden" style={{ border: '1.5px solid rgba(255,255,255,0.1)' }}>
                 {/* Main row */}
                 <div className="px-5 py-4">
                   <div className="flex items-center gap-4">
                     {/* Avatar + name */}
                     <div className="flex items-center gap-2.5 w-44 flex-shrink-0">
                       <div className="flex items-center justify-center rounded-full text-white font-bold text-xs flex-shrink-0"
-                        style={{ width: 32, height: 32, background: member.color, fontFamily: "'DM Sans', sans-serif" }}>
+                        style={{ width: 32, height: 32, background: member.color }}>
                         {member.initials}
                       </div>
                       <div>
-                        <div className="text-sm font-medium text-slate-800">{member.name}</div>
-                        <div className="text-xs text-slate-400">{member.role}</div>
+                        <div className="text-sm font-medium text-[#F0F0F5]">{member.name}</div>
+                        <div className="text-xs text-[#555566]">{member.role}</div>
                       </div>
                     </div>
 
                     {/* Scores */}
                     <div className="flex items-center gap-6 flex-1">
                       <div className="min-w-0">
-                        <div className="text-xs text-slate-400 mb-1">Compromisso</div>
-                        <StarScore memberId={row.memberId} field="punctuality" color="#6366F1" />
+                        <div className="text-xs text-[#555566] mb-1">Compromisso</div>
+                        <StarScore memberId={row.memberId} field="punctuality" color="#00E5C8" />
                       </div>
                       <div className="min-w-0">
-                        <div className="text-xs text-slate-400 mb-1">Qualidade</div>
-                        <StarScore memberId={row.memberId} field="quality" color="#10B981" />
+                        <div className="text-xs text-[#555566] mb-1">Qualidade</div>
+                        <StarScore memberId={row.memberId} field="quality" color="#00C853" />
                       </div>
                       <div className="min-w-0">
-                        <div className="text-xs text-slate-400 mb-1">Presença</div>
-                        <StarScore memberId={row.memberId} field="presence" color="#F59E0B" />
+                        <div className="text-xs text-[#555566] mb-1">Presença</div>
+                        <StarScore memberId={row.memberId} field="presence" color="#FFB300" />
                       </div>
                     </div>
 
                     {/* Tasks */}
                     <div className="flex-shrink-0 w-36">
-                      <div className="text-xs text-slate-400 mb-1">Tasks</div>
+                      <div className="text-xs text-[#555566] mb-1">Tasks</div>
                       {editMode ? (
                         <div className="flex items-center gap-1 text-xs">
                           <input type="number" min={0} value={row.tasksCompleted} onChange={(e) => updateTasks(row.memberId, 'tasksCompleted', e.target.value)}
-                            className="w-12 px-1.5 py-1 rounded border border-slate-200 focus:outline-none focus:border-indigo-400 text-center"
-                            style={{ fontFamily: "'JetBrains Mono', monospace" }} />
-                          <span className="text-slate-400">/</span>
+                            className="w-12 px-1.5 py-1 rounded border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#00E5C8] text-center" />
+                          <span className="text-[#555566]">/</span>
                           <input type="number" min={0} value={row.tasksTotal} onChange={(e) => updateTasks(row.memberId, 'tasksTotal', e.target.value)}
-                            className="w-12 px-1.5 py-1 rounded border border-slate-200 focus:outline-none focus:border-indigo-400 text-center"
-                            style={{ fontFamily: "'JetBrains Mono', monospace" }} />
+                            className="w-12 px-1.5 py-1 rounded border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#00E5C8] text-center" />
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
-                          <div className="h-1.5 w-20 rounded-full overflow-hidden" style={{ background: '#F1F5F9' }}>
-                            <div className="h-full rounded-full" style={{ width: `${(row.tasksCompleted / row.tasksTotal) * 100}%`, background: '#6366F1' }} />
+                          <div className="h-1.5 w-20 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                            <div className="h-full rounded-full" style={{ width: `${(row.tasksCompleted / row.tasksTotal) * 100}%`, background: '#00E5C8' }} />
                           </div>
-                          <span className="text-xs" style={{ fontFamily: "'JetBrains Mono', monospace", color: '#64748B' }}>
+                          <span className="text-xs" style={{ color: '#8A8A9A' }}>
                             {row.tasksCompleted}/{row.tasksTotal}
                           </span>
                         </div>
@@ -1326,18 +1320,18 @@ function EngagementView({ columns }: { columns: KanbanColumn[] }) {
                     <button
                       onClick={() => setExpandedMember(isExpanded ? null : row.memberId)}
                       className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium flex-shrink-0 transition-all"
-                      style={isExpanded ? { background: '#EEF2FF', color: '#4F46E5' } : { background: '#F8FAFC', color: '#64748B' }}>
+                      style={isExpanded ? { background: 'rgba(0,229,200,0.08)', color: '#00B39E' } : { background: '#1A1A25', color: '#8A8A9A' }}>
                       <Edit2 size={11} />
                       Obs.
-                      {hasNotes && <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 ml-0.5" />}
+                      {hasNotes && <span className="w-1.5 h-1.5 rounded-full bg-[#00E5C8] ml-0.5" />}
                     </button>
                   </div>
                 </div>
 
                 {/* Expandable observations panel */}
                 {isExpanded && (
-                  <div className="px-5 pb-5 pt-1" style={{ borderTop: '1px solid #F1F5F9' }}>
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Observações do gerente</p>
+                  <div className="px-5 pb-5 pt-1" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                    <p className="text-xs font-semibold text-[#8A8A9A] uppercase tracking-wide mb-3">Observações do gerente</p>
                     <div className="grid grid-cols-3 gap-3">
                       {NOTE_CATS.map((cat) => (
                         <div key={cat.key}>
@@ -1353,10 +1347,9 @@ function EngagementView({ columns }: { columns: KanbanColumn[] }) {
                             rows={4}
                             className="w-full text-xs px-3 py-2 rounded-xl border resize-none focus:outline-none transition-colors"
                             style={{
-                              border: `1.5px solid ${memberNotes[cat.key] ? cat.color + '50' : '#E2E8F0'}`,
-                              background: memberNotes[cat.key] ? cat.bg : '#FAFAFA',
-                              color: '#374151',
-                              fontFamily: 'Inter, sans-serif',
+                              border: `1.5px solid ${memberNotes[cat.key] ? cat.color + '50' : 'rgba(255,255,255,0.1)'}`,
+                              background: memberNotes[cat.key] ? cat.bg : '#1A1A25',
+                              color: '#F0F0F5',
                             }}
                           />
                         </div>
@@ -1397,11 +1390,11 @@ export default function Monitoramento({ profile, isManager, channel, setChannel 
 
   return (
     <div className="flex flex-col h-full">
-      <header className="bg-white flex-shrink-0" style={{ borderBottom: '1.5px solid #E2E8F0' }}>
+      <header className="bg-[#111118] flex-shrink-0" style={{ borderBottom: '1.5px solid rgba(255,255,255,0.1)' }}>
         <div className="px-4 md:px-6 pt-4 md:pt-5 pb-0 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
           <div>
-            <h1 className="text-lg md:text-xl font-semibold text-slate-900 leading-tight" style={{ fontFamily: "'DM Sans', sans-serif" }}>Monitoramento</h1>
-            <p className="text-xs md:text-sm text-slate-500 mt-0.5 hidden sm:block">Gerencie tasks, calendário e campanhas do time</p>
+            <h1 className="text-lg md:text-xl font-semibold text-[#F0F0F5] leading-tight">Monitoramento</h1>
+            <p className="text-xs md:text-sm text-[#8A8A9A] mt-0.5 hidden sm:block">Gerencie tasks, calendário e campanhas do time</p>
           </div>
           {tab !== 'calendario' && <ChannelFilter channel={channel} setChannel={setChannel} />}
         </div>

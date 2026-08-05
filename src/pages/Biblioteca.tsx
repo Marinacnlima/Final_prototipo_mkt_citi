@@ -10,10 +10,10 @@ import { materialsData, promptsData } from '../data'
 // ─── Shared ────────────────────────────────────────────────────────────────
 
 const CH: Record<ChannelType, { label: string; color: string; bg: string; dot: string }> = {
-  instagram: { label: 'Instagram', color: '#BE185D', bg: '#FDF2F8', dot: '#EC4899' },
-  linkedin: { label: 'LinkedIn', color: '#1E40AF', bg: '#EFF6FF', dot: '#3B82F6' },
-  site: { label: 'Site', color: '#6D28D9', bg: '#F5F3FF', dot: '#7C3AED' },
-  email: { label: 'Email', color: '#92400E', bg: '#FFFBEB', dot: '#F59E0B' },
+  instagram: { label: 'Instagram', color: '#E1306C', bg: 'rgba(225,48,108,0.15)', dot: '#E1306C' },
+  linkedin: { label: 'LinkedIn', color: '#0A66C2', bg: 'rgba(10,102,194,0.15)', dot: '#0A66C2' },
+  site: { label: 'Site', color: '#00C853', bg: 'rgba(0,200,83,0.15)', dot: '#00C853' },
+  email: { label: 'Email', color: '#FFB300', bg: 'rgba(255,179,0,0.15)', dot: '#FFB300' },
 }
 
 function ChannelBadge({ ch }: { ch: ChannelType }) {
@@ -38,7 +38,7 @@ function ChannelFilter({ channel, setChannel }: { channel: Channel; setChannel: 
         const c = o.id !== 'todos' ? CH[o.id as ChannelType] : null
         return (
           <button key={o.id} onClick={() => setChannel(o.id)} className="text-xs px-3 py-1.5 rounded-full font-medium transition-all"
-            style={active ? { background: c ? c.dot : '#6366F1', color: '#fff' } : { background: '#F1F5F9', color: '#64748B' }}>
+            style={active ? { background: c ? c.dot : '#00E5C8', color: '#fff' } : { background: 'rgba(255,255,255,0.06)', color: '#8A8A9A' }}>
             {o.label}
           </button>
         )
@@ -59,7 +59,7 @@ function TabNav({ active, setTab }: { active: Tab; setTab: (t: Tab) => void }) {
     <div className="flex gap-1">
       {tabs.map((t) => (
         <button key={t.id} onClick={() => setTab(t.id)} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-all"
-          style={active === t.id ? { background: '#EEF2FF', color: '#4F46E5' } : { color: '#64748B', background: 'transparent' }}>
+          style={active === t.id ? { background: 'rgba(0,229,200,0.08)', color: '#00B39E' } : { color: '#8A8A9A', background: 'transparent' }}>
           {t.icon}{t.label}
         </button>
       ))}
@@ -71,11 +71,11 @@ function Modal({ title, onClose, children, wide }: { title: string; onClose: () 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
       <div
-        className={`bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden ${wide ? 'w-full max-w-2xl' : 'w-full max-w-md'}`}
+        className={`bg-[#111118] rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden ${wide ? 'w-full max-w-2xl' : 'w-full max-w-md'}`}
         style={{ margin: 16 }} onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 flex-shrink-0" style={{ borderBottom: '1px solid #F1F5F9' }}>
-          <h3 className="font-semibold text-slate-800" style={{ fontFamily: "'DM Sans', sans-serif" }}>{title}</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
+        <div className="flex items-center justify-between px-6 py-4 flex-shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <h3 className="font-semibold text-[#F0F0F5]">{title}</h3>
+          <button onClick={onClose} className="text-[#555566] hover:text-[#8A8A9A]"><X size={18} /></button>
         </div>
         <div className="overflow-y-auto flex-1">{children}</div>
       </div>
@@ -86,14 +86,14 @@ function Modal({ title, onClose, children, wide }: { title: string; onClose: () 
 function FormRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-slate-600 mb-1">{label}</label>
+      <label className="block text-xs font-medium text-[#8A8A9A] mb-1">{label}</label>
       {children}
     </div>
   )
 }
 
 function Inp({ value, onChange, placeholder, type = 'text', as }: { value: string; onChange: (v: string) => void; placeholder?: string; type?: string; as?: 'textarea' }) {
-  const cls = "w-full text-sm px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+  const cls = "w-full text-sm px-3 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#00E5C8] focus:ring-2 focus:ring-[rgba(0,229,200,0.1)]"
   if (as === 'textarea') return <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className={cls} rows={4} />
   return <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className={cls} />
 }
@@ -179,8 +179,8 @@ function PostModal({ initial, onSave, onClose }: {
             <Inp type="date" value={form.validUntil} onChange={(v) => setForm((f) => ({ ...f, validUntil: v }))} />
           </FormRow>
         </div>
-        <div className="pt-2" style={{ borderTop: '1px solid #F1F5F9' }}>
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Insights</p>
+        <div className="pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <p className="text-xs font-semibold text-[#8A8A9A] uppercase tracking-wide mb-3">Insights</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {([['reach', 'Alcance'], ['impressions', 'Impressões'], ['engagement', 'Engajamento'], ['saves', 'Saves'], ['profileVisits', 'Visitas perfil']] as [keyof PostFormData, string][]).map(([k, l]) => (
               <FormRow key={k} label={l}>
@@ -190,12 +190,12 @@ function PostModal({ initial, onSave, onClose }: {
           </div>
         </div>
       </div>
-      <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid #F1F5F9' }}>
-        <button onClick={save} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90"
-          style={{ background: 'linear-gradient(135deg, #6366F1, #818CF8)' }}>
+      <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <button onClick={save} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90 btn-glow"
+          style={{ background: 'linear-gradient(135deg, #00E5C8, #00FFD9)' }}>
           {initial ? 'Salvar alterações' : 'Criar post'}
         </button>
-        <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100">Cancelar</button>
+        <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-medium text-[#8A8A9A] hover:bg-[rgba(255,255,255,0.08)]">Cancelar</button>
       </div>
     </Modal>
   )
@@ -228,9 +228,9 @@ function PostsView({ channel, posts, setPosts }: { channel: Channel; posts: Post
   return (
     <div className="h-full overflow-auto p-5">
       <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-slate-500">{filtered.length} post{filtered.length !== 1 ? 's' : ''}</p>
-        <button onClick={() => setModal({})} className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl text-white hover:opacity-90"
-          style={{ background: 'linear-gradient(135deg, #6366F1, #818CF8)' }}>
+        <p className="text-sm text-[#8A8A9A]">{filtered.length} post{filtered.length !== 1 ? 's' : ''}</p>
+        <button onClick={() => setModal({})} className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl text-white hover:opacity-90 btn-glow"
+          style={{ background: 'linear-gradient(135deg, #00E5C8, #00FFD9)' }}>
           <Plus size={15} /> Adicionar post
         </button>
       </div>
@@ -241,9 +241,9 @@ function PostsView({ channel, posts, setPosts }: { channel: Channel; posts: Post
           const isExpanded = expanded[post.id]
           const caption = isExpanded ? post.caption : post.caption.slice(0, 120) + (post.caption.length > 120 ? '…' : '')
           return (
-            <div key={post.id} className="bg-white rounded-2xl overflow-hidden flex flex-col group"
-              style={{ border: '1.5px solid #E2E8F0', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
-              <div className="relative" style={{ background: '#F8FAFC', aspectRatio: '1/1' }}>
+            <div key={post.id} className="bg-[#111118] rounded-2xl overflow-hidden flex flex-col group"
+              style={{ border: '1.5px solid rgba(255,255,255,0.1)', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
+              <div className="relative" style={{ background: '#1A1A25', aspectRatio: '1/1' }}>
                 <img src={post.images[slide]} alt={post.title} className="w-full h-full object-cover" />
                 {post.images.length > 1 && (
                   <>
@@ -265,36 +265,36 @@ function PostsView({ channel, posts, setPosts }: { channel: Channel; posts: Post
                 )}
                 <div className="absolute top-2 left-2"><ChannelBadge ch={post.channel} /></div>
                 <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => setModal({ post })} className="w-7 h-7 rounded-lg bg-white/90 flex items-center justify-center text-indigo-600 hover:bg-white shadow-sm">
+                  <button onClick={() => setModal({ post })} className="w-7 h-7 rounded-lg bg-[#111118]/90 flex items-center justify-center text-[#00E5C8] hover:bg-[#111118] shadow-sm">
                     <Edit2 size={12} />
                   </button>
-                  <button onClick={() => setDeleteId(post.id)} className="w-7 h-7 rounded-lg bg-white/90 flex items-center justify-center text-red-500 hover:bg-white shadow-sm">
+                  <button onClick={() => setDeleteId(post.id)} className="w-7 h-7 rounded-lg bg-[#111118]/90 flex items-center justify-center text-[#FF5252] hover:bg-[#111118] shadow-sm">
                     <Trash2 size={12} />
                   </button>
                 </div>
               </div>
               <div className="p-4 flex flex-col flex-1">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-slate-400">{post.campaign}</span>
-                  <span className="text-xs text-slate-400" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                  <span className="text-xs text-[#555566]">{post.campaign}</span>
+                  <span className="text-xs text-[#555566]">
                     até {post.validUntil.slice(5).split('-').reverse().join('/')}
                   </span>
                 </div>
-                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line flex-1">{caption}</p>
+                <p className="text-sm text-[#F0F0F5] leading-relaxed whitespace-pre-line flex-1">{caption}</p>
                 {post.caption.length > 120 && (
-                  <button onClick={() => toggleExpand(post.id)} className="text-xs text-indigo-500 hover:text-indigo-700 mt-1 text-left">
+                  <button onClick={() => toggleExpand(post.id)} className="text-xs text-[#00E5C8] hover:text-[#00E5C8] mt-1 text-left">
                     {isExpanded ? 'Ver menos' : 'Ver mais'}
                   </button>
                 )}
-                <div className="mt-4 pt-3 grid grid-cols-3 gap-2 text-center" style={{ borderTop: '1px solid #F1F5F9' }}>
+                <div className="mt-4 pt-3 grid grid-cols-3 gap-2 text-center" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                   {[
                     { label: 'Alcance', value: post.insights.reach },
                     { label: 'Engajamento', value: post.insights.engagement },
                     { label: 'Saves', value: post.insights.saves },
                   ].map((kpi) => (
                     <div key={kpi.label}>
-                      <div className="text-sm font-semibold text-slate-800" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{kpi.value.toLocaleString('pt-BR')}</div>
-                      <div className="text-xs text-slate-400">{kpi.label}</div>
+                      <div className="text-sm font-semibold text-[#F0F0F5]">{kpi.value.toLocaleString('pt-BR')}</div>
+                      <div className="text-xs text-[#555566]">{kpi.label}</div>
                     </div>
                   ))}
                 </div>
@@ -302,19 +302,19 @@ function PostsView({ channel, posts, setPosts }: { channel: Channel; posts: Post
             </div>
           )
         })}
-        {filtered.length === 0 && <div className="col-span-full text-center py-16 text-slate-400">Nenhum post neste canal</div>}
+        {filtered.length === 0 && <div className="col-span-full text-center py-16 text-[#555566]">Nenhum post neste canal</div>}
       </div>
 
       {modal && <PostModal initial={modal.post} onSave={savePost} onClose={() => setModal(null)} />}
 
       {deleteId !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setDeleteId(null)}>
-          <div className="bg-white rounded-2xl p-6 shadow-2xl max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
-            <p className="font-semibold text-slate-800 mb-1" style={{ fontFamily: "'DM Sans', sans-serif" }}>Apagar post?</p>
-            <p className="text-sm text-slate-500 mb-4">Esta ação não pode ser desfeita.</p>
+          <div className="bg-[#111118] rounded-2xl p-6 shadow-2xl max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <p className="font-semibold text-[#F0F0F5] mb-1">Apagar post?</p>
+            <p className="text-sm text-[#8A8A9A] mb-4">Esta ação não pode ser desfeita.</p>
             <div className="flex gap-2">
-              <button onClick={() => deletePost(deleteId)} className="px-4 py-2 rounded-xl text-sm font-medium text-white bg-red-500 hover:bg-red-600">Apagar</button>
-              <button onClick={() => setDeleteId(null)} className="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100">Cancelar</button>
+              <button onClick={() => deletePost(deleteId)} className="px-4 py-2 rounded-xl text-sm font-medium text-white bg-[#FF5252] hover:bg-[#E64545]">Apagar</button>
+              <button onClick={() => setDeleteId(null)} className="px-4 py-2 rounded-xl text-sm font-medium text-[#8A8A9A] hover:bg-[rgba(255,255,255,0.08)]">Cancelar</button>
             </div>
           </div>
         </div>
@@ -326,9 +326,9 @@ function PostsView({ channel, posts, setPosts }: { channel: Channel; posts: Post
 // ─── Materials ─────────────────────────────────────────────────────────────
 
 const matTypeStyle = {
-  ebook: { label: 'Ebook', bg: '#EEF2FF', color: '#4338CA' },
-  newsletter: { label: 'Newsletter', bg: '#FFF7ED', color: '#C2410C' },
-  case: { label: 'Case', bg: '#F0FDF4', color: '#15803D' },
+  ebook: { label: 'Ebook', bg: 'rgba(0,229,200,0.08)', color: '#00B39E' },
+  newsletter: { label: 'Newsletter', bg: 'rgba(255,179,0,0.15)', color: '#FFB300' },
+  case: { label: 'Case', bg: 'rgba(0,200,83,0.15)', color: '#00C853' },
 }
 
 interface MatForm {
@@ -386,12 +386,12 @@ function MaterialModal({ initial, onSave, onClose }: { initial?: Material; onSav
           <Inp type="number" value={form.downloads} onChange={(v) => setForm((f) => ({ ...f, downloads: v }))} placeholder="0" />
         </FormRow>
       </div>
-      <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid #F1F5F9' }}>
-        <button onClick={save} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90"
-          style={{ background: 'linear-gradient(135deg, #6366F1, #818CF8)' }}>
+      <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <button onClick={save} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90 btn-glow"
+          style={{ background: 'linear-gradient(135deg, #00E5C8, #00FFD9)' }}>
           {initial ? 'Salvar' : 'Criar material'}
         </button>
-        <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100">Cancelar</button>
+        <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-medium text-[#8A8A9A] hover:bg-[rgba(255,255,255,0.08)]">Cancelar</button>
       </div>
     </Modal>
   )
@@ -427,14 +427,14 @@ function MaterialsView() {
               const s = t !== 'todos' ? matTypeStyle[t] : null
               return (
                 <button key={t} onClick={() => setTypeFilter(t)} className="text-xs px-3 py-1.5 rounded-full font-medium capitalize transition-all"
-                  style={typeFilter === t ? { background: s ? s.color : '#6366F1', color: '#fff' } : { background: '#F1F5F9', color: '#64748B' }}>
+                  style={typeFilter === t ? { background: s ? s.color : '#00E5C8', color: '#fff' } : { background: 'rgba(255,255,255,0.06)', color: '#8A8A9A' }}>
                   {t === 'todos' ? 'Todos' : matTypeStyle[t].label}
                 </button>
               )
             })}
           </div>
-          <button onClick={() => setModal({})} className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl text-white hover:opacity-90"
-            style={{ background: 'linear-gradient(135deg, #6366F1, #818CF8)' }}>
+          <button onClick={() => setModal({})} className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl text-white hover:opacity-90 btn-glow"
+            style={{ background: 'linear-gradient(135deg, #00E5C8, #00FFD9)' }}>
             <Plus size={15} /> Adicionar
           </button>
         </div>
@@ -443,31 +443,31 @@ function MaterialsView() {
           {filtered.map((mat) => {
             const s = matTypeStyle[mat.type]
             return (
-              <div key={mat.id} className="bg-white rounded-2xl overflow-hidden flex flex-col group"
-                style={{ border: '1.5px solid #E2E8F0', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
-                <div className="relative" style={{ height: 140, background: '#F8FAFC' }}>
+              <div key={mat.id} className="bg-[#111118] rounded-2xl overflow-hidden flex flex-col group"
+                style={{ border: '1.5px solid rgba(255,255,255,0.1)', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
+                <div className="relative" style={{ height: 140, background: '#1A1A25' }}>
                   <img src={mat.cover} alt={mat.title} className="w-full h-full object-cover" />
                   <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.3))' }} />
                   <span className="absolute top-3 left-3 text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: s.bg, color: s.color }}>{s.label}</span>
                   <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => setModal({ mat })} className="w-7 h-7 rounded-lg bg-white/90 flex items-center justify-center text-indigo-600 hover:bg-white shadow-sm">
+                    <button onClick={() => setModal({ mat })} className="w-7 h-7 rounded-lg bg-[#111118]/90 flex items-center justify-center text-[#00E5C8] hover:bg-[#111118] shadow-sm">
                       <Edit2 size={12} />
                     </button>
-                    <button onClick={() => setDeleteId(mat.id)} className="w-7 h-7 rounded-lg bg-white/90 flex items-center justify-center text-red-500 hover:bg-white shadow-sm">
+                    <button onClick={() => setDeleteId(mat.id)} className="w-7 h-7 rounded-lg bg-[#111118]/90 flex items-center justify-center text-[#FF5252] hover:bg-[#111118] shadow-sm">
                       <Trash2 size={12} />
                     </button>
                   </div>
                 </div>
                 <div className="p-4 flex-1 flex flex-col">
-                  <h3 className="text-sm font-semibold text-slate-800 mb-1 leading-snug" style={{ fontFamily: "'DM Sans', sans-serif" }}>{mat.title}</h3>
-                  <p className="text-xs text-slate-500 flex-1">{mat.description}</p>
-                  <div className="flex items-center justify-between mt-3 pt-3" style={{ borderTop: '1px solid #F1F5F9' }}>
-                    <div className="flex items-center gap-1 text-xs text-slate-400">
+                  <h3 className="text-sm font-semibold text-[#F0F0F5] mb-1 leading-snug">{mat.title}</h3>
+                  <p className="text-xs text-[#8A8A9A] flex-1">{mat.description}</p>
+                  <div className="flex items-center justify-between mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div className="flex items-center gap-1 text-xs text-[#555566]">
                       <Download size={11} />
-                      <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{mat.downloads.toLocaleString('pt-BR')}</span>
+                      <span>{mat.downloads.toLocaleString('pt-BR')}</span>
                     </div>
                     <button className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg font-medium hover:opacity-80"
-                      style={{ background: '#EEF2FF', color: '#4338CA' }}>
+                      style={{ background: 'rgba(0,229,200,0.08)', color: '#00B39E' }}>
                       <Download size={11} /> Baixar
                     </button>
                   </div>
@@ -480,12 +480,12 @@ function MaterialsView() {
         {modal && <MaterialModal initial={modal.mat} onSave={saveMaterial} onClose={() => setModal(null)} />}
         {deleteId !== null && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setDeleteId(null)}>
-            <div className="bg-white rounded-2xl p-6 shadow-2xl max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
-              <p className="font-semibold text-slate-800 mb-1" style={{ fontFamily: "'DM Sans', sans-serif" }}>Apagar material?</p>
-              <p className="text-sm text-slate-500 mb-4">Esta ação não pode ser desfeita.</p>
+            <div className="bg-[#111118] rounded-2xl p-6 shadow-2xl max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
+              <p className="font-semibold text-[#F0F0F5] mb-1">Apagar material?</p>
+              <p className="text-sm text-[#8A8A9A] mb-4">Esta ação não pode ser desfeita.</p>
               <div className="flex gap-2">
-                <button onClick={() => deleteMaterial(deleteId)} className="px-4 py-2 rounded-xl text-sm font-medium text-white bg-red-500">Apagar</button>
-                <button onClick={() => setDeleteId(null)} className="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100">Cancelar</button>
+                <button onClick={() => deleteMaterial(deleteId)} className="px-4 py-2 rounded-xl text-sm font-medium text-white bg-[#FF5252]">Apagar</button>
+                <button onClick={() => setDeleteId(null)} className="px-4 py-2 rounded-xl text-sm font-medium text-[#8A8A9A] hover:bg-[rgba(255,255,255,0.08)]">Cancelar</button>
               </div>
             </div>
           </div>
@@ -497,16 +497,18 @@ function MaterialsView() {
 
 // ─── Prompts ───────────────────────────────────────────────────────────────
 
+// TODO: Validar padrão visual — "Carrossel" não é um canal oficial do design system;
+// usa o token --warning por ser o mais próximo (categoria original em laranja).
 const catStyle: Record<string, { bg: string; color: string }> = {
-  Instagram: { bg: '#FDF2F8', color: '#BE185D' },
-  LinkedIn: { bg: '#EFF6FF', color: '#1E40AF' },
-  Email: { bg: '#FFFBEB', color: '#92400E' },
-  Carrossel: { bg: '#FFF7ED', color: '#C2410C' },
-  Site: { bg: '#F5F3FF', color: '#6D28D9' },
+  Instagram: { bg: 'rgba(225,48,108,0.15)', color: '#E1306C' },
+  LinkedIn: { bg: 'rgba(10,102,194,0.15)', color: '#0A66C2' },
+  Email: { bg: 'rgba(255,179,0,0.15)', color: '#FFB300' },
+  Carrossel: { bg: 'rgba(255,179,0,0.15)', color: '#FFB300' },
+  Site: { bg: 'rgba(0,200,83,0.15)', color: '#00C853' },
 }
 
 function getCatStyle(cat: string) {
-  return catStyle[cat] ?? { bg: '#F1F5F9', color: '#64748B' }
+  return catStyle[cat] ?? { bg: 'rgba(255,255,255,0.06)', color: '#8A8A9A' }
 }
 
 interface PromptFormData {
@@ -557,19 +559,19 @@ function PromptModal({ initial, onSave, onClose }: { initial?: Prompt; onSave: (
         <FormRow label="Conteúdo do prompt *">
           <textarea value={form.content} onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))}
             placeholder="Escreva o prompt aqui..." rows={8}
-            className="w-full text-sm px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:border-indigo-400 font-mono"
-            style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }} />
+            className="w-full text-sm px-3 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#00E5C8] font-mono"
+            style={{ fontSize: 12 }} />
         </FormRow>
         <FormRow label="Tags (separadas por vírgula)">
           <Inp value={form.tags} onChange={(v) => setForm((f) => ({ ...f, tags: v }))} placeholder="caption, cta, engajamento" />
         </FormRow>
       </div>
-      <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid #F1F5F9' }}>
-        <button onClick={save} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90"
-          style={{ background: 'linear-gradient(135deg, #6366F1, #818CF8)' }}>
+      <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <button onClick={save} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90 btn-glow"
+          style={{ background: 'linear-gradient(135deg, #00E5C8, #00FFD9)' }}>
           {initial ? 'Salvar alterações' : 'Criar prompt'}
         </button>
-        <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100">Cancelar</button>
+        <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-medium text-[#8A8A9A] hover:bg-[rgba(255,255,255,0.08)]">Cancelar</button>
       </div>
     </Modal>
   )
@@ -622,23 +624,23 @@ function PromptsView() {
         {/* Toolbar */}
         <div className="flex items-center gap-3 mb-5 flex-wrap">
           {/* Search */}
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl flex-1 min-w-48" style={{ background: '#F8FAFC', border: '1.5px solid #E2E8F0' }}>
-            <Search size={14} className="text-slate-400 flex-shrink-0" />
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl flex-1 min-w-48" style={{ background: '#1A1A25', border: '1.5px solid rgba(255,255,255,0.1)' }}>
+            <Search size={14} className="text-[#555566] flex-shrink-0" />
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar prompts..."
-              className="flex-1 text-sm bg-transparent focus:outline-none text-slate-700 placeholder-slate-400" />
-            {search && <button onClick={() => setSearch('')} className="text-slate-400 hover:text-slate-600"><X size={13} /></button>}
+              className="flex-1 text-sm bg-transparent focus:outline-none text-[#F0F0F5] placeholder-[#555566]" />
+            {search && <button onClick={() => setSearch('')} className="text-[#555566] hover:text-[#8A8A9A]"><X size={13} /></button>}
           </div>
 
           {/* Favorites toggle */}
           <button onClick={() => setOnlyFav((f) => !f)} className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl font-medium transition-all"
-            style={onlyFav ? { background: '#FFF7ED', color: '#C2410C', border: '1.5px solid #FDE68A' } : { background: '#F8FAFC', color: '#64748B', border: '1.5px solid #E2E8F0' }}>
-            <Star size={13} style={{ fill: onlyFav ? '#F59E0B' : 'none', color: onlyFav ? '#F59E0B' : '#CBD5E1' }} />
+            style={onlyFav ? { background: 'rgba(255,179,0,0.15)', color: '#FFB300', border: '1.5px solid rgba(255,179,0,0.4)' } : { background: '#1A1A25', color: '#8A8A9A', border: '1.5px solid rgba(255,255,255,0.1)' }}>
+            <Star size={13} style={{ fill: onlyFav ? '#FFB300' : 'none', color: onlyFav ? '#FFB300' : '#555566' }} />
             Favoritos · {prompts.filter((p) => p.favorited).length}
           </button>
 
           {/* Add button */}
-          <button onClick={() => setModal({})} className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl text-white hover:opacity-90"
-            style={{ background: 'linear-gradient(135deg, #6366F1, #818CF8)' }}>
+          <button onClick={() => setModal({})} className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl text-white hover:opacity-90 btn-glow"
+            style={{ background: 'linear-gradient(135deg, #00E5C8, #00FFD9)' }}>
             <Plus size={15} /> Novo prompt
           </button>
         </div>
@@ -649,7 +651,7 @@ function PromptsView() {
             const s = cat !== 'Todos' ? getCatStyle(cat) : null
             return (
               <button key={cat} onClick={() => setCatFilter(cat)} className="text-xs px-3 py-1.5 rounded-full font-medium transition-all"
-                style={catFilter === cat ? { background: s ? s.color : '#6366F1', color: '#fff' } : { background: '#F1F5F9', color: '#64748B' }}>
+                style={catFilter === cat ? { background: s ? s.color : '#00E5C8', color: '#fff' } : { background: 'rgba(255,255,255,0.06)', color: '#8A8A9A' }}>
                 {cat}
               </button>
             )
@@ -661,46 +663,46 @@ function PromptsView() {
             const s = getCatStyle(prompt.category)
             const isExp = expanded[prompt.id]
             return (
-              <div key={prompt.id} className="bg-white rounded-xl overflow-hidden group"
-                style={{ border: '1.5px solid #E2E8F0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+              <div key={prompt.id} className="bg-[#111118] rounded-xl overflow-hidden group"
+                style={{ border: '1.5px solid rgba(255,255,255,0.1)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
                 <div className="p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1.5">
                         <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: s.bg, color: s.color }}>{prompt.category}</span>
-                        <span className="text-xs text-slate-400" style={{ fontFamily: "'JetBrains Mono', monospace" }}>usado {prompt.usageCount}×</span>
+                        <span className="text-xs text-[#555566]">usado {prompt.usageCount}×</span>
                       </div>
-                      <h3 className="text-sm font-semibold text-slate-800" style={{ fontFamily: "'DM Sans', sans-serif" }}>{prompt.title}</h3>
+                      <h3 className="text-sm font-semibold text-[#F0F0F5]">{prompt.title}</h3>
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
-                      <button onClick={() => setModal({ prompt })} className="p-1.5 rounded-lg text-slate-300 hover:text-indigo-500 hover:bg-indigo-50 opacity-0 group-hover:opacity-100 transition-all">
+                      <button onClick={() => setModal({ prompt })} className="p-1.5 rounded-lg text-[#555566] hover:text-[#00E5C8] hover:bg-[rgba(0,229,200,0.08)] opacity-0 group-hover:opacity-100 transition-all">
                         <Edit2 size={13} />
                       </button>
-                      <button onClick={() => setDeleteId(prompt.id)} className="p-1.5 rounded-lg text-slate-300 hover:text-red-400 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all">
+                      <button onClick={() => setDeleteId(prompt.id)} className="p-1.5 rounded-lg text-[#555566] hover:text-[#FF5252] hover:bg-[rgba(255,82,82,0.12)] opacity-0 group-hover:opacity-100 transition-all">
                         <Trash2 size={13} />
                       </button>
-                      <button onClick={() => toggleFav(prompt.id)} className="p-1.5 rounded-lg transition-colors hover:bg-slate-50">
-                        <Star size={16} style={{ fill: prompt.favorited ? '#F59E0B' : 'none', color: prompt.favorited ? '#F59E0B' : '#CBD5E1' }} />
+                      <button onClick={() => toggleFav(prompt.id)} className="p-1.5 rounded-lg transition-colors hover:bg-[#1A1A25]">
+                        <Star size={16} style={{ fill: prompt.favorited ? '#FFB300' : 'none', color: prompt.favorited ? '#FFB300' : '#555566' }} />
                       </button>
                     </div>
                   </div>
-                  <div className="mt-3 rounded-lg p-3 cursor-pointer" style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', fontFamily: "'JetBrains Mono', monospace" }}
+                  <div className="mt-3 rounded-lg p-3 cursor-pointer" style={{ background: '#1A1A25', border: '1px solid rgba(255,255,255,0.1)' }}
                     onClick={() => setExpanded((e) => ({ ...e, [prompt.id]: !e[prompt.id] }))}>
-                    <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-line">
+                    <p className="text-xs text-[#8A8A9A] leading-relaxed whitespace-pre-line">
                       {isExp ? prompt.content : prompt.content.slice(0, 100) + (prompt.content.length > 100 ? '…' : '')}
-                      {prompt.content.length > 100 && <span className="text-indigo-400 ml-1">{isExp ? ' ▲' : ' ▼'}</span>}
+                      {prompt.content.length > 100 && <span className="text-[#00E5C8] ml-1">{isExp ? ' ▲' : ' ▼'}</span>}
                     </p>
                   </div>
                   <div className="flex items-center justify-between mt-3">
                     <div className="flex gap-1.5 flex-wrap">
                       {prompt.tags.map((tag) => (
-                        <span key={tag} className="flex items-center gap-0.5 text-xs px-2 py-0.5 rounded-full" style={{ background: '#F1F5F9', color: '#64748B' }}>
+                        <span key={tag} className="flex items-center gap-0.5 text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.06)', color: '#8A8A9A' }}>
                           <Hash size={9} />{tag}
                         </span>
                       ))}
                     </div>
                     <button onClick={() => copyPrompt(prompt.id, prompt.content)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium hover:opacity-80"
-                      style={copied === prompt.id ? { background: '#F0FDF4', color: '#15803D' } : { background: '#EEF2FF', color: '#4338CA' }}>
+                      style={copied === prompt.id ? { background: 'rgba(0,200,83,0.15)', color: '#00C853' } : { background: 'rgba(0,229,200,0.08)', color: '#00B39E' }}>
                       {copied === prompt.id ? <><Check size={11} /> Copiado!</> : <><Copy size={11} /> Copiar</>}
                     </button>
                   </div>
@@ -709,7 +711,7 @@ function PromptsView() {
             )
           })}
           {filtered.length === 0 && (
-            <div className="text-center py-12 text-slate-400">
+            <div className="text-center py-12 text-[#555566]">
               {search ? `Nenhum resultado para "${search}"` : 'Nenhum prompt encontrado'}
             </div>
           )}
@@ -718,12 +720,12 @@ function PromptsView() {
         {modal && <PromptModal initial={modal.prompt} onSave={savePrompt} onClose={() => setModal(null)} />}
         {deleteId !== null && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setDeleteId(null)}>
-            <div className="bg-white rounded-2xl p-6 shadow-2xl max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
-              <p className="font-semibold text-slate-800 mb-1" style={{ fontFamily: "'DM Sans', sans-serif" }}>Apagar prompt?</p>
-              <p className="text-sm text-slate-500 mb-4">Esta ação não pode ser desfeita.</p>
+            <div className="bg-[#111118] rounded-2xl p-6 shadow-2xl max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
+              <p className="font-semibold text-[#F0F0F5] mb-1">Apagar prompt?</p>
+              <p className="text-sm text-[#8A8A9A] mb-4">Esta ação não pode ser desfeita.</p>
               <div className="flex gap-2">
-                <button onClick={() => deletePrompt(deleteId)} className="px-4 py-2 rounded-xl text-sm font-medium text-white bg-red-500">Apagar</button>
-                <button onClick={() => setDeleteId(null)} className="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100">Cancelar</button>
+                <button onClick={() => deletePrompt(deleteId)} className="px-4 py-2 rounded-xl text-sm font-medium text-white bg-[#FF5252]">Apagar</button>
+                <button onClick={() => setDeleteId(null)} className="px-4 py-2 rounded-xl text-sm font-medium text-[#8A8A9A] hover:bg-[rgba(255,255,255,0.08)]">Cancelar</button>
               </div>
             </div>
           </div>
@@ -748,11 +750,11 @@ export default function Biblioteca({ channel, setChannel, posts, setPosts }: Pro
 
   return (
     <div className="flex flex-col h-full">
-      <header className="bg-white flex-shrink-0" style={{ borderBottom: '1.5px solid #E2E8F0' }}>
+      <header className="bg-[#111118] flex-shrink-0" style={{ borderBottom: '1.5px solid rgba(255,255,255,0.1)' }}>
         <div className="px-4 md:px-6 pt-4 md:pt-5 pb-0 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
           <div>
-            <h1 className="text-lg md:text-xl font-semibold text-slate-900 leading-tight" style={{ fontFamily: "'DM Sans', sans-serif" }}>Biblioteca</h1>
-            <p className="text-xs md:text-sm text-slate-500 mt-0.5 hidden sm:block">Posts publicados, materiais ricos e biblioteca de prompts</p>
+            <h1 className="text-lg md:text-xl font-semibold text-[#F0F0F5] leading-tight">Biblioteca</h1>
+            <p className="text-xs md:text-sm text-[#8A8A9A] mt-0.5 hidden sm:block">Posts publicados, materiais ricos e biblioteca de prompts</p>
           </div>
           {tab === 'posts' && <ChannelFilter channel={channel} setChannel={setChannel} />}
         </div>

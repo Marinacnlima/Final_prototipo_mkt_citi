@@ -10,10 +10,10 @@ export interface AppUser {
 }
 
 export const initialUsers: AppUser[] = [
-  { id: 1, name: 'Ana Lima', initials: 'AL', color: '#6366F1', email: 'ana@marketops.com', password: 'admin123', role: 'gerente', mustChangePassword: false },
-  { id: 2, name: 'Carlos Melo', initials: 'CM', color: '#10B981', email: 'carlos@marketops.com', password: 'senha123', role: 'analista', mustChangePassword: false },
-  { id: 3, name: 'Beatriz Santos', initials: 'BS', color: '#F59E0B', email: 'beatriz@marketops.com', password: 'senha123', role: 'analista', mustChangePassword: true },
-  { id: 4, name: 'Rafael Costa', initials: 'RC', color: '#EC4899', email: 'rafael@marketops.com', password: 'senha123', role: 'analista', mustChangePassword: false },
+  { id: 1, name: 'Ana Lima', initials: 'AL', color: '#00E5C8', email: 'ana@marketops.com', password: 'admin123', role: 'gerente', mustChangePassword: false },
+  { id: 2, name: 'Carlos Melo', initials: 'CM', color: '#00C853', email: 'carlos@marketops.com', password: 'senha123', role: 'analista', mustChangePassword: false },
+  { id: 3, name: 'Beatriz Santos', initials: 'BS', color: '#FFB300', email: 'beatriz@marketops.com', password: 'senha123', role: 'analista', mustChangePassword: true },
+  { id: 4, name: 'Rafael Costa', initials: 'RC', color: '#E1306C', email: 'rafael@marketops.com', password: 'senha123', role: 'analista', mustChangePassword: false },
 ]
 
 export type ChannelType = 'instagram' | 'linkedin' | 'site' | 'email'
@@ -166,10 +166,10 @@ export function getWeekLabel(dateStr: string): string {
 // ─── Team ───────────────────────────────────────────────────────────────────
 
 export const team: TeamMember[] = [
-  { id: 1, name: 'Ana Lima', role: 'Gerente de Marketing', initials: 'AL', color: '#6366F1' },
-  { id: 2, name: 'Carlos Melo', role: 'Analista de Conteúdo', initials: 'CM', color: '#10B981' },
-  { id: 3, name: 'Beatriz Santos', role: 'Analista de Redes Sociais', initials: 'BS', color: '#F59E0B' },
-  { id: 4, name: 'Rafael Costa', role: 'Designer', initials: 'RC', color: '#EF4444' },
+  { id: 1, name: 'Ana Lima', role: 'Gerente de Marketing', initials: 'AL', color: '#00E5C8' },
+  { id: 2, name: 'Carlos Melo', role: 'Analista de Conteúdo', initials: 'CM', color: '#00C853' },
+  { id: 3, name: 'Beatriz Santos', role: 'Analista de Redes Sociais', initials: 'BS', color: '#FFB300' },
+  { id: 4, name: 'Rafael Costa', role: 'Designer', initials: 'RC', color: '#FF5252' },
 ]
 
 // ─── Kanban ──────────────────────────────────────────────────────────────────
@@ -451,11 +451,11 @@ export const promptsData: Prompt[] = [
 // ─── Default Custom Metrics ───────────────────────────────────────────────────
 
 export const defaultMetrics: CustomMetric[] = [
-  { id: 'm1', name: 'Taxa de Engajamento IG', value: 3.8, unit: '%', formula: '(Curtidas + Comentários + Saves) / Alcance × 100', channel: 'instagram', color: '#EC4899' },
-  { id: 'm2', name: 'CTR LinkedIn', value: 2.18, unit: '%', formula: 'Cliques / Impressões × 100', channel: 'linkedin', color: '#3B82F6' },
-  { id: 'm3', name: 'Taxa de Abertura Email', value: 28.4, unit: '%', formula: 'Emails Abertos / Emails Enviados × 100', channel: 'email', color: '#F59E0B' },
-  { id: 'm4', name: 'MQLs Gerados', value: 28, unit: 'leads', formula: 'Contagem manual de leads com score ≥ 65 no período', color: '#6366F1' },
-  { id: 'm5', name: 'Tráfego Orgânico', value: 8240, unit: 'sessões', formula: 'Soma de sessões via busca orgânica (Google Analytics)', channel: 'site', color: '#8B5CF6' },
+  { id: 'm1', name: 'Taxa de Engajamento IG', value: 3.8, unit: '%', formula: '(Curtidas + Comentários + Saves) / Alcance × 100', channel: 'instagram', color: '#E1306C' },
+  { id: 'm2', name: 'CTR LinkedIn', value: 2.18, unit: '%', formula: 'Cliques / Impressões × 100', channel: 'linkedin', color: '#0A66C2' },
+  { id: 'm3', name: 'Taxa de Abertura Email', value: 28.4, unit: '%', formula: 'Emails Abertos / Emails Enviados × 100', channel: 'email', color: '#FFB300' },
+  { id: 'm4', name: 'MQLs Gerados', value: 28, unit: 'leads', formula: 'Contagem manual de leads com score ≥ 65 no período', color: '#00E5C8' },
+  { id: 'm5', name: 'Tráfego Orgânico', value: 8240, unit: 'sessões', formula: 'Soma de sessões via busca orgânica (Google Analytics)', channel: 'site', color: '#00C853' },
 ]
 
 // ─── SEO Default State ────────────────────────────────────────────────────────
