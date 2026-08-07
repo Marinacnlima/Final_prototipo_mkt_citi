@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Menu, Sparkles } from 'lucide-react'
+import { Menu } from 'lucide-react'
 import Sidebar from './Sidebar'
 import Monitoramento from './pages/Monitoramento'
 import Biblioteca from './pages/Biblioteca'
@@ -51,7 +51,7 @@ export default function App() {
   const profile: Profile = currentUser.role
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#0A0A0F] relative">
+    <div className="app-shell flex h-screen overflow-hidden bg-[#101010] relative">
 
       {/* Mobile backdrop */}
       {sidebarOpen && (
@@ -75,7 +75,7 @@ export default function App() {
       <div className="flex-1 min-w-0 overflow-hidden flex flex-col">
 
         {/* Mobile top bar */}
-        <div className="flex-shrink-0 flex items-center gap-3 px-4 bg-[#111118] md:hidden"
+        <div className="flex-shrink-0 flex items-center gap-3 px-4 bg-[#17171A] md:hidden"
           style={{ height: 52, borderBottom: '1.5px solid rgba(255,255,255,0.1)' }}>
           <button onClick={() => setSidebarOpen(true)}
             className="p-2 rounded-xl hover:bg-[rgba(255,255,255,0.08)] transition-colors flex-shrink-0"
@@ -83,11 +83,8 @@ export default function App() {
             <Menu size={20} className="text-[#8A8A9A]" />
           </button>
           <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center rounded-lg flex-shrink-0"
-              style={{ width: 26, height: 26, background: 'linear-gradient(135deg, #00E5C8, #00FFD9)' }}>
-              <Sparkles size={12} className="text-white" />
-            </div>
-            <span className="font-semibold text-[#F0F0F5] text-sm">MarketOps</span>
+            <div className="brand-wordmark !text-lg"><span>CITi</span></div>
+            <span className="text-[#6F6F7B] text-xs">Marketing Intelligence</span>
           </div>
           <div className="flex-1" />
           <div className="flex items-center justify-center rounded-full text-white text-xs font-bold flex-shrink-0"

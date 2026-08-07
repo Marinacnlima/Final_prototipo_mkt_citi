@@ -46,8 +46,8 @@ function ChannelFilter({ channel, setChannel }: { channel: Channel; setChannel: 
         const active = channel === o.id
         const c = o.id !== 'todos' ? CH[o.id as ChannelType] : null
         return (
-          <button key={o.id} onClick={() => setChannel(o.id)} className="text-xs px-3 py-1.5 rounded-full font-medium transition-all"
-            style={active ? { background: c ? c.dot : '#00E5C8', color: '#fff' } : { background: 'rgba(255,255,255,0.06)', color: '#8A8A9A' }}>
+          <button key={o.id} onClick={() => setChannel(o.id)} className="filter-pill text-xs px-3 py-1.5 rounded-full font-medium transition-all"
+            style={active ? { background: c ? c.dot : '#7D1AD7', color: '#fff' } : { background: 'rgba(255,255,255,0.06)', color: '#8A8A9A' }}>
             {o.label}
           </button>
         )
@@ -76,14 +76,14 @@ function AvatarStack({ assignees }: { assignees: TaskAssignee[] }) {
         if (!member) return null
         return (
           <div key={a.memberId} title={`${member.name}${a.note !== null ? ` — nota: ${a.note}` : ''}`}
-            className="flex items-center justify-center rounded-full text-white font-bold ring-2 ring-[#111118] flex-shrink-0"
+            className="flex items-center justify-center rounded-full text-white font-bold ring-2 ring-[#17171A] flex-shrink-0"
             style={{ width: 22, height: 22, background: member.color, fontSize: 9, marginLeft: i > 0 ? -6 : 0 }}>
             {member.initials}
           </div>
         )
       })}
       {assignees.length > 4 && (
-        <div className="flex items-center justify-center rounded-full ring-2 ring-[#111118] flex-shrink-0 text-[#8A8A9A] font-bold"
+        <div className="flex items-center justify-center rounded-full ring-2 ring-[#17171A] flex-shrink-0 text-[#8A8A9A] font-bold"
           style={{ width: 22, height: 22, fontSize: 9, background: 'rgba(255,255,255,0.1)', marginLeft: -6 }}>
           +{assignees.length - 4}
         </div>
@@ -96,7 +96,7 @@ function Modal({ title, onClose, children, wide }: { title: string; onClose: () 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
       <div
-        className={`bg-[#111118] rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden ${wide ? 'w-full max-w-2xl' : 'w-full max-w-md'}`}
+        className={`bg-[#17171A] rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden ${wide ? 'w-full max-w-2xl' : 'w-full max-w-md'}`}
         style={{ margin: 16 }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -122,7 +122,7 @@ function FormField({ label, children }: { label: string; children: React.ReactNo
 function Inp({ value, onChange, placeholder, type = 'text' }: { value: string; onChange: (v: string) => void; placeholder?: string; type?: string }) {
   return (
     <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
-      className="w-full text-sm px-3 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#00E5C8] focus:ring-2 focus:ring-[rgba(0,229,200,0.1)]" />
+      className="w-full text-sm px-3 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#7D1AD7] focus:ring-2 focus:ring-[rgba(125,26,215,0.1)]" />
   )
 }
 
@@ -133,7 +133,7 @@ function TabNav({ tabs, active, setTab }: { tabs: { id: Tab; label: string; icon
     <div className="flex gap-1">
       {tabs.map((t) => (
         <button key={t.id} onClick={() => setTab(t.id)} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-all"
-          style={active === t.id ? { background: 'rgba(0,229,200,0.08)', color: '#00B39E' } : { color: '#8A8A9A', background: 'transparent' }}>
+          style={active === t.id ? { background: 'rgba(125,26,215,0.08)', color: '#507AE6' } : { color: '#8A8A9A', background: 'transparent' }}>
           {t.icon}{t.label}
         </button>
       ))}
@@ -190,7 +190,7 @@ function TaskModal({ initial, colId, isManager, onSave, onClose }: {
         <FormField label="Rede social">
           <div className="flex gap-2 flex-wrap">
             {channels.map((ch) => (
-              <button key={ch} onClick={() => setChannel(ch)} className="text-xs px-3 py-1.5 rounded-full font-medium transition-all"
+              <button key={ch} onClick={() => setChannel(ch)} className="filter-pill text-xs px-3 py-1.5 rounded-full font-medium transition-all"
                 style={channel === ch ? { background: CH[ch].dot, color: '#fff' } : { background: CH[ch].bg, color: CH[ch].color }}>
                 {CH[ch].label}
               </button>
@@ -205,7 +205,7 @@ function TaskModal({ initial, colId, isManager, onSave, onClose }: {
               const selected = !!a
               return (
                 <div key={m.id} className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all"
-                  style={{ background: selected ? 'rgba(0,229,200,0.08)' : '#1A1A25', border: `1.5px solid ${selected ? '#00E5C8' : 'rgba(255,255,255,0.1)'}` }}>
+                  style={{ background: selected ? 'rgba(125,26,215,0.08)' : '#202024', border: `1.5px solid ${selected ? '#7D1AD7' : 'rgba(255,255,255,0.1)'}` }}>
                   <button onClick={() => toggleMember(m.id)} className="flex items-center gap-2.5 flex-1 min-w-0 text-left">
                     <div className="flex items-center justify-center rounded-full text-white font-bold flex-shrink-0"
                       style={{ width: 28, height: 28, background: m.color, fontSize: 10 }}>
@@ -225,7 +225,7 @@ function TaskModal({ initial, colId, isManager, onSave, onClose }: {
                             value={a!.note ?? ''} placeholder="—"
                             onChange={(e) => setNote(m.id, e.target.value)}
                             onClick={(e) => e.stopPropagation()}
-                            className="w-16 text-xs px-2 py-1 rounded-lg border border-[rgba(0,229,200,0.2)] focus:outline-none focus:border-[#00E5C8] text-center bg-[#111118]" />
+                            className="w-16 text-xs px-2 py-1 rounded-lg border border-[rgba(125,26,215,0.2)] focus:outline-none focus:border-[#7D1AD7] text-center bg-[#17171A]" />
                           <span className="text-xs text-[#555566]">/5</span>
                         </>
                       )}
@@ -258,7 +258,7 @@ function TaskModal({ initial, colId, isManager, onSave, onClose }: {
       </div>
       <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
         <button onClick={save} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90 btn-glow"
-          style={{ background: 'linear-gradient(135deg, #00E5C8, #00FFD9)' }}>
+          style={{ background: 'linear-gradient(135deg, #7D1AD7, #50E678)' }}>
           {initial ? 'Salvar alterações' : 'Criar task'}
         </button>
         <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-medium text-[#8A8A9A] hover:bg-[rgba(255,255,255,0.08)]">Cancelar</button>
@@ -328,7 +328,7 @@ function KanbanBoard({ channel, isManager, columns, setColumns }: { channel: Cha
   }
 
   const filterTasks = (tasks: Task[]) => channel === 'todos' ? tasks : tasks.filter((t) => t.channel === channel)
-  const colColors = ['#00E5C8', '#0A66C2', '#FFB300', '#00C853', '#40C4FF', '#E1306C', '#00B39E']
+  const colColors = ['#7D1AD7', '#0A66C2', '#FFB300', '#00C853', '#40C4FF', '#E1306C', '#507AE6']
 
   return (
     <>
@@ -339,7 +339,7 @@ function KanbanBoard({ channel, isManager, columns, setColumns }: { channel: Cha
             const isOver = dragOverColId === col.id
             return (
               <div key={col.id} className="flex flex-col rounded-xl flex-shrink-0 transition-all"
-                style={{ width: 276, background: isOver ? 'rgba(0,229,200,0.08)' : '#1A1A25', border: `1.5px solid ${isOver ? '#00E5C8' : 'rgba(255,255,255,0.1)'}`, minHeight: 400 }}
+                style={{ width: 276, background: isOver ? 'rgba(125,26,215,0.08)' : '#202024', border: `1.5px solid ${isOver ? '#7D1AD7' : 'rgba(255,255,255,0.1)'}`, minHeight: 400 }}
                 onDragOver={(e) => { e.preventDefault(); setDragOverColId(col.id) }}
                 onDrop={() => handleDrop(col.id)}
                 onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverColId(null) }}>
@@ -350,7 +350,7 @@ function KanbanBoard({ channel, isManager, columns, setColumns }: { channel: Cha
                   {editingColId === col.id ? (
                     <input value={editingColName} onChange={(e) => setEditingColName(e.target.value)}
                       onBlur={commitRename} onKeyDown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') setEditingColId(null) }}
-                      className="flex-1 text-sm font-semibold text-[#F0F0F5] bg-[#111118] border border-[rgba(0,229,200,0.3)] rounded px-2 py-0.5 focus:outline-none" autoFocus />
+                      className="flex-1 text-sm font-semibold text-[#F0F0F5] bg-[#17171A] border border-[rgba(125,26,215,0.3)] rounded px-2 py-0.5 focus:outline-none" autoFocus />
                   ) : (
                     <button className="flex-1 text-sm font-semibold text-left text-[#F0F0F5] hover:text-[#F0F0F5] truncate" onClick={() => { setEditingColId(col.id); setEditingColName(col.name) }}>
                       {col.name}
@@ -370,7 +370,7 @@ function KanbanBoard({ channel, isManager, columns, setColumns }: { channel: Cha
                 <div className="flex-1 p-3 space-y-2 overflow-y-auto">
                   {tasks.map((task) => (
                     <div key={task.id} draggable onDragStart={() => setDragging({ taskId: task.id, fromColId: col.id })}
-                      className="bg-[#111118] rounded-xl p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-all group"
+                      className="bg-[#17171A] rounded-xl p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-all group"
                       style={{ border: '1.5px solid rgba(255,255,255,0.06)', opacity: dragging?.taskId === task.id ? 0.4 : 1, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <ChannelBadge ch={task.channel} small />
@@ -383,7 +383,7 @@ function KanbanBoard({ channel, isManager, columns, setColumns }: { channel: Cha
                       <div className="flex items-center justify-between">
                         <AvatarStack assignees={task.assignees} />
                         <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => setTaskModal({ colId: col.id, task })} className="p-1 rounded hover:bg-[rgba(255,255,255,0.08)] text-[#555566] hover:text-[#00E5C8]">
+                          <button onClick={() => setTaskModal({ colId: col.id, task })} className="p-1 rounded hover:bg-[rgba(255,255,255,0.08)] text-[#555566] hover:text-[#7D1AD7]">
                             <Edit2 size={12} />
                           </button>
                           <button onClick={() => setDeleteConfirm({ type: 'task', id: task.id })} className="p-1 rounded hover:bg-[rgba(255,82,82,0.12)] text-[#555566] hover:text-[#FF5252]">
@@ -404,7 +404,7 @@ function KanbanBoard({ channel, isManager, columns, setColumns }: { channel: Cha
                 </div>
 
                 <button onClick={() => setTaskModal({ colId: col.id })}
-                  className="flex items-center gap-1.5 text-xs text-[#555566] hover:text-[#00E5C8] hover:bg-[rgba(0,229,200,0.08)] rounded-xl mx-3 mb-3 px-3 py-2.5 transition-colors font-medium border border-dashed border-[rgba(255,255,255,0.1)] hover:border-[rgba(0,229,200,0.3)]">
+                  className="flex items-center gap-1.5 text-xs text-[#555566] hover:text-[#7D1AD7] hover:bg-[rgba(125,26,215,0.08)] rounded-xl mx-3 mb-3 px-3 py-2.5 transition-colors font-medium border border-dashed border-[rgba(255,255,255,0.1)] hover:border-[rgba(125,26,215,0.3)]">
                   <Plus size={13} /> Adicionar task
                 </button>
               </div>
@@ -425,7 +425,7 @@ function KanbanBoard({ channel, isManager, columns, setColumns }: { channel: Cha
       {/* Delete confirm */}
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setDeleteConfirm(null)}>
-          <div className="bg-[#111118] rounded-2xl p-6 shadow-2xl max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-[#17171A] rounded-2xl p-6 shadow-2xl max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
             <p className="font-semibold text-[#F0F0F5] mb-1">Confirmar exclusão</p>
             <p className="text-sm text-[#8A8A9A] mb-4">
               {deleteConfirm.type === 'col' ? 'Apagar esta coluna e todas as tasks nela?' : 'Apagar esta task permanentemente?'}
@@ -466,7 +466,7 @@ function getMonthGrid(year: number, month: number): (Date | null)[] {
 }
 
 const typeStyle = {
-  meeting: { bg: 'rgba(0,229,200,0.08)', border: '#00E5C8', color: '#00B39E', icon: <Clock size={11} /> },
+  meeting: { bg: 'rgba(125,26,215,0.08)', border: '#7D1AD7', color: '#507AE6', icon: <Clock size={11} /> },
   deadline: { bg: 'rgba(255,82,82,0.15)', border: '#FF5252', color: '#FF5252', icon: <Flame size={11} /> },
   task: { bg: 'rgba(0,200,83,0.15)', border: '#00C853', color: '#00C853', icon: <Check size={11} /> },
 }
@@ -531,7 +531,7 @@ function CalendarView() {
     ]
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setDayDetail(null)}>
-        <div className="bg-[#111118] rounded-2xl shadow-2xl w-full max-w-sm flex flex-col max-h-[85vh] overflow-hidden" style={{ margin: 16 }} onClick={(e) => e.stopPropagation()}>
+        <div className="bg-[#17171A] rounded-2xl shadow-2xl w-full max-w-sm flex flex-col max-h-[85vh] overflow-hidden" style={{ margin: 16 }} onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center justify-between px-6 py-4 flex-shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
             <div>
               <h3 className="font-semibold text-[#F0F0F5]">{d} de {m}</h3>
@@ -566,7 +566,7 @@ function CalendarView() {
           <div className="px-6 py-4 flex-shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
             <button onClick={() => { setDayDetail(null); openAdd(date) }}
               className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium text-white hover:opacity-90 transition-opacity"
-              style={{ background: 'linear-gradient(135deg, #00E5C8, #00FFD9)' }}>
+              style={{ background: 'linear-gradient(135deg, #7D1AD7, #50E678)' }}>
               <Plus size={15} /> Adicionar evento
             </button>
           </div>
@@ -591,21 +591,21 @@ function CalendarView() {
             const isToday = ds === TODAY
             return (
               <div key={ds} className="rounded-xl overflow-hidden"
-                style={{ background: isToday ? '#1A1A25' : '#111118', border: isToday ? '2px solid #00E5C8' : '1.5px solid rgba(255,255,255,0.1)', minHeight: 180 }}>
-                <button className="w-full px-3 py-2.5 flex items-center gap-2 text-left hover:bg-[rgba(0,229,200,0.08)]/60 transition-colors"
-                  style={{ background: isToday ? 'rgba(0,229,200,0.08)' : '#1A1A25', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
+                style={{ background: isToday ? '#202024' : '#17171A', border: isToday ? '2px solid #7D1AD7' : '1.5px solid rgba(255,255,255,0.1)', minHeight: 180 }}>
+                <button className="w-full px-3 py-2.5 flex items-center gap-2 text-left hover:bg-[rgba(125,26,215,0.08)]/60 transition-colors"
+                  style={{ background: isToday ? 'rgba(125,26,215,0.08)' : '#202024', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
                   onClick={() => openDayDetail(ds)}>
                   <div className="text-sm font-bold flex items-center justify-center rounded-lg flex-shrink-0"
-                    style={{ width: 28, height: 28, background: isToday ? '#00E5C8' : 'transparent', color: isToday ? '#fff' : '#F0F0F5' }}>
+                    style={{ width: 28, height: 28, background: isToday ? '#7D1AD7' : 'transparent', color: isToday ? '#fff' : '#F0F0F5' }}>
                     {day.getDate()}
                   </div>
                   <div>
-                    <div className="text-xs font-semibold" style={{ color: isToday ? '#00B39E' : '#8A8A9A' }}>
+                    <div className="text-xs font-semibold" style={{ color: isToday ? '#507AE6' : '#8A8A9A' }}>
                       {PT_DAYS_SHORT[(day.getDay() + 6) % 7]}
                     </div>
                     <div className="text-xs text-[#555566]">{PT_MONTHS_SHORT[day.getMonth()]}</div>
                   </div>
-                  {isToday && <span className="ml-auto text-xs px-1.5 py-0.5 rounded font-medium" style={{ background: '#00E5C8', color: '#fff' }}>Hoje</span>}
+                  {isToday && <span className="ml-auto text-xs px-1.5 py-0.5 rounded font-medium" style={{ background: '#7D1AD7', color: '#fff' }}>Hoje</span>}
                 </button>
                 <div className="p-2 space-y-1.5">
                   {dayEvents.map((ev) => {
@@ -625,7 +625,7 @@ function CalendarView() {
                       </div>
                     )
                   })}
-                  <button onClick={() => openAdd(ds)} className="w-full text-xs text-[#555566] hover:text-[#00E5C8] hover:bg-[rgba(0,229,200,0.08)] rounded-lg py-1 transition-colors text-center border border-dashed border-[rgba(255,255,255,0.1)] hover:border-[rgba(0,229,200,0.3)]">
+                  <button onClick={() => openAdd(ds)} className="w-full text-xs text-[#555566] hover:text-[#7D1AD7] hover:bg-[rgba(125,26,215,0.08)] rounded-lg py-1 transition-colors text-center border border-dashed border-[rgba(255,255,255,0.1)] hover:border-[rgba(125,26,215,0.3)]">
                     + Evento
                   </button>
                 </div>
@@ -658,12 +658,12 @@ function CalendarView() {
             const isCurrentMonth = day.getMonth() === month
             return (
               <div key={ds} className="rounded-lg overflow-hidden cursor-pointer hover:shadow-sm transition-all group"
-                style={{ minHeight: 80, background: isToday ? 'rgba(0,229,200,0.08)' : '#111118', border: isToday ? '1.5px solid #00E5C8' : '1.5px solid rgba(255,255,255,0.06)', opacity: isCurrentMonth ? 1 : 0.4 }}
+                style={{ minHeight: 80, background: isToday ? 'rgba(125,26,215,0.08)' : '#17171A', border: isToday ? '1.5px solid #7D1AD7' : '1.5px solid rgba(255,255,255,0.06)', opacity: isCurrentMonth ? 1 : 0.4 }}
                 onClick={() => openDayDetail(ds)}>
                 <div className="flex items-center justify-between px-2 pt-2 pb-1">
-                  <span className="text-xs font-bold" style={{ color: isToday ? '#00E5C8' : '#8A8A9A' }}>{day.getDate()}</span>
+                  <span className="text-xs font-bold" style={{ color: isToday ? '#7D1AD7' : '#8A8A9A' }}>{day.getDate()}</span>
                   {dayEvents.length > 0 && (
-                    <span className="text-xs font-medium rounded-full px-1.5" style={{ background: '#00E5C8', color: '#fff', fontSize: 10 }}>
+                    <span className="text-xs font-medium rounded-full px-1.5" style={{ background: '#7D1AD7', color: '#fff', fontSize: 10 }}>
                       {dayEvents.length}
                     </span>
                   )}
@@ -699,7 +699,7 @@ function CalendarView() {
           const cells = getMonthGrid(year, m)
           const monthEvents = events.filter((e) => e.date.startsWith(`${year}-${String(m + 1).padStart(2, '0')}`))
           return (
-            <div key={m} className="bg-[#111118] rounded-xl p-3" style={{ border: '1.5px solid rgba(255,255,255,0.1)' }}>
+            <div key={m} className="bg-[#17171A] rounded-xl p-3" style={{ border: '1.5px solid rgba(255,255,255,0.1)' }}>
               <div className="text-xs font-semibold text-[#F0F0F5] mb-2 text-center">
                 {PT_MONTHS_SHORT[m]}
               </div>
@@ -715,7 +715,7 @@ function CalendarView() {
                   return (
                     <button key={ds} onClick={() => { setView('month'); setNavDate(new Date(year, m, 1)) }}
                       className="flex items-center justify-center rounded transition-all"
-                      style={{ height: 18, fontSize: 9, background: isToday ? '#00E5C8' : hasEv ? 'rgba(0,229,200,0.08)' : 'transparent', color: isToday ? '#fff' : '#8A8A9A' }}>
+                      style={{ height: 18, fontSize: 9, background: isToday ? '#7D1AD7' : hasEv ? 'rgba(125,26,215,0.08)' : 'transparent', color: isToday ? '#fff' : '#8A8A9A' }}>
                       {day.getDate()}
                     </button>
                   )
@@ -723,7 +723,7 @@ function CalendarView() {
               </div>
               {monthEvents.length > 0 && (
                 <div className="mt-2 text-center">
-                  <span className="text-xs" style={{ color: '#00E5C8' }}>{monthEvents.length} evento{monthEvents.length > 1 ? 's' : ''}</span>
+                  <span className="text-xs" style={{ color: '#7D1AD7' }}>{monthEvents.length} evento{monthEvents.length > 1 ? 's' : ''}</span>
                 </div>
               )}
             </div>
@@ -754,7 +754,7 @@ function CalendarView() {
               {(['week', 'month', 'year'] as CalView[]).map((v) => (
                 <button key={v} onClick={() => setView(v)}
                   className="text-xs px-3 py-1.5 font-medium transition-all capitalize"
-                  style={view === v ? { background: '#00E5C8', color: '#fff' } : { color: '#8A8A9A' }}>
+                  style={view === v ? { background: '#7D1AD7', color: '#fff' } : { color: '#8A8A9A' }}>
                   {v === 'week' ? 'Semana' : v === 'month' ? 'Mês' : 'Ano'}
                 </button>
               ))}
@@ -807,7 +807,7 @@ function CalendarView() {
               <div className="flex gap-2 flex-wrap">
                 <button onClick={() => setForm((f) => ({ ...f, channel: '' }))}
                   className="text-xs px-3 py-1 rounded-full font-medium transition-all"
-                  style={form.channel === '' ? { background: '#00E5C8', color: '#fff' } : { background: 'rgba(255,255,255,0.06)', color: '#8A8A9A' }}>
+                  style={form.channel === '' ? { background: '#7D1AD7', color: '#fff' } : { background: 'rgba(255,255,255,0.06)', color: '#8A8A9A' }}>
                   Nenhum
                 </button>
                 {(['instagram', 'linkedin', 'site', 'email'] as ChannelType[]).map((ch) => (
@@ -822,7 +822,7 @@ function CalendarView() {
           </div>
           <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
             <button onClick={saveEvent} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90 btn-glow"
-              style={{ background: 'linear-gradient(135deg, #00E5C8, #00FFD9)' }}>
+              style={{ background: 'linear-gradient(135deg, #7D1AD7, #50E678)' }}>
               Salvar evento
             </button>
             <button onClick={() => setAddModal(null)} className="px-4 py-2 rounded-xl text-sm font-medium text-[#8A8A9A] hover:bg-[rgba(255,255,255,0.08)]">Cancelar</button>
@@ -853,7 +853,7 @@ function ProgressBar({ value, target, color }: { value: number; target: number; 
 
 const statusStyle = {
   ativa: { label: 'Ativa', bg: 'rgba(0,200,83,0.15)', color: '#00C853' },
-  planejada: { label: 'Planejada', bg: 'rgba(0,229,200,0.08)', color: '#00E5C8' },
+  planejada: { label: 'Planejada', bg: 'rgba(125,26,215,0.08)', color: '#7D1AD7' },
   encerrada: { label: 'Encerrada', bg: 'rgba(255,255,255,0.06)', color: '#8A8A9A' },
 }
 
@@ -919,13 +919,13 @@ function CampaignsView({ channel }: { channel: Channel }) {
             <p className="text-sm text-[#8A8A9A]">{filtered.length} campanha{filtered.length !== 1 ? 's' : ''}</p>
           </div>
           <button onClick={() => setShowForm(true)} className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl text-white transition-all hover:opacity-90 btn-glow"
-            style={{ background: 'linear-gradient(135deg, #00E5C8, #00FFD9)' }}>
+            style={{ background: 'linear-gradient(135deg, #7D1AD7, #50E678)' }}>
             <Plus size={16} /> Nova Campanha
           </button>
         </div>
 
         {showForm && (
-          <div className="bg-[#111118] rounded-2xl p-6 mb-5" style={{ border: '1.5px solid rgba(255,255,255,0.1)', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+          <div className="bg-[#17171A] rounded-2xl p-6 mb-5" style={{ border: '1.5px solid rgba(255,255,255,0.1)', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-[#F0F0F5]">Nova Campanha</h3>
               <button onClick={() => setShowForm(false)} className="text-[#555566] hover:text-[#8A8A9A]"><X size={18} /></button>
@@ -942,7 +942,7 @@ function CampaignsView({ channel }: { channel: Channel }) {
                 <label className="block text-xs font-medium text-[#8A8A9A] mb-2">Canais</label>
                 <div className="flex gap-2 flex-wrap">
                   {(['instagram', 'linkedin', 'site', 'email'] as ChannelType[]).map((ch) => (
-                    <button key={ch} onClick={() => toggleChannel(ch)} className="text-xs px-3 py-1.5 rounded-full font-medium transition-all"
+                    <button key={ch} onClick={() => toggleChannel(ch)} className="filter-pill text-xs px-3 py-1.5 rounded-full font-medium transition-all"
                       style={form.channels.includes(ch) ? { background: CH[ch].dot, color: '#fff' } : { background: CH[ch].bg, color: CH[ch].color }}>
                       {CH[ch].label}
                     </button>
@@ -952,7 +952,7 @@ function CampaignsView({ channel }: { channel: Channel }) {
             </div>
             <div className="flex gap-3 mt-5 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
               <button onClick={submitCampaign} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90 btn-glow"
-                style={{ background: 'linear-gradient(135deg, #00E5C8, #00FFD9)' }}>Criar Campanha</button>
+                style={{ background: 'linear-gradient(135deg, #7D1AD7, #50E678)' }}>Criar Campanha</button>
               <button onClick={() => setShowForm(false)} className="px-4 py-2 rounded-xl text-sm font-medium text-[#8A8A9A] hover:bg-[rgba(255,255,255,0.08)]">Cancelar</button>
             </div>
           </div>
@@ -968,7 +968,7 @@ function CampaignsView({ channel }: { channel: Channel }) {
             }))
 
             return (
-              <div key={camp.id} className="bg-[#111118] rounded-2xl p-5" style={{ border: '1.5px solid rgba(255,255,255,0.1)', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+              <div key={camp.id} className="analytic-card bg-[#17171A] rounded-2xl p-5" style={{ border: '1.5px solid rgba(255,255,255,0.1)', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
                 <div className="flex items-start justify-between gap-4 mb-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
@@ -981,7 +981,7 @@ function CampaignsView({ channel }: { channel: Channel }) {
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {camp.daysRunning > 0 && (
                       <span className="text-xs" style={{ color: '#555566' }}>
-                        <span style={{ color: '#00E5C8', fontWeight: 600 }}>{camp.daysRunning}</span>d no ar
+                        <span style={{ color: '#7D1AD7', fontWeight: 600 }}>{camp.daysRunning}</span>d no ar
                       </span>
                     )}
                     <button onClick={() => deleteCampaign(camp.id)} className="p-1.5 rounded-lg text-[#555566] hover:text-[#FF5252] hover:bg-[rgba(255,82,82,0.12)] transition-all">
@@ -998,7 +998,7 @@ function CampaignsView({ channel }: { channel: Channel }) {
                 {camp.status !== 'planejada' && (
                   <div className="grid grid-cols-2 gap-6 mb-4">
                     <div><div className="text-xs font-medium text-[#8A8A9A] mb-1.5 flex items-center gap-1"><Target size={11} /> Alcance</div>
-                      <ProgressBar value={camp.reach} target={camp.targetReach} color="#00E5C8" /></div>
+                      <ProgressBar value={camp.reach} target={camp.targetReach} color="#7D1AD7" /></div>
                     <div><div className="text-xs font-medium text-[#8A8A9A] mb-1.5 flex items-center gap-1"><BarChart2 size={11} /> Interações</div>
                       <ProgressBar value={camp.interactions} target={camp.targetInteractions} color="#00C853" /></div>
                   </div>
@@ -1007,8 +1007,8 @@ function CampaignsView({ channel }: { channel: Channel }) {
                 {/* Daily metrics section */}
                 <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
                   <button onClick={() => setExpandedMetrics((p) => ({ ...p, [camp.id]: !expanded }))}
-                    className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium text-[#F0F0F5] hover:bg-[#1A1A25] transition-colors">
-                    <span className="flex items-center gap-2"><BarChart2 size={14} className="text-[#00E5C8]" /> Métricas diárias ({camp.dailyEntries.length} registros)</span>
+                    className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium text-[#F0F0F5] hover:bg-[#202024] transition-colors">
+                    <span className="flex items-center gap-2"><BarChart2 size={14} className="text-[#7D1AD7]" /> Métricas diárias ({camp.dailyEntries.length} registros)</span>
                     <ChevronRight size={14} className="text-[#555566] transition-transform" style={{ transform: expanded ? 'rotate(90deg)' : 'none' }} />
                   </button>
 
@@ -1019,20 +1019,20 @@ function CampaignsView({ channel }: { channel: Channel }) {
                         <div className="flex-1 min-w-32">
                           <label className="block text-xs text-[#8A8A9A] mb-1">Data</label>
                           <input type="date" value={mf.date} onChange={(e) => setMetricForms((p) => ({ ...p, [camp.id]: { ...mf, date: e.target.value } }))}
-                            className="w-full text-xs px-2.5 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#00E5C8]" />
+                            className="w-full text-xs px-2.5 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#7D1AD7]" />
                         </div>
                         <div className="flex-1 min-w-24">
                           <label className="block text-xs text-[#8A8A9A] mb-1">Alcance</label>
                           <input type="number" value={mf.reach} onChange={(e) => setMetricForms((p) => ({ ...p, [camp.id]: { ...mf, reach: e.target.value } }))}
-                            placeholder="0" className="w-full text-xs px-2.5 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#00E5C8]" />
+                            placeholder="0" className="w-full text-xs px-2.5 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#7D1AD7]" />
                         </div>
                         <div className="flex-1 min-w-24">
                           <label className="block text-xs text-[#8A8A9A] mb-1">Interações</label>
                           <input type="number" value={mf.interactions} onChange={(e) => setMetricForms((p) => ({ ...p, [camp.id]: { ...mf, interactions: e.target.value } }))}
-                            placeholder="0" className="w-full text-xs px-2.5 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#00E5C8]" />
+                            placeholder="0" className="w-full text-xs px-2.5 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#7D1AD7]" />
                         </div>
                         <button onClick={() => addMetricEntry(camp.id)} className="flex items-center gap-1 text-xs px-3 py-2 rounded-xl font-medium text-white hover:opacity-90 btn-glow"
-                          style={{ background: '#00E5C8' }}>
+                          style={{ background: '#7D1AD7' }}>
                           <Plus size={12} /> Registrar
                         </button>
                       </div>
@@ -1045,10 +1045,10 @@ function CampaignsView({ channel }: { channel: Channel }) {
                               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
                               <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#555566' }} axisLine={false} tickLine={false} />
                               <YAxis tick={{ fontSize: 10, fill: '#555566' }} axisLine={false} tickLine={false} />
-                              <Tooltip contentStyle={{ background: '#111118', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, fontSize: 11, color: '#F0F0F5' }}
+                              <Tooltip contentStyle={{ background: '#17171A', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, fontSize: 11, color: '#F0F0F5' }}
                                 formatter={(v) => Number(v ?? 0).toLocaleString('pt-BR')} />
-                              <ReferenceLine y={camp.targetReach} stroke="#00E5C8" strokeDasharray="4 4" label={{ value: 'Meta alcance', fill: '#00E5C8', fontSize: 10 }} />
-                              <Line type="monotone" dataKey="reach" name="Alcance" stroke="#00E5C8" strokeWidth={2} dot={{ r: 3 }} />
+                              <ReferenceLine y={camp.targetReach} stroke="#7D1AD7" strokeDasharray="4 4" label={{ value: 'Meta alcance', fill: '#7D1AD7', fontSize: 10 }} />
+                              <Line type="monotone" dataKey="reach" name="Alcance" stroke="#7D1AD7" strokeWidth={2} dot={{ r: 3 }} />
                               <Line type="monotone" dataKey="interactions" name="Interações" stroke="#00C853" strokeWidth={2} dot={{ r: 3 }} />
                             </LineChart>
                           </ResponsiveContainer>
@@ -1060,9 +1060,9 @@ function CampaignsView({ channel }: { channel: Channel }) {
                         <div className="rounded-lg overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
                           {camp.dailyEntries.map((entry, i) => (
                             <div key={entry.date} className="flex items-center justify-between px-3 py-2 text-xs group"
-                              style={{ background: i % 2 === 0 ? '#1A1A25' : '#111118', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.06)' : undefined }}>
+                              style={{ background: i % 2 === 0 ? '#202024' : '#17171A', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.06)' : undefined }}>
                               <span style={{ color: '#8A8A9A' }}>{entry.date}</span>
-                              <span style={{ color: '#00E5C8' }}>Alcance: {entry.reach.toLocaleString('pt-BR')}</span>
+                              <span style={{ color: '#7D1AD7' }}>Alcance: {entry.reach.toLocaleString('pt-BR')}</span>
                               <span style={{ color: '#00C853' }}>Interações: {entry.interactions.toLocaleString('pt-BR')}</span>
                               <button onClick={() => deleteMetricEntry(camp.id, entry.date)} className="opacity-0 group-hover:opacity-100 text-[#FF5252] hover:text-[#FF5252]">
                                 <Trash2 size={12} />
@@ -1165,7 +1165,7 @@ function EngagementView({ columns }: { columns: KanbanColumn[] }) {
                 const n = Math.max(0, Math.min(5, parseFloat(e.target.value) || 0))
                 setQualityOverride((prev) => ({ ...prev, [memberId]: n }))
               }}
-              className="w-16 text-xs px-2 py-1 rounded border border-[rgba(0,229,200,0.2)] focus:outline-none focus:border-[#00E5C8] text-center" />
+              className="w-16 text-xs px-2 py-1 rounded border border-[rgba(125,26,215,0.2)] focus:outline-none focus:border-[#7D1AD7] text-center" />
             <span className="text-xs text-[#555566]">/ 5</span>
             {isOverridden && (
               <button onClick={() => setQualityOverride((prev) => ({ ...prev, [memberId]: null }))}
@@ -1189,7 +1189,7 @@ function EngagementView({ columns }: { columns: KanbanColumn[] }) {
         <div className="flex items-center gap-1.5">
           <input type="number" min={0} max={5} step={0.1} value={val}
             onChange={(e) => updateScore(memberId, field, e.target.value)}
-            className="w-16 text-xs px-2 py-1 rounded border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#00E5C8] text-center" />
+            className="w-16 text-xs px-2 py-1 rounded border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#7D1AD7] text-center" />
           <span className="text-xs text-[#555566]">/ 5</span>
         </div>
       )
@@ -1219,7 +1219,7 @@ function EngagementView({ columns }: { columns: KanbanColumn[] }) {
   const avgPresence = (data.reduce((a, r) => a + r.presence, 0) / data.length).toFixed(1)
 
   const NOTE_CATS: { key: NoteCategory; label: string; color: string; bg: string }[] = [
-    { key: 'feedbacks', label: 'Feedbacks', color: '#00B39E', bg: 'rgba(0,229,200,0.08)' },
+    { key: 'feedbacks', label: 'Feedbacks', color: '#507AE6', bg: 'rgba(125,26,215,0.08)' },
     { key: 'alertas', label: 'Alertas', color: '#FFB300', bg: 'rgba(255,179,0,0.15)' },
     { key: 'outros', label: 'Outros', color: '#555566', bg: 'rgba(255,255,255,0.08)' },
   ]
@@ -1230,23 +1230,23 @@ function EngagementView({ columns }: { columns: KanbanColumn[] }) {
         <div className="flex items-center justify-between mb-5">
           <div>
             <h2 className="text-base font-semibold text-[#F0F0F5] flex items-center gap-2">
-              <Users size={18} className="text-[#00E5C8]" /> Engajamento do Time
+              <Users size={18} className="text-[#7D1AD7]" /> Engajamento do Time
             </h2>
             <p className="text-sm text-[#8A8A9A] mt-0.5">Visível apenas para a Gerente · Julho 2026 · Escala 0–5</p>
           </div>
           <button onClick={() => setEditMode((e) => !e)} className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl transition-all"
-            style={editMode ? { background: '#00C853', color: '#fff' } : { background: 'rgba(0,229,200,0.08)', color: '#00B39E' }}>
+            style={editMode ? { background: '#00C853', color: '#fff' } : { background: 'rgba(125,26,215,0.08)', color: '#507AE6' }}>
             {editMode ? <><Check size={15} /> Salvar</> : <><Edit2 size={15} /> Editar</>}
           </button>
         </div>
 
         <div className="grid grid-cols-3 gap-4 mb-6">
           {[
-            { label: 'Média Compromisso', value: avgCommitment, color: '#00E5C8' },
+            { label: 'Média Compromisso', value: avgCommitment, color: '#7D1AD7' },
             { label: 'Média Qualidade', value: avgQuality, color: '#00C853' },
             { label: 'Média Presença', value: avgPresence, color: '#FFB300' },
           ].map((kpi) => (
-            <div key={kpi.label} className="bg-[#111118] rounded-xl p-4" style={{ border: '1.5px solid rgba(255,255,255,0.1)' }}>
+            <div key={kpi.label} className="kpi-card bg-[#17171A] rounded-xl p-4" style={{ border: '1.5px solid rgba(255,255,255,0.1)' }}>
               <div className="text-2xl font-bold mb-1" style={{ color: kpi.color }}>{kpi.value}<span className="text-sm font-normal text-[#555566]">/5</span></div>
               <div className="text-xs text-[#8A8A9A]">{kpi.label}</div>
             </div>
@@ -1261,7 +1261,7 @@ function EngagementView({ columns }: { columns: KanbanColumn[] }) {
             const hasNotes = memberNotes.feedbacks || memberNotes.alertas || memberNotes.outros
 
             return (
-              <div key={row.memberId} className="bg-[#111118] rounded-2xl overflow-hidden" style={{ border: '1.5px solid rgba(255,255,255,0.1)' }}>
+              <div key={row.memberId} className="bg-[#17171A] rounded-2xl overflow-hidden" style={{ border: '1.5px solid rgba(255,255,255,0.1)' }}>
                 {/* Main row */}
                 <div className="px-5 py-4">
                   <div className="flex items-center gap-4">
@@ -1281,7 +1281,7 @@ function EngagementView({ columns }: { columns: KanbanColumn[] }) {
                     <div className="flex items-center gap-6 flex-1">
                       <div className="min-w-0">
                         <div className="text-xs text-[#555566] mb-1">Compromisso</div>
-                        <StarScore memberId={row.memberId} field="punctuality" color="#00E5C8" />
+                        <StarScore memberId={row.memberId} field="punctuality" color="#7D1AD7" />
                       </div>
                       <div className="min-w-0">
                         <div className="text-xs text-[#555566] mb-1">Qualidade</div>
@@ -1299,15 +1299,15 @@ function EngagementView({ columns }: { columns: KanbanColumn[] }) {
                       {editMode ? (
                         <div className="flex items-center gap-1 text-xs">
                           <input type="number" min={0} value={row.tasksCompleted} onChange={(e) => updateTasks(row.memberId, 'tasksCompleted', e.target.value)}
-                            className="w-12 px-1.5 py-1 rounded border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#00E5C8] text-center" />
+                            className="w-12 px-1.5 py-1 rounded border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#7D1AD7] text-center" />
                           <span className="text-[#555566]">/</span>
                           <input type="number" min={0} value={row.tasksTotal} onChange={(e) => updateTasks(row.memberId, 'tasksTotal', e.target.value)}
-                            className="w-12 px-1.5 py-1 rounded border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#00E5C8] text-center" />
+                            className="w-12 px-1.5 py-1 rounded border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#7D1AD7] text-center" />
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
                           <div className="h-1.5 w-20 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                            <div className="h-full rounded-full" style={{ width: `${(row.tasksCompleted / row.tasksTotal) * 100}%`, background: '#00E5C8' }} />
+                            <div className="h-full rounded-full" style={{ width: `${(row.tasksCompleted / row.tasksTotal) * 100}%`, background: '#7D1AD7' }} />
                           </div>
                           <span className="text-xs" style={{ color: '#8A8A9A' }}>
                             {row.tasksCompleted}/{row.tasksTotal}
@@ -1320,10 +1320,10 @@ function EngagementView({ columns }: { columns: KanbanColumn[] }) {
                     <button
                       onClick={() => setExpandedMember(isExpanded ? null : row.memberId)}
                       className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium flex-shrink-0 transition-all"
-                      style={isExpanded ? { background: 'rgba(0,229,200,0.08)', color: '#00B39E' } : { background: '#1A1A25', color: '#8A8A9A' }}>
+                      style={isExpanded ? { background: 'rgba(125,26,215,0.08)', color: '#507AE6' } : { background: '#202024', color: '#8A8A9A' }}>
                       <Edit2 size={11} />
                       Obs.
-                      {hasNotes && <span className="w-1.5 h-1.5 rounded-full bg-[#00E5C8] ml-0.5" />}
+                      {hasNotes && <span className="w-1.5 h-1.5 rounded-full bg-[#7D1AD7] ml-0.5" />}
                     </button>
                   </div>
                 </div>
@@ -1348,7 +1348,7 @@ function EngagementView({ columns }: { columns: KanbanColumn[] }) {
                             className="w-full text-xs px-3 py-2 rounded-xl border resize-none focus:outline-none transition-colors"
                             style={{
                               border: `1.5px solid ${memberNotes[cat.key] ? cat.color + '50' : 'rgba(255,255,255,0.1)'}`,
-                              background: memberNotes[cat.key] ? cat.bg : '#1A1A25',
+                              background: memberNotes[cat.key] ? cat.bg : '#202024',
                               color: '#F0F0F5',
                             }}
                           />
@@ -1390,7 +1390,7 @@ export default function Monitoramento({ profile, isManager, channel, setChannel 
 
   return (
     <div className="flex flex-col h-full">
-      <header className="bg-[#111118] flex-shrink-0" style={{ borderBottom: '1.5px solid rgba(255,255,255,0.1)' }}>
+      <header className="page-header bg-[#17171A] flex-shrink-0" style={{ borderBottom: '1.5px solid rgba(255,255,255,0.1)' }}>
         <div className="px-4 md:px-6 pt-4 md:pt-5 pb-0 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
           <div>
             <h1 className="text-lg md:text-xl font-semibold text-[#F0F0F5] leading-tight">Monitoramento</h1>
