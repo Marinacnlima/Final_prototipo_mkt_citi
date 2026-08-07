@@ -37,8 +37,8 @@ function ChannelFilter({ channel, setChannel }: { channel: Channel; setChannel: 
         const active = channel === o.id
         const c = o.id !== 'todos' ? CH[o.id as ChannelType] : null
         return (
-          <button key={o.id} onClick={() => setChannel(o.id)} className="text-xs px-3 py-1.5 rounded-full font-medium transition-all"
-            style={active ? { background: c ? c.dot : '#00E5C8', color: '#fff' } : { background: 'rgba(255,255,255,0.06)', color: '#8A8A9A' }}>
+          <button key={o.id} onClick={() => setChannel(o.id)} className="filter-pill text-xs px-3 py-1.5 rounded-full font-medium transition-all"
+            style={active ? { background: c ? c.dot : '#7D1AD7', color: '#fff' } : { background: 'rgba(255,255,255,0.06)', color: '#8A8A9A' }}>
             {o.label}
           </button>
         )
@@ -59,7 +59,7 @@ function TabNav({ active, setTab }: { active: Tab; setTab: (t: Tab) => void }) {
     <div className="flex gap-1">
       {tabs.map((t) => (
         <button key={t.id} onClick={() => setTab(t.id)} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-all"
-          style={active === t.id ? { background: 'rgba(0,229,200,0.08)', color: '#00B39E' } : { color: '#8A8A9A', background: 'transparent' }}>
+          style={active === t.id ? { background: 'rgba(125,26,215,0.08)', color: '#507AE6' } : { color: '#8A8A9A', background: 'transparent' }}>
           {t.icon}{t.label}
         </button>
       ))}
@@ -71,7 +71,7 @@ function Modal({ title, onClose, children, wide }: { title: string; onClose: () 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
       <div
-        className={`bg-[#111118] rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden ${wide ? 'w-full max-w-2xl' : 'w-full max-w-md'}`}
+        className={`bg-[#17171A] rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden ${wide ? 'w-full max-w-2xl' : 'w-full max-w-md'}`}
         style={{ margin: 16 }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 flex-shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <h3 className="font-semibold text-[#F0F0F5]">{title}</h3>
@@ -93,7 +93,7 @@ function FormRow({ label, children }: { label: string; children: React.ReactNode
 }
 
 function Inp({ value, onChange, placeholder, type = 'text', as }: { value: string; onChange: (v: string) => void; placeholder?: string; type?: string; as?: 'textarea' }) {
-  const cls = "w-full text-sm px-3 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#00E5C8] focus:ring-2 focus:ring-[rgba(0,229,200,0.1)]"
+  const cls = "w-full text-sm px-3 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#7D1AD7] focus:ring-2 focus:ring-[rgba(125,26,215,0.1)]"
   if (as === 'textarea') return <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className={cls} rows={4} />
   return <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className={cls} />
 }
@@ -155,7 +155,7 @@ function PostModal({ initial, onSave, onClose }: {
         <FormRow label="Canal">
           <div className="flex gap-2 flex-wrap">
             {channels.map((ch) => (
-              <button key={ch} onClick={() => setForm((f) => ({ ...f, channel: ch }))} className="text-xs px-3 py-1.5 rounded-full font-medium transition-all"
+              <button key={ch} onClick={() => setForm((f) => ({ ...f, channel: ch }))} className="filter-pill text-xs px-3 py-1.5 rounded-full font-medium transition-all"
                 style={form.channel === ch ? { background: CH[ch].dot, color: '#fff' } : { background: CH[ch].bg, color: CH[ch].color }}>
                 {CH[ch].label}
               </button>
@@ -192,7 +192,7 @@ function PostModal({ initial, onSave, onClose }: {
       </div>
       <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
         <button onClick={save} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90 btn-glow"
-          style={{ background: 'linear-gradient(135deg, #00E5C8, #00FFD9)' }}>
+          style={{ background: 'linear-gradient(135deg, #7D1AD7, #50E678)' }}>
           {initial ? 'Salvar alterações' : 'Criar post'}
         </button>
         <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-medium text-[#8A8A9A] hover:bg-[rgba(255,255,255,0.08)]">Cancelar</button>
@@ -230,7 +230,7 @@ function PostsView({ channel, posts, setPosts }: { channel: Channel; posts: Post
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-[#8A8A9A]">{filtered.length} post{filtered.length !== 1 ? 's' : ''}</p>
         <button onClick={() => setModal({})} className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl text-white hover:opacity-90 btn-glow"
-          style={{ background: 'linear-gradient(135deg, #00E5C8, #00FFD9)' }}>
+          style={{ background: 'linear-gradient(135deg, #7D1AD7, #50E678)' }}>
           <Plus size={15} /> Adicionar post
         </button>
       </div>
@@ -241,9 +241,9 @@ function PostsView({ channel, posts, setPosts }: { channel: Channel; posts: Post
           const isExpanded = expanded[post.id]
           const caption = isExpanded ? post.caption : post.caption.slice(0, 120) + (post.caption.length > 120 ? '…' : '')
           return (
-            <div key={post.id} className="bg-[#111118] rounded-2xl overflow-hidden flex flex-col group"
+            <div key={post.id} className="editorial-card bg-[#17171A] rounded-2xl overflow-hidden flex flex-col group"
               style={{ border: '1.5px solid rgba(255,255,255,0.1)', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
-              <div className="relative" style={{ background: '#1A1A25', aspectRatio: '1/1' }}>
+              <div className="relative" style={{ background: '#202024', aspectRatio: '1/1' }}>
                 <img src={post.images[slide]} alt={post.title} className="w-full h-full object-cover" />
                 {post.images.length > 1 && (
                   <>
@@ -265,10 +265,10 @@ function PostsView({ channel, posts, setPosts }: { channel: Channel; posts: Post
                 )}
                 <div className="absolute top-2 left-2"><ChannelBadge ch={post.channel} /></div>
                 <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => setModal({ post })} className="w-7 h-7 rounded-lg bg-[#111118]/90 flex items-center justify-center text-[#00E5C8] hover:bg-[#111118] shadow-sm">
+                  <button onClick={() => setModal({ post })} className="w-7 h-7 rounded-lg bg-[#17171A]/90 flex items-center justify-center text-[#7D1AD7] hover:bg-[#17171A] shadow-sm">
                     <Edit2 size={12} />
                   </button>
-                  <button onClick={() => setDeleteId(post.id)} className="w-7 h-7 rounded-lg bg-[#111118]/90 flex items-center justify-center text-[#FF5252] hover:bg-[#111118] shadow-sm">
+                  <button onClick={() => setDeleteId(post.id)} className="w-7 h-7 rounded-lg bg-[#17171A]/90 flex items-center justify-center text-[#FF5252] hover:bg-[#17171A] shadow-sm">
                     <Trash2 size={12} />
                   </button>
                 </div>
@@ -282,7 +282,7 @@ function PostsView({ channel, posts, setPosts }: { channel: Channel; posts: Post
                 </div>
                 <p className="text-sm text-[#F0F0F5] leading-relaxed whitespace-pre-line flex-1">{caption}</p>
                 {post.caption.length > 120 && (
-                  <button onClick={() => toggleExpand(post.id)} className="text-xs text-[#00E5C8] hover:text-[#00E5C8] mt-1 text-left">
+                  <button onClick={() => toggleExpand(post.id)} className="text-xs text-[#7D1AD7] hover:text-[#7D1AD7] mt-1 text-left">
                     {isExpanded ? 'Ver menos' : 'Ver mais'}
                   </button>
                 )}
@@ -309,7 +309,7 @@ function PostsView({ channel, posts, setPosts }: { channel: Channel; posts: Post
 
       {deleteId !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setDeleteId(null)}>
-          <div className="bg-[#111118] rounded-2xl p-6 shadow-2xl max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-[#17171A] rounded-2xl p-6 shadow-2xl max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
             <p className="font-semibold text-[#F0F0F5] mb-1">Apagar post?</p>
             <p className="text-sm text-[#8A8A9A] mb-4">Esta ação não pode ser desfeita.</p>
             <div className="flex gap-2">
@@ -326,7 +326,7 @@ function PostsView({ channel, posts, setPosts }: { channel: Channel; posts: Post
 // ─── Materials ─────────────────────────────────────────────────────────────
 
 const matTypeStyle = {
-  ebook: { label: 'Ebook', bg: 'rgba(0,229,200,0.08)', color: '#00B39E' },
+  ebook: { label: 'Ebook', bg: 'rgba(125,26,215,0.08)', color: '#507AE6' },
   newsletter: { label: 'Newsletter', bg: 'rgba(255,179,0,0.15)', color: '#FFB300' },
   case: { label: 'Case', bg: 'rgba(0,200,83,0.15)', color: '#00C853' },
 }
@@ -388,7 +388,7 @@ function MaterialModal({ initial, onSave, onClose }: { initial?: Material; onSav
       </div>
       <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
         <button onClick={save} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90 btn-glow"
-          style={{ background: 'linear-gradient(135deg, #00E5C8, #00FFD9)' }}>
+          style={{ background: 'linear-gradient(135deg, #7D1AD7, #50E678)' }}>
           {initial ? 'Salvar' : 'Criar material'}
         </button>
         <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-medium text-[#8A8A9A] hover:bg-[rgba(255,255,255,0.08)]">Cancelar</button>
@@ -427,14 +427,14 @@ function MaterialsView() {
               const s = t !== 'todos' ? matTypeStyle[t] : null
               return (
                 <button key={t} onClick={() => setTypeFilter(t)} className="text-xs px-3 py-1.5 rounded-full font-medium capitalize transition-all"
-                  style={typeFilter === t ? { background: s ? s.color : '#00E5C8', color: '#fff' } : { background: 'rgba(255,255,255,0.06)', color: '#8A8A9A' }}>
+                  style={typeFilter === t ? { background: s ? s.color : '#7D1AD7', color: '#fff' } : { background: 'rgba(255,255,255,0.06)', color: '#8A8A9A' }}>
                   {t === 'todos' ? 'Todos' : matTypeStyle[t].label}
                 </button>
               )
             })}
           </div>
           <button onClick={() => setModal({})} className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl text-white hover:opacity-90 btn-glow"
-            style={{ background: 'linear-gradient(135deg, #00E5C8, #00FFD9)' }}>
+            style={{ background: 'linear-gradient(135deg, #7D1AD7, #50E678)' }}>
             <Plus size={15} /> Adicionar
           </button>
         </div>
@@ -443,17 +443,17 @@ function MaterialsView() {
           {filtered.map((mat) => {
             const s = matTypeStyle[mat.type]
             return (
-              <div key={mat.id} className="bg-[#111118] rounded-2xl overflow-hidden flex flex-col group"
+              <div key={mat.id} className="editorial-card bg-[#17171A] rounded-2xl overflow-hidden flex flex-col group"
                 style={{ border: '1.5px solid rgba(255,255,255,0.1)', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
-                <div className="relative" style={{ height: 140, background: '#1A1A25' }}>
+                <div className="relative" style={{ height: 140, background: '#202024' }}>
                   <img src={mat.cover} alt={mat.title} className="w-full h-full object-cover" />
                   <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.3))' }} />
                   <span className="absolute top-3 left-3 text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: s.bg, color: s.color }}>{s.label}</span>
                   <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => setModal({ mat })} className="w-7 h-7 rounded-lg bg-[#111118]/90 flex items-center justify-center text-[#00E5C8] hover:bg-[#111118] shadow-sm">
+                    <button onClick={() => setModal({ mat })} className="w-7 h-7 rounded-lg bg-[#17171A]/90 flex items-center justify-center text-[#7D1AD7] hover:bg-[#17171A] shadow-sm">
                       <Edit2 size={12} />
                     </button>
-                    <button onClick={() => setDeleteId(mat.id)} className="w-7 h-7 rounded-lg bg-[#111118]/90 flex items-center justify-center text-[#FF5252] hover:bg-[#111118] shadow-sm">
+                    <button onClick={() => setDeleteId(mat.id)} className="w-7 h-7 rounded-lg bg-[#17171A]/90 flex items-center justify-center text-[#FF5252] hover:bg-[#17171A] shadow-sm">
                       <Trash2 size={12} />
                     </button>
                   </div>
@@ -467,7 +467,7 @@ function MaterialsView() {
                       <span>{mat.downloads.toLocaleString('pt-BR')}</span>
                     </div>
                     <button className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg font-medium hover:opacity-80"
-                      style={{ background: 'rgba(0,229,200,0.08)', color: '#00B39E' }}>
+                      style={{ background: 'rgba(125,26,215,0.08)', color: '#507AE6' }}>
                       <Download size={11} /> Baixar
                     </button>
                   </div>
@@ -480,7 +480,7 @@ function MaterialsView() {
         {modal && <MaterialModal initial={modal.mat} onSave={saveMaterial} onClose={() => setModal(null)} />}
         {deleteId !== null && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setDeleteId(null)}>
-            <div className="bg-[#111118] rounded-2xl p-6 shadow-2xl max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-[#17171A] rounded-2xl p-6 shadow-2xl max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
               <p className="font-semibold text-[#F0F0F5] mb-1">Apagar material?</p>
               <p className="text-sm text-[#8A8A9A] mb-4">Esta ação não pode ser desfeita.</p>
               <div className="flex gap-2">
@@ -545,7 +545,7 @@ function PromptModal({ initial, onSave, onClose }: { initial?: Prompt; onSave: (
             {cats.map((c) => {
               const s = getCatStyle(c)
               return (
-                <button key={c} onClick={() => setForm((f) => ({ ...f, category: c }))} className="text-xs px-3 py-1.5 rounded-full font-medium transition-all"
+                <button key={c} onClick={() => setForm((f) => ({ ...f, category: c }))} className="filter-pill text-xs px-3 py-1.5 rounded-full font-medium transition-all"
                   style={form.category === c ? { background: s.color, color: '#fff' } : { background: s.bg, color: s.color }}>
                   {c}
                 </button>
@@ -559,7 +559,7 @@ function PromptModal({ initial, onSave, onClose }: { initial?: Prompt; onSave: (
         <FormRow label="Conteúdo do prompt *">
           <textarea value={form.content} onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))}
             placeholder="Escreva o prompt aqui..." rows={8}
-            className="w-full text-sm px-3 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#00E5C8] font-mono"
+            className="w-full text-sm px-3 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#7D1AD7] font-mono"
             style={{ fontSize: 12 }} />
         </FormRow>
         <FormRow label="Tags (separadas por vírgula)">
@@ -568,7 +568,7 @@ function PromptModal({ initial, onSave, onClose }: { initial?: Prompt; onSave: (
       </div>
       <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
         <button onClick={save} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90 btn-glow"
-          style={{ background: 'linear-gradient(135deg, #00E5C8, #00FFD9)' }}>
+          style={{ background: 'linear-gradient(135deg, #7D1AD7, #50E678)' }}>
           {initial ? 'Salvar alterações' : 'Criar prompt'}
         </button>
         <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-medium text-[#8A8A9A] hover:bg-[rgba(255,255,255,0.08)]">Cancelar</button>
@@ -624,7 +624,7 @@ function PromptsView() {
         {/* Toolbar */}
         <div className="flex items-center gap-3 mb-5 flex-wrap">
           {/* Search */}
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl flex-1 min-w-48" style={{ background: '#1A1A25', border: '1.5px solid rgba(255,255,255,0.1)' }}>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl flex-1 min-w-48" style={{ background: '#202024', border: '1.5px solid rgba(255,255,255,0.1)' }}>
             <Search size={14} className="text-[#555566] flex-shrink-0" />
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar prompts..."
               className="flex-1 text-sm bg-transparent focus:outline-none text-[#F0F0F5] placeholder-[#555566]" />
@@ -633,14 +633,14 @@ function PromptsView() {
 
           {/* Favorites toggle */}
           <button onClick={() => setOnlyFav((f) => !f)} className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl font-medium transition-all"
-            style={onlyFav ? { background: 'rgba(255,179,0,0.15)', color: '#FFB300', border: '1.5px solid rgba(255,179,0,0.4)' } : { background: '#1A1A25', color: '#8A8A9A', border: '1.5px solid rgba(255,255,255,0.1)' }}>
+            style={onlyFav ? { background: 'rgba(255,179,0,0.15)', color: '#FFB300', border: '1.5px solid rgba(255,179,0,0.4)' } : { background: '#202024', color: '#8A8A9A', border: '1.5px solid rgba(255,255,255,0.1)' }}>
             <Star size={13} style={{ fill: onlyFav ? '#FFB300' : 'none', color: onlyFav ? '#FFB300' : '#555566' }} />
             Favoritos · {prompts.filter((p) => p.favorited).length}
           </button>
 
           {/* Add button */}
           <button onClick={() => setModal({})} className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl text-white hover:opacity-90 btn-glow"
-            style={{ background: 'linear-gradient(135deg, #00E5C8, #00FFD9)' }}>
+            style={{ background: 'linear-gradient(135deg, #7D1AD7, #50E678)' }}>
             <Plus size={15} /> Novo prompt
           </button>
         </div>
@@ -650,8 +650,8 @@ function PromptsView() {
           {categories.map((cat) => {
             const s = cat !== 'Todos' ? getCatStyle(cat) : null
             return (
-              <button key={cat} onClick={() => setCatFilter(cat)} className="text-xs px-3 py-1.5 rounded-full font-medium transition-all"
-                style={catFilter === cat ? { background: s ? s.color : '#00E5C8', color: '#fff' } : { background: 'rgba(255,255,255,0.06)', color: '#8A8A9A' }}>
+              <button key={cat} onClick={() => setCatFilter(cat)} className="filter-pill text-xs px-3 py-1.5 rounded-full font-medium transition-all"
+                style={catFilter === cat ? { background: s ? s.color : '#7D1AD7', color: '#fff' } : { background: 'rgba(255,255,255,0.06)', color: '#8A8A9A' }}>
                 {cat}
               </button>
             )
@@ -663,7 +663,7 @@ function PromptsView() {
             const s = getCatStyle(prompt.category)
             const isExp = expanded[prompt.id]
             return (
-              <div key={prompt.id} className="bg-[#111118] rounded-xl overflow-hidden group"
+              <div key={prompt.id} className="editorial-card bg-[#17171A] rounded-xl overflow-hidden group"
                 style={{ border: '1.5px solid rgba(255,255,255,0.1)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
                 <div className="p-4">
                   <div className="flex items-start justify-between gap-3">
@@ -675,22 +675,22 @@ function PromptsView() {
                       <h3 className="text-sm font-semibold text-[#F0F0F5]">{prompt.title}</h3>
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
-                      <button onClick={() => setModal({ prompt })} className="p-1.5 rounded-lg text-[#555566] hover:text-[#00E5C8] hover:bg-[rgba(0,229,200,0.08)] opacity-0 group-hover:opacity-100 transition-all">
+                      <button onClick={() => setModal({ prompt })} className="p-1.5 rounded-lg text-[#555566] hover:text-[#7D1AD7] hover:bg-[rgba(125,26,215,0.08)] opacity-0 group-hover:opacity-100 transition-all">
                         <Edit2 size={13} />
                       </button>
                       <button onClick={() => setDeleteId(prompt.id)} className="p-1.5 rounded-lg text-[#555566] hover:text-[#FF5252] hover:bg-[rgba(255,82,82,0.12)] opacity-0 group-hover:opacity-100 transition-all">
                         <Trash2 size={13} />
                       </button>
-                      <button onClick={() => toggleFav(prompt.id)} className="p-1.5 rounded-lg transition-colors hover:bg-[#1A1A25]">
+                      <button onClick={() => toggleFav(prompt.id)} className="p-1.5 rounded-lg transition-colors hover:bg-[#202024]">
                         <Star size={16} style={{ fill: prompt.favorited ? '#FFB300' : 'none', color: prompt.favorited ? '#FFB300' : '#555566' }} />
                       </button>
                     </div>
                   </div>
-                  <div className="mt-3 rounded-lg p-3 cursor-pointer" style={{ background: '#1A1A25', border: '1px solid rgba(255,255,255,0.1)' }}
+                  <div className="mt-3 rounded-lg p-3 cursor-pointer" style={{ background: '#202024', border: '1px solid rgba(255,255,255,0.1)' }}
                     onClick={() => setExpanded((e) => ({ ...e, [prompt.id]: !e[prompt.id] }))}>
                     <p className="text-xs text-[#8A8A9A] leading-relaxed whitespace-pre-line">
                       {isExp ? prompt.content : prompt.content.slice(0, 100) + (prompt.content.length > 100 ? '…' : '')}
-                      {prompt.content.length > 100 && <span className="text-[#00E5C8] ml-1">{isExp ? ' ▲' : ' ▼'}</span>}
+                      {prompt.content.length > 100 && <span className="text-[#7D1AD7] ml-1">{isExp ? ' ▲' : ' ▼'}</span>}
                     </p>
                   </div>
                   <div className="flex items-center justify-between mt-3">
@@ -702,7 +702,7 @@ function PromptsView() {
                       ))}
                     </div>
                     <button onClick={() => copyPrompt(prompt.id, prompt.content)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium hover:opacity-80"
-                      style={copied === prompt.id ? { background: 'rgba(0,200,83,0.15)', color: '#00C853' } : { background: 'rgba(0,229,200,0.08)', color: '#00B39E' }}>
+                      style={copied === prompt.id ? { background: 'rgba(0,200,83,0.15)', color: '#00C853' } : { background: 'rgba(125,26,215,0.08)', color: '#507AE6' }}>
                       {copied === prompt.id ? <><Check size={11} /> Copiado!</> : <><Copy size={11} /> Copiar</>}
                     </button>
                   </div>
@@ -720,7 +720,7 @@ function PromptsView() {
         {modal && <PromptModal initial={modal.prompt} onSave={savePrompt} onClose={() => setModal(null)} />}
         {deleteId !== null && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setDeleteId(null)}>
-            <div className="bg-[#111118] rounded-2xl p-6 shadow-2xl max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-[#17171A] rounded-2xl p-6 shadow-2xl max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
               <p className="font-semibold text-[#F0F0F5] mb-1">Apagar prompt?</p>
               <p className="text-sm text-[#8A8A9A] mb-4">Esta ação não pode ser desfeita.</p>
               <div className="flex gap-2">
@@ -750,7 +750,7 @@ export default function Biblioteca({ channel, setChannel, posts, setPosts }: Pro
 
   return (
     <div className="flex flex-col h-full">
-      <header className="bg-[#111118] flex-shrink-0" style={{ borderBottom: '1.5px solid rgba(255,255,255,0.1)' }}>
+      <header className="page-header bg-[#17171A] flex-shrink-0" style={{ borderBottom: '1.5px solid rgba(255,255,255,0.1)' }}>
         <div className="px-4 md:px-6 pt-4 md:pt-5 pb-0 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
           <div>
             <h1 className="text-lg md:text-xl font-semibold text-[#F0F0F5] leading-tight">Biblioteca</h1>

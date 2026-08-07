@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import {
-  LayoutDashboard, BookOpen, BarChart2, ChevronRight, Sparkles,
+  LayoutDashboard, BookOpen, BarChart2, ChevronRight,
   LogOut, Users, Plus, X, Eye, EyeOff, KeyRound, ChevronDown, Trash2,
 } from 'lucide-react'
 import type { Module } from './App'
@@ -55,7 +55,7 @@ function UserManagementModal({ users, setUsers, currentUserId, onClose }: UserMo
       return
     }
     const initials = form.name.trim().split(' ').filter(Boolean).map((w) => w[0].toUpperCase()).slice(0, 2).join('')
-    const colors = ['#00E5C8', '#00C853', '#FFB300', '#E1306C', '#0A66C2', '#40C4FF', '#00B39E']
+    const colors = ['#7D1AD7', '#00C853', '#FFB300', '#E1306C', '#0A66C2', '#40C4FF', '#507AE6']
     const color = colors[users.length % colors.length]
     const newUser: AppUser = {
       id: Date.now(),
@@ -76,13 +76,13 @@ function UserManagementModal({ users, setUsers, currentUserId, onClose }: UserMo
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 px-0 sm:px-4"
       onClick={onClose}>
-      <div className="bg-[#111118] w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden"
+      <div className="bg-[#17171A] w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden"
         style={{ maxHeight: '90vh' }}
         onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <div className="flex items-center gap-2">
-            <Users size={16} className="text-[#00E5C8]" />
+            <Users size={16} className="text-[#7D1AD7]" />
             <h2 className="font-semibold text-[#F0F0F5]">Gerenciar usuários</h2>
           </div>
           <button onClick={onClose} className="text-[#555566] hover:text-[#8A8A9A]"><X size={18} /></button>
@@ -96,7 +96,7 @@ function UserManagementModal({ users, setUsers, currentUserId, onClose }: UserMo
               const isConfirming = deleteConfirmId === u.id
               return (
                 <div key={u.id}>
-                  <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl" style={{ background: '#1A1A25', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl" style={{ background: '#202024', border: '1px solid rgba(255,255,255,0.1)' }}>
                     <div className="flex items-center justify-center rounded-full text-white text-xs font-bold flex-shrink-0"
                       style={{ width: 32, height: 32, background: u.color }}>
                       {u.initials}
@@ -110,7 +110,7 @@ function UserManagementModal({ users, setUsers, currentUserId, onClose }: UserMo
                         <span className="text-xs px-1.5 py-0.5 rounded-full hidden sm:block" style={{ background: 'rgba(255,179,0,0.15)', color: '#FFB300' }}>1º acesso</span>
                       )}
                       <span className="text-xs px-2 py-0.5 rounded-full font-medium"
-                        style={u.role === 'gerente' ? { background: 'rgba(0,229,200,0.08)', color: '#00B39E' } : { background: 'rgba(0,200,83,0.15)', color: '#00C853' }}>
+                        style={u.role === 'gerente' ? { background: 'rgba(125,26,215,0.08)', color: '#507AE6' } : { background: 'rgba(0,200,83,0.15)', color: '#00C853' }}>
                         {u.role === 'gerente' ? 'Gerente' : 'Analista'}
                       </span>
                       {!isSelf && (
@@ -140,7 +140,7 @@ function UserManagementModal({ users, setUsers, currentUserId, onClose }: UserMo
           <div className="px-6 pb-2">
             <button onClick={() => { setShowForm((s) => !s); setError('') }}
               className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all${showForm ? '' : ' btn-glow'}`}
-              style={showForm ? { background: 'rgba(255,255,255,0.06)', color: '#8A8A9A' } : { background: 'linear-gradient(135deg, #00E5C8, #00FFD9)', color: '#fff' }}>
+              style={showForm ? { background: 'rgba(255,255,255,0.06)', color: '#8A8A9A' } : { background: 'linear-gradient(135deg, #7D1AD7, #50E678)', color: '#fff' }}>
               {showForm ? <><ChevronDown size={15} /> Cancelar</> : <><Plus size={15} /> Novo usuário</>}
             </button>
           </div>
@@ -154,18 +154,18 @@ function UserManagementModal({ users, setUsers, currentUserId, onClose }: UserMo
                     <label className="block text-xs font-medium text-[#8A8A9A] mb-1">Nome completo *</label>
                     <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                       placeholder="João Silva"
-                      className="w-full text-sm px-3 py-2 rounded-xl border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#00E5C8]" />
+                      className="w-full text-sm px-3 py-2 rounded-xl border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#7D1AD7]" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-[#8A8A9A] mb-1">E-mail *</label>
                     <input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                       placeholder="joao@empresa.com"
-                      className="w-full text-sm px-3 py-2 rounded-xl border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#00E5C8]" />
+                      className="w-full text-sm px-3 py-2 rounded-xl border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#7D1AD7]" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-[#8A8A9A] mb-1">Perfil *</label>
                     <select value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value as 'gerente' | 'analista' }))}
-                      className="w-full text-sm px-3 py-2 rounded-xl border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#00E5C8] bg-[#111118]">
+                      className="w-full text-sm px-3 py-2 rounded-xl border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#7D1AD7] bg-[#17171A]">
                       <option value="analista">Analista</option>
                       <option value="gerente">Gerente</option>
                     </select>
@@ -176,7 +176,7 @@ function UserManagementModal({ users, setUsers, currentUserId, onClose }: UserMo
                       <input type={showPw ? 'text' : 'password'} value={form.password}
                         onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
                         placeholder="••••••"
-                        className="w-full text-sm px-3 py-2 pr-9 rounded-xl border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#00E5C8]" />
+                        className="w-full text-sm px-3 py-2 pr-9 rounded-xl border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#7D1AD7]" />
                       <button type="button" onClick={() => setShowPw((s) => !s)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-[#555566] hover:text-[#8A8A9A]">
                         {showPw ? <EyeOff size={13} /> : <Eye size={13} />}
@@ -189,7 +189,7 @@ function UserManagementModal({ users, setUsers, currentUserId, onClose }: UserMo
 
                 <button onClick={saveUser}
                   className="mt-4 w-full py-2.5 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-opacity btn-glow"
-                  style={{ background: 'linear-gradient(135deg, #00E5C8, #00FFD9)' }}>
+                  style={{ background: 'linear-gradient(135deg, #7D1AD7, #50E678)' }}>
                   Criar conta
                 </button>
               </div>
@@ -217,18 +217,14 @@ export default function Sidebar({ currentUser, users, setUsers, activeModule, se
           'md:relative md:translate-x-0',
           open ? 'translate-x-0' : '-translate-x-full',
         ].join(' ')}
-        style={{ width: 256, background: '#0D1117', borderRight: '1px solid rgba(255,255,255,0.06)' }}
+        style={{ width: 268, background: 'rgba(18,18,20,.96)', borderRight: '1px solid rgba(255,255,255,0.075)', backdropFilter: 'blur(22px)' }}
       >
         {/* Logo + close button */}
         <div className="flex items-center justify-between px-5 pt-5 pb-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
           <div className="flex items-center gap-2.5">
-            <div className="flex items-center justify-center rounded-xl flex-shrink-0"
-              style={{ width: 34, height: 34, background: 'linear-gradient(135deg, #00E5C8 0%, #00FFD9 100%)' }}>
-              <Sparkles size={16} className="text-white" />
-            </div>
             <div>
-              <div className="text-white font-semibold text-sm tracking-tight">MarketOps</div>
-              <div className="text-xs" style={{ color: '#555566' }}>Gestão de Marketing</div>
+              <div className="brand-wordmark"><span>CITi</span></div>
+              <div className="text-[10px] uppercase tracking-[.18em]" style={{ color: '#6F6F7B' }}>Liquid Intelligence</div>
             </div>
           </div>
           <button onClick={onClose} className="md:hidden p-1.5 rounded-lg hover:bg-white/10 transition-colors">
@@ -247,7 +243,7 @@ export default function Sidebar({ currentUser, users, setUsers, activeModule, se
               <div className="text-sm font-medium truncate" style={{ color: '#F0F0F5' }}>{currentUser.name}</div>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span className="text-xs px-2 py-0.5 rounded-full font-medium"
-                  style={isManager ? { background: 'rgba(0,229,200,0.25)', color: '#00E5C8' } : { background: 'rgba(0,200,83,0.2)', color: '#00C853' }}>
+                  style={isManager ? { background: 'rgba(125,26,215,0.25)', color: '#7D1AD7' } : { background: 'rgba(0,200,83,0.2)', color: '#00C853' }}>
                   {isManager ? 'Gerente' : 'Analista'}
                 </span>
               </div>
@@ -263,18 +259,18 @@ export default function Sidebar({ currentUser, users, setUsers, activeModule, se
               const active = activeModule === id
               return (
                 <button key={id} onClick={() => setModule(id)}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all"
+                  className={`sidebar-nav-item w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-all ${active ? 'is-active' : ''}`}
                   style={active
-                    ? { background: 'rgba(0,229,200,0.18)', borderLeft: '2px solid #00E5C8' }
-                    : { background: 'transparent', borderLeft: '2px solid transparent' }}>
-                  <Icon size={17} className="flex-shrink-0" style={{ color: active ? '#00FFD9' : '#555566' }} />
+                    ? { background: 'linear-gradient(100deg, rgba(125,26,215,.18), rgba(80,122,230,.07))', border: '1px solid rgba(125,26,215,.22)', boxShadow: 'inset 3px 0 0 #7D1AD7, 0 10px 28px rgba(125,26,215,.08)' }
+                    : { background: 'transparent', border: '1px solid transparent' }}>
+                  <Icon size={17} className="flex-shrink-0" style={{ color: active ? '#B69AEF' : '#6F6F7B' }} />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium leading-tight" style={{ color: active ? '#F0F0F5' : '#8A8A9A' }}>
                       {label}
                     </div>
-                    <div className="text-xs truncate mt-0.5" style={{ color: active ? '#00E5C8' : '#555566' }}>{desc}</div>
+                    <div className="text-xs truncate mt-0.5" style={{ color: active ? '#8C91B9' : '#555566' }}>{desc}</div>
                   </div>
-                  {active && <ChevronRight size={12} style={{ color: '#00E5C8', flexShrink: 0 }} />}
+                  {active && <ChevronRight size={12} style={{ color: '#8F70E4', flexShrink: 0 }} />}
                 </button>
               )
             })}
