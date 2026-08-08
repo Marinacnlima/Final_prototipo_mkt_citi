@@ -101,12 +101,15 @@ export interface Post {
   campaign: string
   images: string[]
   caption: string
+  format: 'reel' | 'carousel' | 'static' | 'story' | 'document' | 'video' | 'article' | 'poll'
   insights: {
+    likes: number
     reach: number
     impressions: number
     engagement: number
     saves: number
-    profileVisits: number
+    shares: number
+    comments: number
   }
   publishedAt: string
   validUntil: string
@@ -322,7 +325,8 @@ export const postsData: Post[] = [
       'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=400&h=400&fit=crop&auto=format',
     ],
     caption: 'O mercado B2B está mudando rapidamente. Separamos as 5 estratégias que estão gerando mais resultado em 2026...\n\n✅ Account-Based Marketing\n✅ SEO técnico para decisores\n✅ LinkedIn Thought Leadership\n✅ Email nurturing segmentado\n✅ Cases de sucesso em vídeo\n\nQual você já aplica? 👇\n\n#MarketingB2B #EstrategiaDigital',
-    insights: { reach: 4820, impressions: 7340, engagement: 312, saves: 89, profileVisits: 142 },
+    format: 'carousel',
+    insights: { likes: 238, reach: 4820, impressions: 7340, engagement: 312, saves: 89, shares: 46, comments: 28 },
     publishedAt: '2026-07-25',
     validUntil: '2026-08-15',
   },
@@ -336,7 +340,8 @@ export const postsData: Post[] = [
       'https://images.unsplash.com/photo-1556761175-4b46a572b786?w=400&h=400&fit=crop&auto=format',
     ],
     caption: 'Vai, vai, vai! 🚀 Tá chegando!\n\nQ3 chegando com novidades que vão transformar sua gestão de marketing. Fica ligado! 👀\n\n#Lançamento #MarketingDigital',
-    insights: { reach: 12400, impressions: 18900, engagement: 1240, saves: 334, profileVisits: 567 },
+    format: 'reel',
+    insights: { likes: 940, reach: 12400, impressions: 18900, engagement: 1240, saves: 334, shares: 207, comments: 91 },
     publishedAt: '2026-07-20',
     validUntil: '2026-08-31',
   },
@@ -351,7 +356,8 @@ export const postsData: Post[] = [
       'https://images.unsplash.com/photo-1553484771-371a605b060b?w=400&h=400&fit=crop&auto=format',
     ],
     caption: 'Content marketing gera 3x mais leads com 62% menos custo.\n\n📊 +340% tráfego orgânico · 127 MQLs · CAC -28%\n\n#ContentMarketing #ROI',
-    insights: { reach: 6230, impressions: 9810, engagement: 498, saves: 201, profileVisits: 88 },
+    format: 'document',
+    insights: { likes: 351, reach: 6230, impressions: 9810, engagement: 498, saves: 201, shares: 103, comments: 44 },
     publishedAt: '2026-07-18',
     validUntil: '2026-08-15',
   },
@@ -364,7 +370,8 @@ export const postsData: Post[] = [
       'https://images.unsplash.com/photo-1586339949916-3e9457bef6d3?w=600&h=200&fit=crop&auto=format',
     ],
     caption: 'Assunto: 🔥 As 3 tendências de marketing que vão dominar agosto\n\nOlá [Nome],\nEste mês trouxemos análises e insights exclusivos...',
-    insights: { reach: 2840, impressions: 2840, engagement: 0, saves: 0, profileVisits: 0 },
+    format: 'article',
+    insights: { likes: 0, reach: 2840, impressions: 2840, engagement: 0, saves: 0, shares: 0, comments: 0 },
     publishedAt: '2026-07-15',
     validUntil: '2026-08-31',
   },

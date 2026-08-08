@@ -102,9 +102,11 @@ function Inp({ value, onChange, placeholder, type = 'text', as }: { value: strin
 
 interface PostFormData {
   title: string; channel: ChannelType; campaign: string
+  format: Post['format']
   images: string; caption: string
   publishedAt: string; validUntil: string
-  reach: string; impressions: string; engagement: string; saves: string; profileVisits: string
+  likes: string; reach: string; impressions: string; engagement: string; saves: string
+  shares: string; comments: string
 }
 
 function PostModal({ initial, onSave, onClose }: {
@@ -116,15 +118,18 @@ function PostModal({ initial, onSave, onClose }: {
     title: initial?.title ?? '',
     channel: initial?.channel ?? 'instagram',
     campaign: initial?.campaign ?? '',
+    format: initial?.format ?? 'carousel',
     images: initial?.images.join('\n') ?? '',
     caption: initial?.caption ?? '',
     publishedAt: initial?.publishedAt ?? '',
     validUntil: initial?.validUntil ?? '',
+    likes: String(initial?.insights.likes ?? ''),
     reach: String(initial?.insights.reach ?? ''),
     impressions: String(initial?.insights.impressions ?? ''),
     engagement: String(initial?.insights.engagement ?? ''),
     saves: String(initial?.insights.saves ?? ''),
-    profileVisits: String(initial?.insights.profileVisits ?? ''),
+    shares: String(initial?.insights.shares ?? ''),
+    comments: String(initial?.insights.comments ?? ''),
   })
 
   function save() {
@@ -132,13 +137,13 @@ function PostModal({ initial, onSave, onClose }: {
     const images = form.images.split('\n').map((s) => s.trim()).filter(Boolean)
     const post: Post = {
       id: initial?.id ?? Date.now(),
-      title: form.title, channel: form.channel, campaign: form.campaign,
+      title: form.title, channel: form.channel, campaign: form.campaign, format: form.format,
       images: images.length ? images : ['https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=400&fit=crop&auto=format'],
       caption: form.caption, publishedAt: form.publishedAt, validUntil: form.validUntil,
       insights: {
-        reach: parseInt(form.reach) || 0, impressions: parseInt(form.impressions) || 0,
+        likes: parseInt(form.likes) || 0, reach: parseInt(form.reach) || 0, impressions: parseInt(form.impressions) || 0,
         engagement: parseInt(form.engagement) || 0, saves: parseInt(form.saves) || 0,
-        profileVisits: parseInt(form.profileVisits) || 0,
+        shares: parseInt(form.shares) || 0, comments: parseInt(form.comments) || 0,
       },
     }
     onSave(post); onClose()
@@ -165,6 +170,14 @@ function PostModal({ initial, onSave, onClose }: {
         <FormRow label="Campanha">
           <Inp value={form.campaign} onChange={(v) => setForm((f) => ({ ...f, campaign: v }))} placeholder="Ex: Lançamento Produto Q3" />
         </FormRow>
+        <FormRow label="Formato do conteúdo">
+          <select value={form.format} onChange={(e) => setForm((f) => ({ ...f, format: e.target.value as Post['format'] }))}
+            className="w-full text-sm px-3 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#7D1AD7]">
+            <option value="reel">Reel</option><option value="carousel">Carrossel</option><option value="static">Post estático</option>
+            <option value="story">Story</option><option value="document">Documento / PDF</option><option value="video">Vídeo</option>
+            <option value="article">Artigo</option><option value="poll">Enquete</option>
+          </select>
+        </FormRow>
         <FormRow label="URLs das imagens (uma por linha)">
           <Inp as="textarea" value={form.images} onChange={(v) => setForm((f) => ({ ...f, images: v }))} placeholder="https://..." />
         </FormRow>
@@ -182,7 +195,7 @@ function PostModal({ initial, onSave, onClose }: {
         <div className="pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
           <p className="text-xs font-semibold text-[#8A8A9A] uppercase tracking-wide mb-3">Insights</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {([['reach', 'Alcance'], ['impressions', 'Impressões'], ['engagement', 'Engajamento'], ['saves', 'Saves'], ['profileVisits', 'Visitas perfil']] as [keyof PostFormData, string][]).map(([k, l]) => (
+            {([['likes', 'Curtidas'], ['comments', 'Comentários'], ['saves', 'Salvamentos'], ['shares', 'Compartilhamentos'], ['reach', 'Alcance'], ['impressions', 'Impressões'], ['engagement', 'Engajamento do post']] as [keyof PostFormData, string][]).map(([k, l]) => (
               <FormRow key={k} label={l}>
                 <Inp type="number" value={form[k] as string} onChange={(v) => setForm((f) => ({ ...f, [k]: v }))} placeholder="0" />
               </FormRow>
