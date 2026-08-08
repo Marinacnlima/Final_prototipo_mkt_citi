@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import type { Module } from './App'
 import type { AppUser } from './data'
+import citiLogoWhite from './assets/citi-logo-white.png'
 
 interface Props {
   currentUser: AppUser
@@ -212,6 +213,7 @@ export default function Sidebar({ currentUser, users, setUsers, activeModule, se
       {/* Sidebar panel */}
       <aside
         className={[
+          'app-sidebar',
           'fixed inset-y-0 left-0 z-40 flex flex-col flex-shrink-0',
           'transition-transform duration-300 ease-in-out',
           'md:relative md:translate-x-0',
@@ -223,7 +225,7 @@ export default function Sidebar({ currentUser, users, setUsers, activeModule, se
         <div className="flex items-center justify-between px-5 pt-5 pb-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
           <div className="flex items-center gap-2.5">
             <div>
-              <div className="brand-wordmark"><span>CITi</span></div>
+              <img className="sidebar-brand-logo" src={citiLogoWhite} alt="CITi" />
               <div className="text-[10px] uppercase tracking-[.18em]" style={{ color: '#6F6F7B' }}>Liquid Intelligence</div>
             </div>
           </div>
@@ -233,8 +235,8 @@ export default function Sidebar({ currentUser, users, setUsers, activeModule, se
         </div>
 
         {/* Current user */}
-        <div className="px-4 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-          <div className="flex items-center gap-2.5">
+        <div className="sidebar-profile-wrap px-4 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          <div className="sidebar-profile flex items-center gap-2.5">
             <div className="flex items-center justify-center rounded-full text-white font-bold text-xs flex-shrink-0"
               style={{ width: 36, height: 36, background: currentUser.color }}>
               {currentUser.initials}
@@ -258,7 +260,7 @@ export default function Sidebar({ currentUser, users, setUsers, activeModule, se
             {navItems.map(({ id, label, desc, Icon }) => {
               const active = activeModule === id
               return (
-                <button key={id} onClick={() => setModule(id)}
+                <button key={id} onClick={() => setModule(id)} aria-current={active ? 'page' : undefined}
                   className={`sidebar-nav-item w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-all ${active ? 'is-active' : ''}`}
                   style={active
                     ? { background: 'linear-gradient(100deg, rgba(125,26,215,.18), rgba(80,122,230,.07))', border: '1px solid rgba(125,26,215,.22)', boxShadow: 'inset 3px 0 0 #7D1AD7, 0 10px 28px rgba(125,26,215,.08)' }

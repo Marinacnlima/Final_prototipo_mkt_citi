@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Eye, EyeOff, Lock, Mail, ShieldCheck, ArrowLeft, ArrowRight, Check } from 'lucide-react'
 import type { AppUser } from '../data'
+import citiLogo from '../assets/citi-logo-white.png'
+import LiquidBackground from '../components/LiquidBackground'
 
 // ─── Change Password ────────────────────────────────────────────────────────
 
@@ -126,10 +128,12 @@ export default function Login({ users, onLogin }: LoginProps) {
   const demoManager = users.find((u) => u.role === 'gerente')
   return (
     <main className="original-login min-h-screen">
+      <LiquidBackground />
       <div className="original-login__aurora" aria-hidden="true" />
+      <img className="original-login__logo" src={citiLogo} alt="CITi" />
       <section className="original-login__hero">
         <div className="original-login__eyebrow"><span />Liquid Intelligence</div>
-        <h1>Estratégia em<br /><strong>movimento.</strong></h1>
+        <h1>Estratégia em<br /><strong className="original-login__movement">Movimento.</strong></h1>
         <p>Dados, conteúdo e performance conectados em uma única<br className="hidden xl:block" /> experiência de marketing.</p>
         <div className="original-login__pillars" aria-label="Pilares da plataforma">
           <div><b>01</b><span>Visão integrada</span></div>

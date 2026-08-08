@@ -753,6 +753,7 @@ export default function Biblioteca({ channel, setChannel, posts, setPosts }: Pro
       <header className="page-header bg-[#17171A] flex-shrink-0" style={{ borderBottom: '1.5px solid rgba(255,255,255,0.1)' }}>
         <div className="px-4 md:px-6 pt-4 md:pt-5 pb-0 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
           <div>
+            <span className="page-eyebrow">Acervo de conteúdo</span>
             <h1 className="text-lg md:text-xl font-semibold text-[#F0F0F5] leading-tight">Biblioteca</h1>
             <p className="text-xs md:text-sm text-[#8A8A9A] mt-0.5 hidden sm:block">Posts publicados, materiais ricos e biblioteca de prompts</p>
           </div>
@@ -762,7 +763,7 @@ export default function Biblioteca({ channel, setChannel, posts, setPosts }: Pro
           <TabNav active={tab} setTab={setTab} />
         </div>
       </header>
-      <div className="flex-1 overflow-hidden">
+      <div className="module-stage flex-1 overflow-hidden">
         {tab === 'posts' && <PostsView channel={channel} posts={posts} setPosts={setPosts} />}
         {tab === 'materiais' && <MaterialsView />}
         {tab === 'prompts' && <PromptsView />}

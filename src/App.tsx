@@ -7,6 +7,7 @@ import Metricas from './pages/Metricas'
 import Login, { ChangePasswordScreen } from './pages/Login'
 import { postsData, initialUsers } from './data'
 import type { Post, AppUser } from './data'
+import citiLogoWhite from './assets/citi-logo-white.png'
 
 export type Profile = 'gerente' | 'analista'
 export type Module = 'monitoramento' | 'biblioteca' | 'metricas'
@@ -51,7 +52,7 @@ export default function App() {
   const profile: Profile = currentUser.role
 
   return (
-    <div className="app-shell flex h-screen overflow-hidden bg-[#101010] relative">
+    <div className="internal-app app-shell flex h-screen overflow-hidden bg-[#101010] relative">
 
       {/* Mobile backdrop */}
       {sidebarOpen && (
@@ -75,7 +76,7 @@ export default function App() {
       <div className="flex-1 min-w-0 overflow-hidden flex flex-col">
 
         {/* Mobile top bar */}
-        <div className="flex-shrink-0 flex items-center gap-3 px-4 bg-[#17171A] md:hidden"
+        <div className="mobile-topbar flex-shrink-0 flex items-center gap-3 px-4 bg-[#17171A] md:hidden"
           style={{ height: 52, borderBottom: '1.5px solid rgba(255,255,255,0.1)' }}>
           <button onClick={() => setSidebarOpen(true)}
             className="p-2 rounded-xl hover:bg-[rgba(255,255,255,0.08)] transition-colors flex-shrink-0"
@@ -83,7 +84,7 @@ export default function App() {
             <Menu size={20} className="text-[#8A8A9A]" />
           </button>
           <div className="flex items-center gap-2">
-            <div className="brand-wordmark !text-lg"><span>CITi</span></div>
+            <img className="mobile-brand-logo" src={citiLogoWhite} alt="CITi" />
             <span className="text-[#6F6F7B] text-xs">Marketing Intelligence</span>
           </div>
           <div className="flex-1" />
