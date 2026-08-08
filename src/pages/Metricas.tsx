@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import {
   BarChart2, TrendingUp, Users, Globe,
-  Plus, X, Edit2, Check, Info, ArrowUp, ArrowDown, Trash2,
+  Plus, X, Edit2, Check, Info, ArrowUp, ArrowDown, Trash2, Eye,
 } from 'lucide-react'
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -224,6 +224,264 @@ function Dashboard({ posts, metrics, mql }: {
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+interface GlobalChannelMetrics {
+  followersTotal: number
+  followersGrowth: number
+  channelClicks: number
+  profileVisits: number
+  roi: number
+  conversions: number
+  reachOverride: number
+  impressionsOverride: number
+  engagementRateOverride: number
+  followerReachShare: number
+}
+
+type GlobalMetricsState = Record<'instagram' | 'linkedin', GlobalChannelMetrics>
+
+function GlobalMetricsModal({ channel, values, onSave, onClose }: {
+  channel: 'instagram' | 'linkedin'
+  values: GlobalChannelMetrics
+  onSave: (values: GlobalChannelMetrics) => void
+  onClose: () => void
+}) {
+  const [draft, setDraft] = useState(values)
+  const fields: { key: keyof GlobalChannelMetrics; label: string; suffix?: string }[] = [
+    { key: 'followersTotal', label: 'Seguidores totais' },
+    { key: 'followersGrowth', label: 'Novos seguidores no período' },
+    { key: 'channelClicks', label: channel === 'instagram' ? 'Cliques no link da bio' : 'Cliques no website / CTA' },
+    { key: 'profileVisits', label: 'Visitas ao perfil' },
+    { key: 'roi', label: 'ROI', suffix: '%' },
+    { key: 'conversions', label: 'Conversões' },
+  ]
+  return <Modal title={`Editar dados globais · ${channel === 'instagram' ? 'Instagram' : 'LinkedIn'}`} onClose={onClose} wide>
+    <div className="px-6 py-5">
+      <p className="text-xs text-[#8A8A9A] mb-5">Dados gerais do canal que não pertencem a um post individual.</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{fields.map((field) => <label key={field.key} className="text-xs font-medium text-[#8A8A9A]">{field.label}
+        <div className="relative mt-1"><input type="number" min="0" step={field.key === 'roi' ? '.1' : '1'} value={draft[field.key]}
+          onChange={(event) => setDraft((current) => ({ ...current, [field.key]: Number(event.target.value) }))}
+          className="w-full text-sm px-3 py-2.5 rounded-xl border border-[rgba(255,255,255,.1)] focus:outline-none focus:border-[#507AE6]" />
+          {field.suffix && <span className="absolute right-3 top-2.5 text-xs text-[#777]">{field.suffix}</span>}</div>
+      </label>)}</div>
+    </div>
+    <div className="px-6 py-4 flex gap-3 border-t border-[rgba(255,255,255,.06)]"><button onClick={() => { onSave(draft); onClose() }} className="px-5 py-2 rounded-xl text-sm font-medium text-white" style={{ background: 'linear-gradient(135deg, #7D1AD7, #507AE6, #50E678)' }}>Salvar dados</button><button onClick={onClose} className="px-4 py-2 rounded-xl text-sm text-[#8A8A9A]">Cancelar</button></div>
+  </Modal>
+}
+
+function DashboardFigma({ posts, metrics, channel, setChannel, globalMetrics, setGlobalMetrics }: {
+  posts: Post[]
+  metrics: CustomMetric[]
+  channel: Channel
+  setChannel: (c: Channel) => void
+  globalMetrics: GlobalMetricsState
+  setGlobalMetrics: React.Dispatch<React.SetStateAction<GlobalMetricsState>>
+}) {
+  const [editingGlobal, setEditingGlobal] = useState(false)
+  const [inlineEdit, setInlineEdit] = useState<'reach' | 'engagement' | 'clicks' | 'followers' | 'audience' | null>(null)
+  const [editMode, setEditMode] = useState(false)
+  const [instagramFormats, setInstagramFormats] = useState([
+    { format: 'Reels', reach: 12400, engagement: 6.8, saves: 892, shares: 241 },
+    { format: 'Carrossel', reach: 4800, engagement: 5.2, saves: 634, shares: 118 },
+    { format: 'Post Estático', reach: 3100, engagement: 3.1, saves: 220, shares: 64 },
+    { format: 'Stories', reach: 2200, engagement: 4.4, saves: 0, shares: 0 },
+  ])
+  const [storyViews, setStoryViews] = useState([3410, 2890, 2410, 1980, 1640, 1320])
+  const [activityHeatmap, setActivityHeatmap] = useState([
+    [10,18,40,62,48,55,80,72,30], [12,22,55,70,60,58,88,90,42], [8,16,48,64,52,60,82,78,35],
+    [14,20,50,68,55,62,86,85,40], [10,18,42,60,50,52,72,68,28], [6,10,22,40,38,50,65,60,45], [4,8,18,32,30,44,58,54,38],
+  ])
+  const [organicShare, setOrganicShare] = useState(68)
+  const [linkedinFormats, setLinkedinFormats] = useState([
+    { format: 'PDF / Documento', impressions: 14200, ctr: 4.8, reactions: 7.2, reposts: 187, comments: 86 },
+    { format: 'Texto + Imagem', impressions: 9800, ctr: 3.6, reactions: 5.8, reposts: 134, comments: 72 },
+    { format: 'Vídeo', impressions: 7300, ctr: 2.9, reactions: 6.1, reposts: 98, comments: 54 },
+    { format: 'Artigo / Newsletter', impressions: 5600, ctr: 6.4, reactions: 2.8, reposts: 150, comments: 130 },
+    { format: 'Enquete', impressions: 4800, ctr: 8.2, reactions: 6.1, reposts: 32, comments: 240 },
+  ])
+  const [audienceTab, setAudienceTab] = useState<'Cargo / Função' | 'Senioridade' | 'Setor' | 'Localização'>('Cargo / Função')
+  const [audienceData, setAudienceData] = useState<Record<string, { label: string; value: number }[]>>({
+    'Cargo / Função': [{label:'Marketing & Comunicação',value:28},{label:'Engenharia & Tecnologia',value:22},{label:'Vendas & Negócios',value:18},{label:'Liderança (C-Level, VP)',value:12},{label:'RH & Gestão de Pessoas',value:8},{label:'Financeiro',value:7},{label:'Outros',value:5}],
+    Senioridade: [{label:'Pleno',value:31},{label:'Sênior',value:27},{label:'Gerência',value:19},{label:'Diretoria',value:12},{label:'C-Level',value:7},{label:'Júnior',value:4}],
+    Setor: [{label:'Tecnologia',value:32},{label:'Serviços profissionais',value:23},{label:'Educação',value:16},{label:'Varejo',value:12},{label:'Indústria',value:10},{label:'Outros',value:7}],
+    Localização: [{label:'São Paulo',value:38},{label:'Recife',value:19},{label:'Rio de Janeiro',value:16},{label:'Belo Horizonte',value:11},{label:'Curitiba',value:9},{label:'Outros',value:7}],
+  })
+  const activeChannel: 'instagram' | 'linkedin' = channel === 'linkedin' ? 'linkedin' : 'instagram'
+  const filteredPosts = useMemo(() => posts.filter((post) => post.channel === activeChannel), [posts, activeChannel])
+  const visibleMetrics = metrics.filter((metric) => !metric.channel || metric.channel === activeChannel)
+  const global = globalMetrics[activeChannel]
+
+  const weekly = useMemo(() => {
+    const values = ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'].map((week) => ({ week, reach: 0, previous: 0 }))
+    filteredPosts.forEach((post) => {
+      const index = Math.max(0, Number(getWeekLabel(post.publishedAt).slice(-1)) - 1)
+      values[index].reach += post.insights.reach
+    })
+    return values.map((item, index) => ({ ...item, previous: index === 0 ? Math.round(item.reach * .92) : values[index - 1].reach }))
+  }, [filteredPosts])
+
+  const totals = useMemo(() => filteredPosts.reduce((acc, post) => ({
+    reach: acc.reach + post.insights.reach,
+    impressions: acc.impressions + post.insights.impressions,
+    engagement: acc.engagement + post.insights.engagement,
+  }), { reach: 0, impressions: 0, engagement: 0 }), [filteredPosts])
+
+  const engagementRate = totals.reach ? totals.engagement / totals.reach * 100 : 0
+  const channelCtr = global.profileVisits ? global.channelClicks / global.profileVisits * 100 : 0
+  const compact = (value: number) => Intl.NumberFormat('pt-BR', { notation: 'compact', maximumFractionDigits: 1 }).format(value)
+  const formatLabel: Record<Post['format'], string> = { reel: 'Reels', carousel: 'Carrossel', static: 'Post estático', story: 'Stories', document: 'PDF / Documento', video: 'Vídeo', article: 'Artigo', poll: 'Enquete' }
+  const formatRows = Object.entries(filteredPosts.reduce<Record<string, Post[]>>((acc, post) => {
+    ;(acc[post.format] ||= []).push(post)
+    return acc
+  }, {})).map(([format, grouped]) => ({
+    format: formatLabel[format as Post['format']],
+    reach: grouped.reduce((sum, post) => sum + post.insights.reach, 0) / grouped.length,
+    engagement: grouped.reduce((sum, post) => sum + post.insights.engagement, 0) / Math.max(1, grouped.reduce((sum, post) => sum + post.insights.reach, 0)) * 100,
+    saves: grouped.reduce((sum, post) => sum + post.insights.saves, 0),
+    shares: grouped.reduce((sum, post) => sum + post.insights.shares, 0),
+  }))
+
+  const cards = activeChannel === 'instagram'
+    ? [
+        { label: 'Alcance & Impressões', value: compact(totals.reach), sub: `${compact(totals.impressions)} impressões`, delta: 8.4, color: '#50E678', icon: <Globe size={18} /> },
+        { label: 'Taxa de Engajamento', value: `${engagementRate.toFixed(1)}%`, sub: 'interações ÷ alcance', delta: 6.7, color: '#507AE6', icon: <BarChart2 size={18} /> },
+        { label: 'CTR — Link na Bio', value: `${channelCtr.toFixed(1)}%`, sub: `${global.channelClicks.toLocaleString('pt-BR')} cliques`, delta: -1.2, color: '#7D1AD7', icon: <TrendingUp size={18} /> },
+        { label: 'Crescimento de Seguidores', value: `+${global.followersGrowth}`, sub: `${global.followersTotal.toLocaleString('pt-BR')} seguidores totais`, delta: 14.7, color: '#50E678', icon: <Users size={18} /> },
+      ]
+    : [
+        { label: 'Impressões & Alcance Único', value: compact(totals.impressions), sub: `${compact(totals.reach)} pessoas`, delta: 3.1, color: '#507AE6', icon: <Globe size={18} /> },
+        { label: 'Taxa de Engajamento Geral', value: `${engagementRate.toFixed(1)}%`, sub: 'interações ÷ alcance', delta: 1.8, color: '#50E678', icon: <BarChart2 size={18} /> },
+        { label: 'Cliques Website / CTA', value: `+${global.channelClicks}`, sub: `${channelCtr.toFixed(1)}% CTR do canal`, delta: 6.4, color: '#7D1AD7', icon: <TrendingUp size={18} /> },
+        { label: 'Crescimento de Seguidores', value: `+${global.followersGrowth}`, sub: `${global.followersTotal.toLocaleString('pt-BR')} seguidores totais`, delta: 14.7, color: '#50E678', icon: <Users size={18} /> },
+      ]
+
+  if (activeChannel === 'instagram') {
+    const shownReach = global.reachOverride || totals.reach
+    const shownImpressions = global.impressionsOverride || totals.impressions
+    const shownEngagement = global.engagementRateOverride || engagementRate
+    const updateGlobal = (patch: Partial<GlobalChannelMetrics>) => setGlobalMetrics((current) => ({ ...current, instagram: { ...current.instagram, ...patch } }))
+    const storyPercent = storyViews.map((value) => Math.round(value / Math.max(1, storyViews[0]) * 100))
+    const days = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
+    const hours = ['6h', '8h', '10h', '12h', '14h', '16h', '18h', '20h', '22h']
+    const manualIg = visibleMetrics.filter((metric) => metric.channel === 'instagram' || !metric.channel).slice(0, 2)
+
+    return <div className="h-full overflow-auto p-4 md:p-6"><div className="max-w-6xl mx-auto space-y-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl p-4 bg-[#17171A] border border-[rgba(255,255,255,.08)]"><div className="flex items-center gap-4"><div className="inline-flex rounded-xl p-1 bg-[rgba(255,255,255,.04)]"><button className="px-4 py-2 rounded-lg text-xs font-medium text-white" style={{ background: 'linear-gradient(120deg, #E43678, #7D1AD7)' }}>Instagram</button><button onClick={() => setChannel('linkedin')} className="px-4 py-2 rounded-lg text-xs font-medium text-[#999]">LinkedIn</button></div><h2 className="text-sm font-semibold text-[#F0F0F5]">Instagram Analytics</h2></div><button onClick={()=>{setEditMode((value)=>!value);setInlineEdit(null)}} className="px-4 py-2.5 rounded-xl text-xs font-medium text-white border border-[rgba(255,255,255,.1)]" style={{background:editMode?'linear-gradient(135deg,#7D1AD7,#507AE6)':'rgba(255,255,255,.06)'}}><Edit2 size={13} className="inline mr-1.5" />{editMode?'Concluir edição':'Editar dados'}</button></div>
+      {editMode&&<div className="rounded-xl px-4 py-3 text-xs text-[#A99BEF] border border-[rgba(125,26,215,.25)] bg-[rgba(125,26,215,.07)]"><Edit2 size={13} className="inline mr-2"/>Modo de edição ativo — altere os valores diretamente nos cards, tabelas e células.</div>}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">{[
+        { key:'reach' as const, label:'Alcance & Impressões', value:shownReach, secondary:`${compact(shownImpressions)} impressões`, field:'reachOverride' as const },
+        { key:'engagement' as const, label:'Taxa de Engajamento', value:shownEngagement, secondary:'(Curtidas + Comentários + Saves) / Alcance', field:'engagementRateOverride' as const, percent:true },
+        { key:'clicks' as const, label:'CTR — Link na Bio', value:channelCtr, secondary:`${global.channelClicks} cliques no link da bio`, field:'channelClicks' as const, percent:true },
+        { key:'followers' as const, label:'Crescimento de Seguidores', value:global.followersGrowth, secondary:'Novos seguidores menos unfollows', field:'followersGrowth' as const },
+      ].map((card)=><div key={card.key} className="bg-[#17171A] rounded-2xl p-4 border border-[rgba(255,255,255,.1)]"><div className="flex justify-between gap-2"><p className="text-xs font-semibold text-[#999]">{card.label}</p>{editMode&&<button onClick={()=>setInlineEdit(inlineEdit===card.key?null:card.key)} className="text-[#777] hover:text-[#D9D9D9]" aria-label={`Editar ${card.label}`}><Edit2 size={13}/></button>}</div>{inlineEdit===card.key?<div className="flex items-center gap-2 mt-3"><input autoFocus type="number" step={card.percent?'.1':'1'} value={card.key==='clicks'?global.channelClicks:card.value} onChange={(event)=>updateGlobal({[card.field]:Number(event.target.value)})} className="w-full text-xl font-bold px-2 py-1 rounded-lg border border-[#507AE6] bg-[rgba(255,255,255,.04)]"/><button onClick={()=>setInlineEdit(null)} className="p-2 text-[#50E678]" aria-label="Concluir edição"><Check size={16}/></button></div>:<p className="text-2xl font-bold text-[#F0F0F5] mt-3">{card.key==='reach'?compact(Number(card.value)):Number(card.value).toLocaleString('pt-BR',{maximumFractionDigits:1})}{card.percent?'%':''}</p>}<p className="text-[11px] text-[#777] mt-2">{card.secondary}</p></div>)}</div>
+
+      <section className="bg-[#17171A] rounded-2xl p-5 border border-[rgba(255,255,255,.1)]"><h3 className="text-sm font-semibold text-[#F0F0F5]">Alcance: Seguidores vs. Não Seguidores</h3><p className="text-xs text-[#777] mt-1 mb-4">Proporção de usuários que viram via discovery vs. feed</p>{editMode&&<div className="flex items-center gap-3 mb-4"><input aria-label="Percentual de seguidores" type="range" min="0" max="100" value={global.followerReachShare} onChange={(event)=>updateGlobal({followerReachShare:Number(event.target.value)})} className="flex-1 accent-[#E43678]"/><strong className="text-sm text-[#F0F0F5] w-10 text-right">{global.followerReachShare}%</strong></div>}{[['Seguidores',global.followerReachShare,'#E43678'],['Não seguidores (Descoberta)',100-global.followerReachShare,'#FF9F1A']].map(([label,value,color]) => <div key={String(label)} className="mb-3 last:mb-0"><div className="flex justify-between text-xs mb-1.5"><span className="text-[#C9C9D2] flex items-center gap-2"><i className="w-2.5 h-2.5 rounded-full" style={{background:String(color)}} />{label}</span><strong className="text-[#F0F0F5]">{value}%</strong></div><div className="h-2 rounded-full bg-[rgba(255,255,255,.06)] overflow-hidden"><div className="h-full rounded-full transition-all" style={{width:`${value}%`,background:String(color)}} /></div></div>)}</section>
+
+      <div><div className="flex items-center gap-2 mb-3"><BarChart2 size={14} className="text-[#6C63FF]"/><h3 className="text-sm font-semibold text-[#F0F0F5]">Performance por Formato de Conteúdo</h3><span className="text-[10px] px-2 py-1 rounded-md text-[#8C82FF] bg-[rgba(108,99,255,.12)]">Nível tático</span></div><section className="bg-[#17171A] rounded-2xl p-5 border border-[rgba(255,255,255,.1)] overflow-x-auto"><h3 className="text-sm font-semibold text-[#F0F0F5]">Matriz de Formatos</h3><p className="text-xs text-[#777] mt-1 mb-4">Alcance médio · Engajamento · Saves · Compartilhamentos por tipo de publicação</p><table className="w-full min-w-[620px] text-xs"><thead><tr className="text-left text-[#777] border-b border-[rgba(255,255,255,.06)]"><th className="pb-3">Formato</th><th>Alcance Médio</th><th>Taxa de Eng.</th><th>Saves</th><th>Compartilhamentos</th></tr></thead><tbody>{instagramFormats.map((row,rowIndex)=><tr key={row.format} className="border-b border-[rgba(255,255,255,.04)]"><td className="py-4"><span className="px-2 py-1 rounded-md border border-[rgba(255,255,255,.1)] text-[#D9D9D9]">{row.format}</span></td>{(['reach','engagement','saves','shares'] as const).map((field)=><td key={field}>{editMode?<input type="number" step={field==='engagement'?'.1':'1'} value={row[field]} onChange={(event)=>setInstagramFormats((current)=>current.map((item,index)=>index===rowIndex?{...item,[field]:Number(event.target.value)}:item))} className="w-20 px-2 py-1.5 rounded-md border border-[rgba(255,255,255,.12)] bg-[rgba(255,255,255,.04)] text-[#F0F0F5]"/>:<div className="flex items-center gap-2">{field==='reach'||field==='engagement'?<div className="w-16 h-1.5 rounded-full bg-[rgba(255,255,255,.06)]"><div className="h-full rounded-full" style={{width:`${field==='reach'?Math.min(100,row.reach/124):row.engagement*10}%`,background:field==='reach'?'#E43678':'#6C63FF'}}/></div>:null}<strong>{field==='reach'?compact(row[field]):field==='engagement'?`${row[field].toFixed(1)}%`:row[field]}</strong></div>}</td>)}</tr>)}</tbody></table></section></div>
+
+      <section className="bg-[#17171A] rounded-2xl p-5 border border-[rgba(255,255,255,.1)]"><h3 className="text-sm font-semibold text-[#F0F0F5]">Funil de Retenção — Stories</h3><p className="text-xs text-[#777] mt-1 mb-4">Progressão de espectadores · valores editáveis em modo edição</p><div className="space-y-2">{storyViews.map((value,index)=><div key={index} className="grid grid-cols-[52px_1fr_72px_44px] items-center gap-3 text-xs"><span className="text-[#999]">Story {index+1}</span><div className="h-5 rounded-full bg-[rgba(255,255,255,.06)] overflow-hidden"><div className="h-full rounded-full flex items-center px-2 text-[10px] font-semibold text-white" style={{width:`${storyPercent[index]}%`,background:`rgba(228,54,120,${1-index*.1})`}}>{storyPercent[index]}%</div></div>{editMode?<input type="number" value={value} onChange={(event)=>setStoryViews((current)=>current.map((item,i)=>i===index?Number(event.target.value):item))} className="w-[72px] px-2 py-1 rounded-md border border-[rgba(255,255,255,.12)] bg-[rgba(255,255,255,.04)] text-right"/>:<strong className="text-[#D9D9D9] text-right">{value.toLocaleString('pt-BR')}</strong>}<span className="text-[#FF5252] text-right">{index ? `−${storyViews[index-1]-value}` : ''}</span></div>)}</div><div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">{[[`${storyPercent.at(-1)}%`,'Retenção total','#50E678'],['17%','Drop-off médio/slide','#FF5252'],['Story 1→2','Melhor trecho','#6C63FF']].map(([value,label,color])=><div key={label} className="rounded-xl p-3 text-center bg-[rgba(255,255,255,.025)] border border-[rgba(255,255,255,.08)]"><strong style={{color}}>{value}</strong><p className="text-[11px] text-[#777] mt-1">{label}</p></div>)}</div></section>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{manualIg.map((metric)=><div key={metric.id} className="bg-[#17171A] rounded-xl p-4 border" style={{borderColor:metric.color+'55'}}><p className="text-xs text-[#999]">{metric.name}</p><p className="text-xl font-semibold mt-2" style={{color:metric.color}}>{metric.value.toLocaleString('pt-BR')} <span className="text-xs text-[#777]">{metric.unit}</span></p></div>)}</div>
+
+      <div><div className="flex items-center gap-2 mb-3"><TrendingUp size={14} className="text-[#6C63FF]"/><h3 className="text-sm font-semibold text-[#F0F0F5]">Heatmap de Atividade</h3><span className="text-[10px] px-2 py-1 rounded-md text-[#8C82FF] bg-[rgba(108,99,255,.12)]">Dias & Horários</span></div><section className="bg-[#17171A] rounded-2xl p-5 border border-[rgba(255,255,255,.1)] overflow-x-auto"><h3 className="text-sm font-semibold text-[#F0F0F5]">Intensidade de Engajamento</h3><p className="text-xs text-[#777] mt-1 mb-4">{editMode?'Clique em qualquer célula para editar o valor (0–100)':'Intensidade por dia da semana e faixa horária'}</p><div className="min-w-[620px]"><div className="grid grid-cols-[28px_repeat(9,1fr)] gap-1 mb-1"><span/>{hours.map(hour=><span key={hour} className="text-[10px] text-[#777] text-center">{hour}</span>)}</div>{activityHeatmap.map((row,r)=><div key={days[r]} className="grid grid-cols-[28px_repeat(9,1fr)] gap-1 mb-1"><span className="text-[10px] text-[#777] self-center">{days[r]}</span>{row.map((value,c)=>editMode?<input key={c} aria-label={`${days[r]} ${hours[c]}`} type="number" min="0" max="100" value={value} onChange={(event)=>setActivityHeatmap((current)=>current.map((line,lineIndex)=>lineIndex===r?line.map((item,columnIndex)=>columnIndex===c?Math.max(0,Math.min(100,Number(event.target.value))):item):line))} className="h-7 min-w-0 rounded text-center text-[9px] font-semibold text-white border border-[rgba(255,255,255,.12)]" style={{background:`rgba(228,54,120,${.12+value/115})`}}/>:<div key={c} className="h-7 rounded flex items-center justify-center text-[9px] font-semibold text-white" style={{background:`rgba(228,54,120,${.12+value/115})`}}>{value}</div>)}</div>)}</div></section></div>
+    </div>{editingGlobal && <GlobalMetricsModal channel="instagram" values={global} onClose={()=>setEditingGlobal(false)} onSave={(values)=>setGlobalMetrics((current)=>({...current,instagram:values}))}/>}</div>
+  }
+
+  if (activeChannel === 'linkedin') {
+    const linkedUpdate = (patch: Partial<GlobalChannelMetrics>) => setGlobalMetrics((current) => ({ ...current, linkedin: { ...current.linkedin, ...patch } }))
+    const linkedAudience = audienceData[audienceTab]
+    return <div className="h-full overflow-auto p-4 md:p-6"><div className="max-w-6xl mx-auto space-y-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl p-4 bg-[#17171A] border border-[rgba(255,255,255,.08)]"><div className="flex items-center gap-4"><div className="inline-flex rounded-xl p-1 bg-[rgba(255,255,255,.04)]"><button onClick={()=>setChannel('instagram')} className="px-4 py-2 rounded-lg text-xs font-medium text-[#999]">Instagram</button><button className="px-4 py-2 rounded-lg text-xs font-medium text-white" style={{background:'linear-gradient(120deg,#0A66C2,#507AE6)'}}>LinkedIn</button></div><h2 className="text-sm font-semibold text-[#F0F0F5]">LinkedIn Analytics</h2></div><button onClick={()=>{setEditMode((value)=>!value);setInlineEdit(null)}} className="px-4 py-2.5 rounded-xl text-xs font-medium text-white border border-[rgba(255,255,255,.1)]" style={{background:editMode?'linear-gradient(135deg,#7D1AD7,#507AE6)':'rgba(255,255,255,.06)'}}><Edit2 size={13} className="inline mr-1.5"/>{editMode?'Concluir edição':'Editar dados'}</button></div>
+      {editMode&&<div className="rounded-xl px-4 py-3 text-xs text-[#A99BEF] border border-[rgba(125,26,215,.25)] bg-[rgba(125,26,215,.07)]"><Edit2 size={13} className="inline mr-2"/>Modo de edição ativo — altere os valores diretamente nos cards, tabelas e células.</div>}
+
+      <div><div className="flex items-center gap-2 mb-3"><BarChart2 size={14} className="text-[#507AE6]"/><h3 className="text-sm font-semibold text-[#F0F0F5]">KPIs Executivos — LinkedIn B2B</h3><span className="text-[10px] px-2 py-1 rounded-md text-[#8C82FF] bg-[rgba(108,99,255,.12)]">Alta prioridade</span></div><div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">{[
+        {label:'Impressões & Alcance Único',value:global.impressionsOverride||totals.impressions||28400,sub:'Impressões orgânicas + patrocinadas no período',delta:'+3,1%'},
+        {label:'Taxa de Engajamento Geral',value:`${(global.engagementRateOverride||4.2).toFixed(1)}%`,sub:'(Cliques + Reações + Comentários + Reposts) / Impressões',delta:'+1,8%'},
+        {label:'Cliques no Website / CTA',value:`+${global.channelClicks}`,sub:'Cliques no botão principal da página LinkedIn',delta:'+6,4%'},
+        {label:'Crescimento de Seguidores',value:`+${global.followersGrowth}`,sub:'Novos seguidores orgânicos + patrocinados',delta:'+14,7%'},
+      ].map((card)=><div key={card.label} className="relative bg-[#17171A] rounded-2xl p-4 border border-[rgba(255,255,255,.1)]"><div className="flex justify-between"><p className="text-xs font-semibold text-[#999]">{card.label}</p>{editMode&&<button onClick={()=>setEditingGlobal(true)} aria-label={`Editar ${card.label}`} className="text-[#777]"><Edit2 size={13}/></button>}</div><p className="text-2xl font-bold text-[#F0F0F5] mt-3">{typeof card.value==='number'?compact(card.value):card.value} <span className="text-xs text-[#50E678]">↗ {card.delta}</span></p><p className="text-[11px] text-[#777] mt-2 leading-relaxed">{card.sub}</p></div>)}</div></div>
+
+      <section className="bg-[#17171A] rounded-2xl p-5 border border-[rgba(255,255,255,.1)]"><div className="flex justify-between gap-3"><div><h3 className="text-sm font-semibold text-[#F0F0F5]">Impressões: Orgânico vs. Patrocinado</h3><p className="text-xs text-[#777] mt-1 mb-4">Proporção do alcance por tipo de distribuição</p></div><span className="text-xs text-[#507AE6]">{compact(totals.impressions||28400)} impressões totais</span></div>{editMode&&<div className="flex items-center gap-3 mb-4"><input type="range" min="0" max="100" value={organicShare} onChange={(event)=>setOrganicShare(Number(event.target.value))} className="flex-1 accent-[#0A66C2]"/><strong>{organicShare}%</strong></div>}{[['Orgânico',organicShare,'#0A66C2'],['Patrocinado (Sponsored)',100-organicShare,'#FF9F1A']].map(([label,value,color])=><div key={String(label)} className="mb-3"><div className="flex justify-between text-xs mb-1.5"><span className="text-[#C9C9D2] flex items-center gap-2"><i className="w-2.5 h-2.5 rounded-full" style={{background:String(color)}}/>{label}</span><strong>{value}%</strong></div><div className="h-2 rounded-full bg-[rgba(255,255,255,.06)]"><div className="h-full rounded-full transition-all" style={{width:`${value}%`,background:String(color)}}/></div></div>)}</section>
+
+      <div><div className="flex items-center gap-2 mb-3"><BarChart2 size={14} className="text-[#507AE6]"/><h3 className="text-sm font-semibold text-[#F0F0F5]">Performance por Formato de Conteúdo</h3><span className="text-[10px] px-2 py-1 rounded-md text-[#8C82FF] bg-[rgba(108,99,255,.12)]">Nível tático</span></div><section className="bg-[#17171A] rounded-2xl p-5 border border-[rgba(255,255,255,.1)] overflow-x-auto"><h3 className="text-sm font-semibold text-[#F0F0F5]">Matriz de Formatos LinkedIn</h3><p className="text-xs text-[#777] mt-1 mb-4">Impressões · CTR · Taxa de Reação · Reposts · Comentários</p><table className="w-full min-w-[760px] text-xs"><thead><tr className="text-left text-[#777] border-b border-[rgba(255,255,255,.06)]"><th className="pb-3">Formato</th><th>Impressões</th><th>CTR</th><th>Taxa de Reação</th><th>Reposts</th><th>Comentários</th></tr></thead><tbody>{linkedinFormats.map((row,rowIndex)=><tr key={row.format} className="border-b border-[rgba(255,255,255,.04)]"><td className="py-4"><span className="px-2 py-1 rounded-md border border-[rgba(80,122,230,.25)] text-[#AFC5FF]">{row.format}</span></td>{(['impressions','ctr','reactions','reposts','comments'] as const).map((field)=><td key={field}>{editMode?<input type="number" step={field==='ctr'||field==='reactions'?'.1':'1'} value={row[field]} onChange={(event)=>setLinkedinFormats((current)=>current.map((item,index)=>index===rowIndex?{...item,[field]:Number(event.target.value)}:item))} className="w-20 px-2 py-1.5 rounded-md border border-[rgba(255,255,255,.12)] bg-[rgba(255,255,255,.04)]"/>:<span>{field==='impressions'?compact(row[field]):field==='ctr'||field==='reactions'?`${row[field].toFixed(1)}%`:row[field]}</span>}</td>)}</tr>)}</tbody></table></section></div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">{[
+        {title:'Top Posts por CTR',color:'#0A66C2',items:[['Como aumentar conversão B2B com LinkedIn Ads','4,8 CTR · 3.200 alcance'],['5 erros fatais no funil de vendas enterprise','3,6 CTR · 2.850 alcance'],['Framework de decisão para CMOs em 2026','2,9 CTR · 1.970 alcance']]},
+        {title:'Top Posts por Reposts',color:'#7D1AD7',items:[['O futuro do marketing B2B é conversacional','187 reposts · 14.200 impressões'],['Métricas que realmente importam para o board','134 reposts · 9.800 impressões'],['Por que 80% dos leads B2B são desperdiçados','98 reposts · 7.300 impressões']]},
+      ].map((group)=><section key={group.title} className="bg-[#17171A] rounded-2xl p-5 border border-[rgba(255,255,255,.1)]"><h3 className="text-sm font-semibold text-[#F0F0F5]">{group.title}</h3><div className="mt-4 space-y-3">{group.items.map(([title,meta],index)=><div key={title} className="flex gap-3"><span className="w-6 h-6 rounded-lg text-white text-xs flex items-center justify-center" style={{background:group.color}}>{index+1}</span><div><p className="text-xs font-medium text-[#D9D9D9]">{title}</p><p className="text-[11px] text-[#777] mt-1">{meta}</p></div></div>)}</div></section>)}</div>
+
+      <div><div className="flex items-center gap-2 mb-3"><Eye size={14} className="text-[#8C82FF]"/><h3 className="text-sm font-semibold text-[#F0F0F5]">Vídeo & Documento — Analytics</h3></div><div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><section className="bg-[#17171A] rounded-2xl p-5 border border-[rgba(255,255,255,.1)]"><p className="text-xs font-semibold text-[#D9D9D9]">Vídeo — Taxa de Conclusão</p><p className="text-3xl font-bold text-[#507AE6] mt-3">62<span className="text-sm">%</span></p><p className="text-xs text-[#777] mt-2">Visualizações que chegaram ao final</p></section><section className="bg-[#17171A] rounded-2xl p-5 border border-[rgba(255,255,255,.1)]"><p className="text-xs font-semibold text-[#D9D9D9]">Documento PDF — Swipe-through</p><p className="text-3xl font-bold text-[#7D1AD7] mt-3">48<span className="text-sm">%</span></p><p className="text-xs text-[#777] mt-2">Leitores que chegaram até o fim</p></section></div></div>
+
+      {visibleMetrics.length>0&&<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{visibleMetrics.slice(0,2).map((metric)=><div key={metric.id} className="bg-[#17171A] rounded-xl p-4 border" style={{borderColor:metric.color+'55'}}><p className="text-xs text-[#999]">{metric.name}</p><p className="text-xl font-semibold mt-2" style={{color:metric.color}}>{metric.value.toLocaleString('pt-BR')} <span className="text-xs text-[#777]">{metric.unit}</span></p></div>)}</div>}
+
+      <div><div className="flex items-center gap-2 mb-3"><Users size={14} className="text-[#507AE6]"/><h3 className="text-sm font-semibold text-[#F0F0F5]">Audiência Profissional — Demographics</h3><span className="text-[10px] px-2 py-1 rounded-md text-[#8C82FF] bg-[rgba(108,99,255,.12)]">LinkedIn B2B</span></div><section className="bg-[#17171A] rounded-2xl p-5 border border-[rgba(255,255,255,.1)]"><h3 className="text-sm font-semibold text-[#F0F0F5]">Perfil da Audiência</h3><p className="text-xs text-[#777] mt-1">Segmentação por cargo, senioridade, setor e localização</p><div className="flex flex-wrap gap-1.5 my-4">{(['Cargo / Função','Senioridade','Setor','Localização'] as const).map((tab)=><button key={tab} onClick={()=>setAudienceTab(tab)} className="px-3 py-2 rounded-lg text-xs" style={audienceTab===tab?{background:'#0A66C2',color:'#fff'}:{background:'rgba(255,255,255,.05)',color:'#999'}}>{tab}</button>)}</div><div className="space-y-3">{linkedAudience.map((item,index)=><div key={item.label} className="grid grid-cols-[170px_1fr_54px] items-center gap-3"><span className="text-xs text-[#999]">{item.label}</span><div className="h-2 rounded-full bg-[rgba(255,255,255,.06)]"><div className="h-full rounded-full bg-[#318ACB]" style={{width:`${item.value/Math.max(...linkedAudience.map((entry)=>entry.value))*100}%`}}/></div>{editMode?<input type="number" min="0" max="100" value={item.value} onChange={(event)=>setAudienceData((current)=>({...current,[audienceTab]:current[audienceTab].map((entry,i)=>i===index?{...entry,value:Number(event.target.value)}:entry)}))} className="w-14 px-2 py-1 rounded-md text-xs border border-[rgba(255,255,255,.12)] bg-[rgba(255,255,255,.04)]"/>:<strong className="text-xs text-right">{item.value}%</strong>}</div>)}</div></section></div>
+    </div>{editingGlobal&&<GlobalMetricsModal channel="linkedin" values={global} onClose={()=>setEditingGlobal(false)} onSave={(values)=>setGlobalMetrics((current)=>({...current,linkedin:values}))}/>}</div>
+  }
+
+  return (
+    <div className="h-full overflow-auto p-4 md:p-6">
+      <div className="max-w-6xl mx-auto space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <p className="text-xs text-[#999999] uppercase tracking-[.18em]">Visão por plataforma</p>
+            <h2 className="text-lg font-semibold text-[#F0F0F5] mt-1">{activeChannel === 'instagram' ? 'Instagram' : 'LinkedIn'} Analytics</h2>
+          </div>
+          <div className="flex items-center gap-2 self-start"><div className="inline-flex rounded-xl p-1 bg-[rgba(255,255,255,.04)] border border-[rgba(255,255,255,.08)]">
+            {(['instagram', 'linkedin'] as const).map((item) => <button key={item} onClick={() => setChannel(item)}
+              className="px-4 py-2 rounded-lg text-xs font-medium transition-all"
+              style={activeChannel === item ? { background: 'linear-gradient(120deg, rgba(125,26,215,.7), rgba(80,122,230,.7))', color: '#fff' } : { color: '#999' }}>
+              {item === 'instagram' ? 'Instagram' : 'LinkedIn'}
+            </button>)}</div><button onClick={() => { setEditMode((value) => !value); setInlineEdit(null) }} className="px-4 py-2.5 rounded-xl text-xs font-medium text-white border border-[rgba(255,255,255,.08)]" style={{ background: editMode ? 'linear-gradient(135deg,#7D1AD7,#507AE6)' : 'rgba(255,255,255,.04)' }}><Edit2 size={13} className="inline mr-1.5" />{editMode ? 'Concluir edição' : 'Editar dados'}</button></div>
+        </div>
+
+        {editMode && <div className="rounded-xl px-4 py-3 text-xs text-[#A99BEF] border border-[rgba(125,26,215,.25)] bg-[rgba(125,26,215,.07)]"><Edit2 size={13} className="inline mr-2" />Modo de edição ativo — clique no lápis de qualquer card para atualizar os dados.</div>}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4">
+          {cards.map((card) => <div key={card.label} className="relative"><KpiCard {...card} />{editMode && <button onClick={() => setEditingGlobal(true)} aria-label={`Editar ${card.label}`} className="absolute right-4 top-4 text-[#777] hover:text-[#D9D9D9]"><Edit2 size={13} /></button>}</div>)}
+        </div>
+
+        <div className="analytic-card bg-[#17171A] rounded-2xl p-4 md:p-5 border border-[rgba(255,255,255,.1)]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+            <div><h3 className="text-sm font-semibold text-[#F0F0F5]">Alcance semanal</h3><p className="text-xs text-[#777] mt-1">Atualização automática com os posts da Biblioteca</p></div>
+            <div className="flex gap-4 text-xs text-[#999]"><span className="flex items-center gap-1.5"><i className="w-2 h-2 rounded-full bg-[#507AE6]" />Período atual</span><span className="flex items-center gap-1.5"><i className="w-2 h-2 rounded-full bg-[#555]" />Anterior</span></div>
+          </div>
+          <ResponsiveContainer width="100%" height={280}>
+            <AreaChart data={weekly} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+              <defs><linearGradient id="citiReach" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#7D1AD7" stopOpacity={.42}/><stop offset=".5" stopColor="#507AE6" stopOpacity={.18}/><stop offset="1" stopColor="#50E678" stopOpacity={0}/></linearGradient></defs>
+              <CartesianGrid vertical={false} stroke="rgba(255,255,255,.06)" />
+              <XAxis dataKey="week" axisLine={false} tickLine={false} tick={{ fill: '#777', fontSize: 11 }} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#777', fontSize: 11 }} />
+              <Tooltip contentStyle={{ background: '#1C1C1C', border: '1px solid rgba(255,255,255,.1)', borderRadius: 12, color: '#fff' }} formatter={(v) => Number(v).toLocaleString('pt-BR')} />
+              <Area type="monotone" dataKey="previous" name="Período anterior" stroke="#555" strokeDasharray="5 5" fill="transparent" />
+              <Area type="monotone" dataKey="reach" name="Período atual" stroke="#507AE6" strokeWidth={2.5} fill="url(#citiReach)" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2 bg-[#17171A] rounded-2xl p-4 md:p-5 border border-[rgba(255,255,255,.1)] overflow-x-auto">
+            <h3 className="text-sm font-semibold text-[#F0F0F5] mb-4">Desempenho por formato</h3>
+            <table className="w-full min-w-[560px] text-left text-xs"><thead className="text-[#777]"><tr><th className="pb-3 font-medium">Formato</th><th className="pb-3 font-medium">Alcance médio</th><th className="pb-3 font-medium">Engajamento</th><th className="pb-3 font-medium">Salvos</th><th className="pb-3 font-medium">Compart.</th></tr></thead>
+              <tbody>{formatRows.map((row) => <tr key={row.format} className="border-t border-[rgba(255,255,255,.06)] text-[#D9D9D9]"><td className="py-3 font-medium text-white">{row.format}</td><td>{compact(row.reach)}</td><td>{row.engagement.toFixed(1)}%</td><td>{row.saves}</td><td>{row.shares}</td></tr>)}</tbody></table>
+            {formatRows.length === 0 && <p className="text-sm text-[#777] py-8 text-center">Cadastre posts deste canal para preencher a análise.</p>}
+          </div>
+          <div className="bg-[#17171A] rounded-2xl p-4 md:p-5 border border-[rgba(255,255,255,.1)]">
+            <h3 className="text-sm font-semibold text-[#F0F0F5]">Top conteúdos</h3><p className="text-xs text-[#777] mt-1 mb-4">Ordenados por alcance</p>
+            <div className="space-y-3">{[...filteredPosts].sort((a,b) => b.insights.reach-a.insights.reach).slice(0,4).map((post, index) => <div key={post.id} className="flex gap-3 items-center"><span className="w-7 h-7 rounded-lg bg-[rgba(125,26,215,.14)] text-[#9A65E8] text-xs font-semibold flex items-center justify-center">{index+1}</span><div className="min-w-0 flex-1"><p className="text-xs text-[#F0F0F5] truncate">{post.title}</p><p className="text-[11px] text-[#777] mt-0.5">{post.insights.reach.toLocaleString('pt-BR')} alcance · {post.insights.engagement.toLocaleString('pt-BR')} interações</p></div></div>)}</div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">{[
+          ['Visitas ao perfil', global.profileVisits.toLocaleString('pt-BR')], ['Seguidores totais', global.followersTotal.toLocaleString('pt-BR')], ['ROI', `${global.roi.toFixed(1)}%`], ['Conversões', global.conversions.toLocaleString('pt-BR')],
+        ].map(([label, value]) => <div key={label} className="bg-[#17171A] rounded-xl p-4 border border-[rgba(255,255,255,.1)]"><p className="text-xs text-[#999]">{label}</p><p className="text-xl font-semibold text-[#F0F0F5] mt-2">{value}</p><p className="text-[11px] text-[#666] mt-1">Entrada manual do canal</p></div>)}</div>
+
+        {visibleMetrics.length > 0 && <div><h3 className="text-sm font-semibold text-[#F0F0F5] mb-3">Métricas adicionadas manualmente</h3><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">{visibleMetrics.map((metric) => <div key={metric.id} className="bg-[#17171A] rounded-xl p-4 border border-[rgba(255,255,255,.1)]"><p className="text-xs text-[#999]">{metric.name}</p><p className="text-xl font-semibold mt-2" style={{ color: metric.color }}>{metric.value.toLocaleString('pt-BR')} <span className="text-xs text-[#777]">{metric.unit}</span></p><p className="text-[11px] text-[#666] mt-1">{metric.formula || 'Entrada manual'}</p></div>)}</div></div>}
+      </div>
+      {editingGlobal && <GlobalMetricsModal channel={activeChannel} values={global} onClose={() => setEditingGlobal(false)} onSave={(values) => setGlobalMetrics((current) => ({ ...current, [activeChannel]: values }))} />}
     </div>
   )
 }
@@ -581,11 +839,16 @@ export default function Metricas({ channel, setChannel, posts }: Props) {
   const [tab, setTab] = useState<Tab>('dashboard')
   const [metrics, setMetrics] = useState<CustomMetric[]>(defaultMetrics)
   const [mql, setMql] = useState(mqlData)
+  const [globalMetrics, setGlobalMetrics] = useState<GlobalMetricsState>({
+    instagram: { followersTotal: 18420, followersGrowth: 342, channelClicks: 624, profileVisits: 27130, roi: 184.5, conversions: 93, reachOverride: 48200, impressionsOverride: 0, engagementRateOverride: 4.8, followerReachShare: 62 },
+    linkedin: { followersTotal: 9780, followersGrowth: 127, channelClicks: 624, profileVisits: 14860, roi: 163.2, conversions: 61, reachOverride: 0, impressionsOverride: 28400, engagementRateOverride: 4.2, followerReachShare: 68 },
+  })
 
   return (
     <div className="flex flex-col h-full">
       <header className="page-header bg-[#17171A] flex-shrink-0" style={{ borderBottom: '1.5px solid rgba(255,255,255,0.1)' }}>
         <div className="px-4 md:px-6 pt-4 md:pt-5 pb-0">
+          <span className="page-eyebrow">Inteligência de performance</span>
           <h1 className="text-lg md:text-xl font-semibold text-[#F0F0F5] leading-tight">Métricas</h1>
           <p className="text-xs md:text-sm text-[#8A8A9A] mt-0.5">Dashboard consolidado · Julho 2026</p>
         </div>
@@ -593,8 +856,8 @@ export default function Metricas({ channel, setChannel, posts }: Props) {
           <TabNav active={tab} setTab={setTab} />
         </div>
       </header>
-      <div className="flex-1 overflow-hidden">
-        {tab === 'dashboard' && <Dashboard posts={posts} metrics={metrics} mql={mql} />}
+      <div className="module-stage flex-1 overflow-hidden">
+        {tab === 'dashboard' && <DashboardFigma posts={posts} metrics={metrics} channel={channel} setChannel={setChannel} globalMetrics={globalMetrics} setGlobalMetrics={setGlobalMetrics} />}
         {tab === 'inserir' && <InsertMetrics metrics={metrics} setMetrics={setMetrics} />}
         {tab === 'mql' && <MQLView mql={mql} setMql={setMql} />}
       </div>
