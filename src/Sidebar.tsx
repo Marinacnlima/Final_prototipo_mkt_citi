@@ -6,6 +6,7 @@ import {
 import type { Module } from './App'
 import type { AppUser } from './data'
 import citiLogoWhite from './assets/citi-logo-white.png'
+import { api } from './api'
 
 interface Props {
   currentUser: AppUser
@@ -30,7 +31,7 @@ const navItems: { id: Module; label: string; desc: string; Icon: React.Component
 interface UserModalProps {
   users: AppUser[]
   setUsers: React.Dispatch<React.SetStateAction<AppUser[]>>
-  currentUserId: number
+  currentUserId: number | string
   onClose: () => void
 }
 
@@ -39,39 +40,56 @@ function UserManagementModal({ users, setUsers, currentUserId, onClose }: UserMo
   const [form, setForm] = useState({ name: '', email: '', role: 'analista' as 'gerente' | 'analista', password: '' })
   const [showPw, setShowPw] = useState(false)
   const [error, setError] = useState('')
-  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | string | null>(null)
 
-  function deleteUser(id: number) {
-    setUsers((prev) => prev.filter((u) => u.id !== id))
-    setDeleteConfirmId(null)
+  async function deleteUser(id: number | string) {
+    try {
+      await api.users.remove(id)
+      setUsers((prev) => prev.filter((u) => u.id !== id))
+      setDeleteConfirmId(null)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Não foi possível remover o usuário.')
+    }
   }
 
-  function saveUser() {
+  async function saveUser() {
     if (!form.name.trim() || !form.email.trim() || !form.password.trim()) {
       setError('Preencha todos os campos.')
+      return
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      setError('Informe um e-mail válido.')
+      return
+    }
+    if (form.password.length < 8) {
+      setError('A senha inicial deve ter pelo menos 8 caracteres.')
       return
     }
     if (users.find((u) => u.email.toLowerCase() === form.email.toLowerCase())) {
       setError('E-mail já cadastrado.')
       return
     }
-    const initials = form.name.trim().split(' ').filter(Boolean).map((w) => w[0].toUpperCase()).slice(0, 2).join('')
-    const colors = ['#7D1AD7', '#00C853', '#FFB300', '#E1306C', '#0A66C2', '#40C4FF', '#507AE6']
-    const color = colors[users.length % colors.length]
-    const newUser: AppUser = {
-      id: Date.now(),
-      name: form.name.trim(),
-      initials,
-      color,
-      email: form.email.trim(),
-      password: form.password,
-      role: form.role,
-      mustChangePassword: true,
+    setSaving(true); setError('')
+    try {
+      const created = await api.users.create({
+        nomeCompleto: form.name.trim(),
+        email: form.email.trim(),
+        perfil: form.role === 'gerente' ? 'GERENTE' : 'ANALISTA',
+        cargo: form.role === 'gerente' ? 'Gerente de Marketing' : 'Analista de Marketing',
+        senhaInicial: form.password,
+      })
+      const initials = created.nomeCompleto.split(/\s+/).slice(0, 2).map((part: string) => part[0]).join('').toUpperCase()
+      const colors = ['#7D1AD7', '#00C853', '#FFB300', '#E1306C', '#0A66C2', '#40C4FF', '#507AE6']
+      const newUser: AppUser = { id: created.id, name: created.nomeCompleto, initials, color: colors[users.length % colors.length], email: created.email, password: '', role: created.perfil === 'GERENTE' ? 'gerente' : 'analista', mustChangePassword: created.primeiroAcesso }
+      setUsers((prev) => [...prev, newUser])
+      setForm({ name: '', email: '', role: 'analista', password: '' })
+      setShowForm(false)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Não foi possível criar a conta.')
+    } finally {
+      setSaving(false)
     }
-    setUsers((prev) => [...prev, newUser])
-    setForm({ name: '', email: '', role: 'analista', password: '' })
-    setShowForm(false)
-    setError('')
   }
 
   return (
@@ -188,10 +206,10 @@ function UserManagementModal({ users, setUsers, currentUserId, onClose }: UserMo
 
                 {error && <p className="text-xs text-[#FF5252] mt-2 px-1">{error}</p>}
 
-                <button onClick={saveUser}
-                  className="mt-4 w-full py-2.5 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-opacity btn-glow"
+                <button onClick={saveUser} disabled={saving}
+                  className="mt-4 w-full py-2.5 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-opacity btn-glow disabled:opacity-50"
                   style={{ background: 'linear-gradient(135deg, #7D1AD7, #50E678)' }}>
-                  Criar conta
+                  {saving ? 'Criando conta…' : 'Criar conta'}
                 </button>
               </div>
             </div>
@@ -282,7 +300,7 @@ export default function Sidebar({ currentUser, users, setUsers, activeModule, se
         {/* Footer actions */}
         <div className="px-3 py-3 space-y-1" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
           {isManager && (
-            <button onClick={() => setUserModalOpen(true)}
+      <button type="button" onClick={() => setUserModalOpen(true)}
               className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left transition-all hover:bg-white/10">
               <Users size={15} style={{ color: '#555566' }} />
               <span className="text-sm" style={{ color: '#8A8A9A' }}>Gerenciar usuários</span>

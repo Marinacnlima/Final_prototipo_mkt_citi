@@ -328,6 +328,7 @@ main, [class*='overflow-auto'] { scroll-behavior: smooth; }
   border-radius: 12px; background-color: rgba(255,255,255,.04); border-color: var(--line-subtle);
 }
 .internal-app [class*='fixed'][class*='inset-0'][class*='z-50'] {
+  position: fixed !important; inset: 0 !important; z-index: 100 !important;
   backdrop-filter: blur(8px); background-color: rgba(0,0,0,.66);
 }
 .internal-app [class*='fixed'][class*='inset-0'][class*='z-50'] > [class*='bg-\[\#17171A\]'] {
@@ -404,7 +405,7 @@ main, [class*='overflow-auto'] { scroll-behavior: smooth; }
   background-image: linear-gradient(rgba(255,255,255,.012) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.012) 1px, transparent 1px);
   background-size: 48px 48px; mask-image: linear-gradient(to bottom, black, transparent 48%); opacity: .42;
 }
-.internal-app .module-stage > * { position: relative; z-index: 1; }
+.internal-app .module-stage > :not([class~='fixed']) { position: relative; z-index: 1; }
 
 .internal-app .module-stage .editorial-card {
   border-radius: 22px !important; box-shadow: 0 16px 42px rgba(0,0,0,.2) !important;

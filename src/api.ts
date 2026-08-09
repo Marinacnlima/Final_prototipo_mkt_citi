@@ -1,0 +1,28 @@
+const API_URL=import.meta.env.VITE_API_URL??'http://localhost:3001/api/v1'
+let token=sessionStorage.getItem('marketops.token')
+
+export class ApiClientError extends Error { constructor(public status:number,public code:string,message:string){super(message)} }
+async function request<T>(path:string,init:RequestInit={}):Promise<T>{
+  const response=await fetch(`${API_URL}${path}`,{...init,headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`} :{}),...init.headers}})
+  if(!response.ok){const payload=await response.json().catch(()=>({error:{code:'HTTP_ERROR',message:response.statusText}}));throw new ApiClientError(response.status,payload.error?.code,payload.error?.message)}
+  if(response.status===204)return undefined as T
+  return response.json()
+}
+const body=(value:unknown)=>JSON.stringify(value)
+export const api={
+  setToken(value:string|null){token=value;if(value)sessionStorage.setItem('marketops.token',value);else sessionStorage.removeItem('marketops.token')},
+  get hasToken(){return Boolean(token)},
+  login:(email:string,senha:string)=>request<any>('/auth/login',{method:'POST',body:body({email,senha})}),
+  me:()=>request<any>('/auth/me'),
+  changePassword:(senhaAtual:string,novaSenha:string)=>request('/auth/change-password',{method:'POST',body:body({senhaAtual,novaSenha,confirmarSenha:novaSenha})}),
+  logout:()=>request('/auth/logout',{method:'POST'}),
+  users:{list:()=>request<any[]>('/users'),create:(data:any)=>request<any>('/users',{method:'POST',body:body(data)}),update:(id:string|number,data:any)=>request<any>(`/users/${id}`,{method:'PATCH',body:body(data)}),remove:(id:string|number)=>request(`/users/${id}`,{method:'DELETE'})},
+  kanban:{columns:(canal?:string)=>request<any[]>(`/kanban/columns${canal?`?canal=${canal}`:''}`),assignees:()=>request<any[]>('/kanban/assignees'),createColumn:(data:any)=>request<any>('/kanban/columns',{method:'POST',body:body(data)}),updateColumn:(id:string|number,data:any)=>request<any>(`/kanban/columns/${id}`,{method:'PATCH',body:body(data)}),removeColumn:(id:string|number)=>request(`/kanban/columns/${id}`,{method:'DELETE'}),createTask:(data:any)=>request<any>('/kanban/tasks',{method:'POST',body:body(data)}),updateTask:(id:string|number,data:any)=>request<any>(`/kanban/tasks/${id}`,{method:'PATCH',body:body(data)}),moveTask:(id:string|number,data:any)=>request<any>(`/kanban/tasks/${id}/move`,{method:'PATCH',body:body(data)}),removeTask:(id:string|number)=>request(`/kanban/tasks/${id}`,{method:'DELETE'})},
+  calendar:{list:(query='')=>request<any[]>(`/calendar/events${query}`),create:(data:any)=>request<any>('/calendar/events',{method:'POST',body:body(data)}),update:(id:string|number,data:any)=>request<any>(`/calendar/events/${id}`,{method:'PATCH',body:body(data)}),remove:(id:string|number)=>request(`/calendar/events/${id}`,{method:'DELETE'})},
+  campaigns:{list:()=>request<any[]>('/campaigns'),create:(data:any)=>request<any>('/campaigns',{method:'POST',body:body(data)}),update:(id:string|number,data:any)=>request<any>(`/campaigns/${id}`,{method:'PATCH',body:body(data)}),remove:(id:string|number)=>request(`/campaigns/${id}`,{method:'DELETE'}),addMetric:(id:string|number,data:any)=>request<any>(`/campaigns/${id}/metrics`,{method:'POST',body:body(data)})},
+  engagement:{get:(periodo:string)=>request<any>(`/engagement?periodo=${periodo}`),update:(id:string|number,periodo:string,data:any)=>request<any>(`/engagement/${id}?periodo=${periodo}`,{method:'PUT',body:body(data)})},
+  posts:{list:()=>request<any[]>('/library/posts'),create:(data:any)=>request<any>('/library/posts',{method:'POST',body:body(data)}),update:(id:string|number,data:any)=>request<any>(`/library/posts/${id}`,{method:'PATCH',body:body(data)}),remove:(id:string|number)=>request(`/library/posts/${id}`,{method:'DELETE'})},
+  materials:{list:()=>request<any[]>('/library/materials'),create:(data:any)=>request<any>('/library/materials',{method:'POST',body:body(data)}),update:(id:string|number,data:any)=>request<any>(`/library/materials/${id}`,{method:'PATCH',body:body(data)}),remove:(id:string|number)=>request(`/library/materials/${id}`,{method:'DELETE'}),download:(id:string|number)=>request<any>(`/library/materials/${id}/download`,{method:'POST'})},
+  prompts:{list:()=>request<any[]>('/library/prompts'),create:(data:any)=>request<any>('/library/prompts',{method:'POST',body:body(data)}),update:(id:string|number,data:any)=>request<any>(`/library/prompts/${id}`,{method:'PATCH',body:body(data)}),remove:(id:string|number)=>request(`/library/prompts/${id}`,{method:'DELETE'}),copy:(id:string|number)=>request<any>(`/library/prompts/${id}/copy`,{method:'POST'}),favorite:(id:string|number,favorito:boolean)=>request<any>(`/library/prompts/${id}/favorite`,{method:'PATCH',body:body({favorito})})},
+  metrics:{custom:()=>request<any[]>('/metrics/custom'),dashboard:(platform:string)=>request<any>(`/metrics/dashboard?plataforma=${platform}`),saveDashboard:(platform:string,data:any)=>request<any>(`/metrics/dashboard?plataforma=${platform}`,{method:'PUT',body:body(data)}),mql:()=>request<any>('/metrics/mql'),saveMql:(data:any)=>request<any>('/metrics/mql',{method:'PUT',body:body(data)})},
+}

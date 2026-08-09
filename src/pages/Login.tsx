@@ -95,20 +95,21 @@ export function ChangePasswordScreen({ user, onSave, onBack }: ChangePwProps) {
 interface LoginProps {
   users: AppUser[]
   onLogin: (user: AppUser) => void
+  authenticate?: (email: string, password: string) => Promise<AppUser>
 }
 
-export default function Login({ users, onLogin }: LoginProps) {
+export default function Login({ users, onLogin, authenticate }: LoginProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
-    setTimeout(() => {
-      const user = users.find((u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password)
+    try {
+      const user = authenticate ? await authenticate(email, password) : users.find((u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password)
       if (!user) {
         setError('E-mail ou senha incorretos.')
         setLoading(false)
@@ -116,7 +117,9 @@ export default function Login({ users, onLogin }: LoginProps) {
       }
       setError('')
       onLogin(user)
-    }, 400)
+    } catch {
+      setError('E-mail ou senha incorretos.')
+    } finally { setLoading(false) }
   }
 
   function fillDemo(u: AppUser) {

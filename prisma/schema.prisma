@@ -1,0 +1,394 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CanalSocial {
+  INSTAGRAM
+  LINKEDIN
+  SITE
+  EMAIL
+}
+
+enum CanalPost {
+  INSTAGRAM
+  LINKEDIN
+}
+
+enum PerfilUsuario {
+  GERENTE
+  ANALISTA
+}
+
+enum Dificuldade {
+  FACIL
+  MEDIO
+  DIFICIL
+}
+
+enum TipoEvento {
+  REUNIAO
+  DEADLINE
+  TASK
+}
+
+enum StatusCampanha {
+  ATIVA
+  PLANEJADA
+  ENCERRADA
+}
+
+enum TipoMaterial {
+  EBOOK
+  NEWSLETTER
+  CASE
+}
+
+enum CategoriaPrompt {
+  INSTAGRAM
+  LINKEDIN
+  EMAIL
+  CARROSSEL
+  SITE
+}
+
+enum UnidadeMetrica {
+  PERCENT
+  LEADS
+  SESSOES
+  NUMERO
+}
+
+enum Plataforma {
+  INSTAGRAM
+  LINKEDIN
+}
+
+enum FormatoConteudo {
+  REELS
+  CARROSSEL
+  POST_ESTATICO
+  STORIES
+  PDF_DOCUMENTO
+  TEXTO_IMAGEM
+  VIDEO
+  ARTIGO_NEWSLETTER
+  ENQUETE
+}
+
+model User {
+  id             String           @id @default(uuid())
+  nomeCompleto   String
+  email          String           @unique
+  senhaHash      String
+  perfil         PerfilUsuario    @default(ANALISTA)
+  cargo          String?
+  primeiroAcesso Boolean          @default(true)
+  ativo          Boolean          @default(true)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  atribuicoes    TaskAssignment[]
+  engajamentos   TeamEngagement[]
+
+  @@index([perfil, ativo])
+}
+
+model KanbanColumn {
+  id        String   @id @default(uuid())
+  nome      String
+  cor       String?
+  ordem     Int
+  isDone    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  tasks     Task[]
+
+  @@index([ordem])
+}
+
+model Task {
+  id          String           @id @default(uuid())
+  titulo      String
+  redeSocial  CanalSocial
+  dificuldade Dificuldade      @default(MEDIO)
+  dataInicio  DateTime?
+  dataEntrega DateTime?
+  colunaId    String
+  ordem       Int              @default(0)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  coluna      KanbanColumn     @relation(fields: [colunaId], references: [id])
+  atribuicoes TaskAssignment[]
+
+  @@index([colunaId, ordem])
+  @@index([redeSocial])
+  @@index([dataInicio])
+  @@index([dataEntrega])
+}
+
+model TaskAssignment {
+  id     String @id @default(uuid())
+  taskId String
+  userId String
+  nota   Float?
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, userId])
+  @@index([userId])
+}
+
+model CalendarEvent {
+  id        String       @id @default(uuid())
+  titulo    String
+  data      DateTime
+  horario   String
+  duracao   String?
+  tipo      TipoEvento   @default(REUNIAO)
+  canal     CanalSocial?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([data])
+  @@index([canal])
+}
+
+model Campaign {
+  id              String                @id @default(uuid())
+  nome            String
+  status          StatusCampanha        @default(PLANEJADA)
+  objetivo        String
+  publico         String
+  dataInicio      DateTime
+  dataFim         DateTime
+  alcanceMeta     Int                   @default(0)
+  interacoesMeta  Int                   @default(0)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  canais          CampaignChannel[]
+  metricasDiarias CampaignDailyMetric[]
+  posts           Post[]
+
+  @@index([status, dataInicio])
+}
+
+model CampaignChannel {
+  id         String      @id @default(uuid())
+  campaignId String
+  canal      CanalSocial
+  campaign   Campaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, canal])
+  @@index([canal])
+}
+
+model CampaignDailyMetric {
+  id         String   @id @default(uuid())
+  campaignId String
+  data       DateTime
+  alcance    Int      @default(0)
+  interacoes Int      @default(0)
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, data])
+  @@index([campaignId, data])
+}
+
+model TeamEngagement {
+  id          String   @id @default(uuid())
+  userId      String
+  periodo     String
+  compromisso Float?
+  presenca    Float?
+  observacoes String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, periodo])
+  @@index([periodo])
+}
+
+model Post {
+  id                String           @id @default(uuid())
+  canal             CanalPost
+  campaignId        String?
+  titulo            String
+  conteudo          String
+  formato           FormatoConteudo?
+  dataPublicacao    DateTime         @default(now())
+  dataLimite        DateTime?
+  alcance           Int              @default(0)
+  impressoes        Int              @default(0)
+  engajamento       Int              @default(0)
+  curtidas          Int              @default(0)
+  comentarios       Int              @default(0)
+  saves             Int              @default(0)
+  compartilhamentos Int              @default(0)
+  ctr               Float?
+  visitasPerfil     Int?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  campaign          Campaign?        @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  imagens           PostImage[]
+
+  @@index([canal, dataPublicacao])
+  @@index([campaignId])
+}
+
+model PostImage {
+  id     String @id @default(uuid())
+  postId String
+  url    String
+  ordem  Int    @default(0)
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, ordem])
+}
+
+model RichMaterial {
+  id         String       @id @default(uuid())
+  titulo     String
+  descricao  String
+  tipo       TipoMaterial
+  arquivoUrl String?
+  capaUrl    String?
+  downloads  Int          @default(0)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  @@index([tipo])
+}
+
+model Prompt {
+  id        String          @id @default(uuid())
+  titulo    String
+  categoria CategoriaPrompt
+  conteudo  String
+  usos      Int             @default(0)
+  favorito  Boolean         @default(false)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  tags      PromptTag[]
+
+  @@index([categoria])
+  @@index([favorito])
+}
+
+model PromptTag {
+  id       String @id @default(uuid())
+  promptId String
+  tag      String
+  prompt   Prompt @relation(fields: [promptId], references: [id], onDelete: Cascade)
+
+  @@unique([promptId, tag])
+}
+
+model CustomMetric {
+  id           String         @id @default(uuid())
+  nome         String
+  canal        CanalSocial
+  formula      String
+  valor        Float
+  unidade      UnidadeMetrica
+  atualizadoEm DateTime       @default(now())
+  createdAt    DateTime       @default(now())
+
+  @@index([atualizadoEm])
+  @@index([canal])
+}
+
+model DashboardKpi {
+  id           String     @id @default(uuid())
+  plataforma   Plataforma
+  nome         String
+  valor        String
+  variacaoPct  Float?
+  descricao    String?
+  atualizadoEm DateTime   @default(now())
+
+  @@unique([plataforma, nome])
+  @@index([atualizadoEm])
+}
+
+model ContentFormatPerformance {
+  id                String          @id @default(uuid())
+  plataforma        Plataforma
+  formato           FormatoConteudo
+  alcanceMedio      Int             @default(0)
+  taxaEngajamento   Float           @default(0)
+  saves             Int?
+  compartilhamentos Int?
+  impressoes        Int?
+  ctr               Float?
+  taxaReacao        Float?
+  reposts           Int?
+  comentarios       Int?
+  atualizadoEm      DateTime        @default(now())
+
+  @@unique([plataforma, formato])
+}
+
+model StoryFunnelStep {
+  id           String     @id @default(uuid())
+  plataforma   Plataforma @default(INSTAGRAM)
+  ordem        Int
+  percentual   Float
+  espectadores Int
+
+  @@unique([plataforma, ordem])
+}
+
+model ActivityHeatmapCell {
+  id          String     @id @default(uuid())
+  plataforma  Plataforma @default(INSTAGRAM)
+  diaSemana   Int
+  faixaHora   Int
+  intensidade Int
+
+  @@unique([plataforma, diaSemana, faixaHora])
+}
+
+model DashboardDistribution {
+  id            String     @id @default(uuid())
+  plataforma    Plataforma @unique
+  principalPct  Float
+  secundarioPct Float
+  updatedAt     DateTime   @updatedAt
+}
+
+model MqlDefinition {
+  id             String          @id @default(uuid())
+  scoreMinimo    Int             @default(65)
+  taxaMqlSql     Float           @default(0)
+  mqlsEsteMes    Int             @default(0)
+  tamanhoEmpresa String
+  updatedAt      DateTime        @updatedAt
+  cargosAlvo     MqlTargetRole[]
+  segmentos      MqlSegment[]
+  comportamentos MqlBehavior[]
+}
+
+model MqlTargetRole {
+  id    String        @id @default(uuid())
+  mqlId String
+  nome  String
+  mql   MqlDefinition @relation(fields: [mqlId], references: [id], onDelete: Cascade)
+}
+
+model MqlSegment {
+  id    String        @id @default(uuid())
+  mqlId String
+  nome  String
+  mql   MqlDefinition @relation(fields: [mqlId], references: [id], onDelete: Cascade)
+}
+
+model MqlBehavior {
+  id        String        @id @default(uuid())
+  mqlId     String
+  descricao String
+  mql       MqlDefinition @relation(fields: [mqlId], references: [id], onDelete: Cascade)
+}
