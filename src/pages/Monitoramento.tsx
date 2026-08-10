@@ -396,7 +396,7 @@ function KanbanBoard({ channel, setChannel, isManager, members, setMembers, colu
             const tasks = filterTasks(col.tasks)
             const isOver = dragOverColId === col.id
             return (
-              <div key={col.id} className="flex flex-col rounded-xl flex-shrink-0 transition-all"
+              <div key={col.id} data-empty={tasks.length === 0 ? 'true' : 'false'} className="kanban-column flex flex-col rounded-xl flex-shrink-0 transition-all"
                 style={{ width: 276, background: isOver ? 'rgba(125,26,215,0.08)' : '#202024', border: `1.5px solid ${isOver ? '#7D1AD7' : 'rgba(255,255,255,0.1)'}`, minHeight: 400 }}
                 onDragOver={(e) => { e.preventDefault(); setDragOverColId(col.id) }}
                 onDrop={() => handleDrop(col.id)}
@@ -457,7 +457,7 @@ function KanbanBoard({ channel, setChannel, isManager, members, setMembers, colu
                     </div>
                   ))}
                   {tasks.length === 0 && (
-                    <div className="text-center py-6 text-[#555566] text-sm">Solte aqui</div>
+                    <div className="empty-state text-center py-6 text-[#8A8A9A] text-sm">Solte aqui</div>
                   )}
                 </div>
 

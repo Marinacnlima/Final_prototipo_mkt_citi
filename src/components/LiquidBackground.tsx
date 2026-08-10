@@ -113,7 +113,7 @@ function compile(gl: WebGLRenderingContext, type: number, source: string) {
   return shader
 }
 
-export default function LiquidBackground() {
+export default function LiquidBackground({ interactive = true, className = '' }: { interactive?: boolean; className?: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -173,19 +173,19 @@ export default function LiquidBackground() {
       if (!reducedMotion) frame = requestAnimationFrame(render)
     }
 
-    window.addEventListener('pointermove', move, { passive: true })
+    if (interactive) window.addEventListener('pointermove', move, { passive: true })
     window.addEventListener('resize', resize)
     frame = requestAnimationFrame(render)
     return () => {
       cancelAnimationFrame(frame)
-      window.removeEventListener('pointermove', move)
+      if (interactive) window.removeEventListener('pointermove', move)
       window.removeEventListener('resize', resize)
       gl.deleteProgram(program)
       gl.deleteShader(vertex)
       gl.deleteShader(fragment)
       gl.deleteBuffer(buffer)
     }
-  }, [])
+  }, [interactive])
 
-  return <canvas ref={canvasRef} className="original-login__liquid" aria-hidden="true" />
+  return <canvas ref={canvasRef} className={`original-login__liquid ${className}`} aria-hidden="true" />
 }

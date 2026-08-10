@@ -8,6 +8,7 @@ import Login, { ChangePasswordScreen } from './pages/Login'
 import type { Post, AppUser } from './data'
 import { api } from './api'
 import citiLogoWhite from './assets/citi-logo-white.png'
+import LiquidBackground from './components/LiquidBackground'
 
 export type Profile = 'gerente' | 'analista'
 export type Module = 'monitoramento' | 'biblioteca' | 'metricas'
@@ -80,6 +81,7 @@ export default function App() {
 
   return (
     <div className="internal-app app-shell flex h-screen overflow-hidden bg-[#101010] relative">
+      <LiquidBackground interactive={false} className="internal-liquid-background" />
 
       {/* Mobile backdrop */}
       {sidebarOpen && (
