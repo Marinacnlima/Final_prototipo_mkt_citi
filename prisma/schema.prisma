@@ -80,6 +80,11 @@ enum FormatoConteudo {
   ENQUETE
 }
 
+enum TipoMidia {
+  IMAGEM
+  VIDEO
+}
+
 model User {
   id             String           @id @default(uuid())
   nomeCompleto   String
@@ -93,8 +98,21 @@ model User {
   updatedAt      DateTime         @updatedAt
   atribuicoes    TaskAssignment[]
   engajamentos   TeamEngagement[]
+  resetCodes     PasswordResetCode[]
 
   @@index([perfil, ativo])
+}
+
+model PasswordResetCode {
+  id        String    @id @default(uuid())
+  userId    String
+  codeHash  String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model KanbanColumn {
@@ -230,6 +248,7 @@ model Post {
   compartilhamentos Int              @default(0)
   ctr               Float?
   visitasPerfil     Int?
+  linkUrl           String?
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
   campaign          Campaign?        @relation(fields: [campaignId], references: [id], onDelete: SetNull)
@@ -240,25 +259,29 @@ model Post {
 }
 
 model PostImage {
-  id     String @id @default(uuid())
+  id     String    @id @default(uuid())
   postId String
   url    String
-  ordem  Int    @default(0)
-  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tipo   TipoMidia @default(IMAGEM)
+  ordem  Int       @default(0)
+  post   Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@unique([postId, ordem])
 }
 
 model RichMaterial {
-  id         String       @id @default(uuid())
-  titulo     String
-  descricao  String
-  tipo       TipoMaterial
-  arquivoUrl String?
-  capaUrl    String?
-  downloads  Int          @default(0)
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
+  id           String       @id @default(uuid())
+  titulo       String
+  descricao    String
+  tipo         TipoMaterial
+  arquivoUrl   String?
+  capaUrl      String?
+  nomeArquivo  String?
+  tamanhoBytes Int?
+  mimeType     String?
+  downloads    Int          @default(0)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
   @@index([tipo])
 }
@@ -290,7 +313,7 @@ model PromptTag {
 model CustomMetric {
   id           String         @id @default(uuid())
   nome         String
-  canal        CanalSocial
+  canal        CanalSocial?
   formula      String
   valor        Float
   unidade      UnidadeMetrica

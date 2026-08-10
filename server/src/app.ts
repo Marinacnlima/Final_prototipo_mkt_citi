@@ -1,5 +1,6 @@
 import express from 'express'
 import cors from 'cors'
+import path from 'node:path'
 import { config } from './config.js'
 import { errorHandler } from './http.js'
 import { authRouter, usersRouter } from './routes/auth-users.js'
@@ -13,6 +14,7 @@ app.disable('x-powered-by')
 app.use(cors({origin:config.CORS_ORIGIN.split(',').map((origin)=>origin.trim()),credentials:false}))
 app.use(express.json({limit:'2mb'}))
 app.get('/health',(_req,res)=>res.json({ok:true}))
+app.use(`/${config.UPLOAD_DIR}`,express.static(path.resolve(process.cwd(),config.UPLOAD_DIR)))
 app.use('/api/v1/auth',authRouter)
 app.use('/api/v1/users',usersRouter)
 app.use('/api/v1/kanban',kanbanRouter)

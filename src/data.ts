@@ -95,12 +95,20 @@ export interface CalendarEvent {
   attendees: string[]
 }
 
+export interface PostMedia {
+  url: string
+  tipo: 'imagem' | 'video'
+}
+
 export interface Post {
   id: number | string
   title: string
   channel: ChannelType
   campaign: string
-  images: string[]
+  images: PostMedia[]
+  linkUrl?: string
+  ctr?: number
+  profileVisits?: number
   caption: string
   format: 'reel' | 'carousel' | 'static' | 'story' | 'document' | 'video' | 'article' | 'poll'
   insights: {
@@ -117,13 +125,16 @@ export interface Post {
 }
 
 export interface Material {
-  id: number
+  id: number | string
   type: 'ebook' | 'newsletter' | 'case'
   title: string
   description: string
   cover: string
   downloads: number
   createdAt: string
+  arquivoUrl?: string
+  arquivoNome?: string
+  arquivoTamanho?: number
 }
 
 export interface Prompt {
@@ -321,9 +332,9 @@ export const postsData: Post[] = [
     channel: 'linkedin',
     campaign: 'Cases de Sucesso',
     images: [
-      'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=400&fit=crop&auto=format',
-      'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=400&fit=crop&auto=format',
-      'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=400&h=400&fit=crop&auto=format',
+      { url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=400&fit=crop&auto=format', tipo: 'imagem' },
+      { url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=400&fit=crop&auto=format', tipo: 'imagem' },
+      { url: 'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=400&h=400&fit=crop&auto=format', tipo: 'imagem' },
     ],
     caption: 'O mercado B2B está mudando rapidamente. Separamos as 5 estratégias que estão gerando mais resultado em 2026...\n\n✅ Account-Based Marketing\n✅ SEO técnico para decisores\n✅ LinkedIn Thought Leadership\n✅ Email nurturing segmentado\n✅ Cases de sucesso em vídeo\n\nQual você já aplica? 👇\n\n#MarketingB2B #EstrategiaDigital',
     format: 'carousel',
@@ -337,8 +348,8 @@ export const postsData: Post[] = [
     channel: 'instagram',
     campaign: 'Lançamento Produto Q3',
     images: [
-      'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&h=400&fit=crop&auto=format',
-      'https://images.unsplash.com/photo-1556761175-4b46a572b786?w=400&h=400&fit=crop&auto=format',
+      { url: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&h=400&fit=crop&auto=format', tipo: 'imagem' },
+      { url: 'https://images.unsplash.com/photo-1556761175-4b46a572b786?w=400&h=400&fit=crop&auto=format', tipo: 'imagem' },
     ],
     caption: 'Vai, vai, vai! 🚀 Tá chegando!\n\nQ3 chegando com novidades que vão transformar sua gestão de marketing. Fica ligado! 👀\n\n#Lançamento #MarketingDigital',
     format: 'reel',
@@ -352,9 +363,9 @@ export const postsData: Post[] = [
     channel: 'linkedin',
     campaign: 'Cases de Sucesso',
     images: [
-      'https://images.unsplash.com/photo-1543286386-713bdd548da4?w=400&h=400&fit=crop&auto=format',
-      'https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=400&h=400&fit=crop&auto=format',
-      'https://images.unsplash.com/photo-1553484771-371a605b060b?w=400&h=400&fit=crop&auto=format',
+      { url: 'https://images.unsplash.com/photo-1543286386-713bdd548da4?w=400&h=400&fit=crop&auto=format', tipo: 'imagem' },
+      { url: 'https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=400&h=400&fit=crop&auto=format', tipo: 'imagem' },
+      { url: 'https://images.unsplash.com/photo-1553484771-371a605b060b?w=400&h=400&fit=crop&auto=format', tipo: 'imagem' },
     ],
     caption: 'Content marketing gera 3x mais leads com 62% menos custo.\n\n📊 +340% tráfego orgânico · 127 MQLs · CAC -28%\n\n#ContentMarketing #ROI',
     format: 'document',
@@ -368,7 +379,7 @@ export const postsData: Post[] = [
     channel: 'email',
     campaign: 'Lançamento Produto Q3',
     images: [
-      'https://images.unsplash.com/photo-1586339949916-3e9457bef6d3?w=600&h=200&fit=crop&auto=format',
+      { url: 'https://images.unsplash.com/photo-1586339949916-3e9457bef6d3?w=600&h=200&fit=crop&auto=format', tipo: 'imagem' },
     ],
     caption: 'Assunto: 🔥 As 3 tendências de marketing que vão dominar agosto\n\nOlá [Nome],\nEste mês trouxemos análises e insights exclusivos...',
     format: 'article',

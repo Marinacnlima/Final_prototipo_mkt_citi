@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   BarChart2, TrendingUp, Users, Globe,
   Plus, X, Edit2, Check, Info, ArrowUp, ArrowDown, Trash2, Eye,
@@ -9,7 +9,8 @@ import {
 } from 'recharts'
 import type { Channel } from '../App'
 import type { ChannelType, Post, CustomMetric } from '../data'
-import { defaultMetrics, mqlData, getWeekLabel } from '../data'
+import { mqlData, getWeekLabel } from '../data'
+import { api } from '../api'
 
 // ─── Tab nav ──────────────────────────────────────────────────────────────
 
@@ -138,7 +139,7 @@ function Dashboard({ posts, metrics, mql }: {
                   </div>
                   <p className="text-xl font-bold" style={{ color: m.color }}>
                     {typeof m.value === 'number' ? m.value.toLocaleString('pt-BR') : m.value}
-                    <span className="text-sm font-normal ml-1 text-[#555566]">{m.unit}</span>
+                    <span className="text-sm font-normal ml-1 text-[#555566]">{UNIT_LABELS[m.unit] ?? m.unit}</span>
                   </p>
                   <p className="text-xs text-[#555566] mt-1 leading-snug">{m.formula}</p>
                 </div>
@@ -366,7 +367,7 @@ function DashboardFigma({ posts, metrics, channel, setChannel, globalMetrics, se
     const storyPercent = storyViews.map((value) => Math.round(value / Math.max(1, storyViews[0]) * 100))
     const days = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
     const hours = ['6h', '8h', '10h', '12h', '14h', '16h', '18h', '20h', '22h']
-    const manualIg = visibleMetrics.filter((metric) => metric.channel === 'instagram' || !metric.channel).slice(0, 2)
+    const manualIg = visibleMetrics.filter((metric) => metric.channel === 'instagram' || !metric.channel)
 
     return <div className="h-full overflow-auto p-4 md:p-6"><div className="max-w-6xl mx-auto space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl p-4 bg-[#17171A] border border-[rgba(255,255,255,.08)]"><div className="flex items-center gap-4"><div className="inline-flex rounded-xl p-1 bg-[rgba(255,255,255,.04)]"><button className="px-4 py-2 rounded-lg text-xs font-medium text-white" style={{ background: 'linear-gradient(120deg, #E43678, #7D1AD7)' }}>Instagram</button><button onClick={() => setChannel('linkedin')} className="px-4 py-2 rounded-lg text-xs font-medium text-[#999]">LinkedIn</button></div><h2 className="text-sm font-semibold text-[#F0F0F5]">Instagram Analytics</h2></div><button onClick={()=>{setEditMode((value)=>!value);setInlineEdit(null)}} className="px-4 py-2.5 rounded-xl text-xs font-medium text-white border border-[rgba(255,255,255,.1)]" style={{background:editMode?'linear-gradient(135deg,#7D1AD7,#507AE6)':'rgba(255,255,255,.06)'}}><Edit2 size={13} className="inline mr-1.5" />{editMode?'Concluir edição':'Editar dados'}</button></div>
@@ -385,7 +386,7 @@ function DashboardFigma({ posts, metrics, channel, setChannel, globalMetrics, se
 
       <section className="bg-[#17171A] rounded-2xl p-5 border border-[rgba(255,255,255,.1)]"><h3 className="text-sm font-semibold text-[#F0F0F5]">Funil de Retenção — Stories</h3><p className="text-xs text-[#777] mt-1 mb-4">Progressão de espectadores · valores editáveis em modo edição</p><div className="space-y-2">{storyViews.map((value,index)=><div key={index} className="grid grid-cols-[52px_1fr_72px_44px] items-center gap-3 text-xs"><span className="text-[#999]">Story {index+1}</span><div className="h-5 rounded-full bg-[rgba(255,255,255,.06)] overflow-hidden"><div className="h-full rounded-full flex items-center px-2 text-[10px] font-semibold text-white" style={{width:`${storyPercent[index]}%`,background:`rgba(228,54,120,${1-index*.1})`}}>{storyPercent[index]}%</div></div>{editMode?<input type="number" value={value} onChange={(event)=>setStoryViews((current)=>current.map((item,i)=>i===index?Number(event.target.value):item))} className="w-[72px] px-2 py-1 rounded-md border border-[rgba(255,255,255,.12)] bg-[rgba(255,255,255,.04)] text-right"/>:<strong className="text-[#D9D9D9] text-right">{value.toLocaleString('pt-BR')}</strong>}<span className="text-[#FF5252] text-right">{index ? `−${storyViews[index-1]-value}` : ''}</span></div>)}</div><div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">{[[`${storyPercent.at(-1)}%`,'Retenção total','#50E678'],['17%','Drop-off médio/slide','#FF5252'],['Story 1→2','Melhor trecho','#6C63FF']].map(([value,label,color])=><div key={label} className="rounded-xl p-3 text-center bg-[rgba(255,255,255,.025)] border border-[rgba(255,255,255,.08)]"><strong style={{color}}>{value}</strong><p className="text-[11px] text-[#777] mt-1">{label}</p></div>)}</div></section>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{manualIg.map((metric)=><div key={metric.id} className="bg-[#17171A] rounded-xl p-4 border" style={{borderColor:metric.color+'55'}}><p className="text-xs text-[#999]">{metric.name}</p><p className="text-xl font-semibold mt-2" style={{color:metric.color}}>{metric.value.toLocaleString('pt-BR')} <span className="text-xs text-[#777]">{metric.unit}</span></p></div>)}</div>
+      {manualIg.length>0&&<div className="grid gap-3" style={{gridTemplateColumns:`repeat(${manualIg.length}, minmax(0, 1fr))`}}>{manualIg.map((metric)=><div key={metric.id} className="bg-[#17171A] rounded-xl p-4 border" style={{borderColor:metric.color+'55'}}><p className="text-xs text-[#999]">{metric.name}</p><p className="text-xl font-semibold mt-2" style={{color:metric.color}}>{metric.value.toLocaleString('pt-BR')} <span className="text-xs text-[#777]">{UNIT_LABELS[metric.unit] ?? metric.unit}</span></p></div>)}</div>}
 
       <div><div className="flex items-center gap-2 mb-3"><TrendingUp size={14} className="text-[#6C63FF]"/><h3 className="text-sm font-semibold text-[#F0F0F5]">Heatmap de Atividade</h3><span className="text-[10px] px-2 py-1 rounded-md text-[#8C82FF] bg-[rgba(108,99,255,.12)]">Dias & Horários</span></div><section className="bg-[#17171A] rounded-2xl p-5 border border-[rgba(255,255,255,.1)] overflow-x-auto"><h3 className="text-sm font-semibold text-[#F0F0F5]">Intensidade de Engajamento</h3><p className="text-xs text-[#777] mt-1 mb-4">{editMode?'Clique em qualquer célula para editar o valor (0–100)':'Intensidade por dia da semana e faixa horária'}</p><div className="min-w-[620px]"><div className="grid grid-cols-[28px_repeat(9,1fr)] gap-1 mb-1"><span/>{hours.map(hour=><span key={hour} className="text-[10px] text-[#777] text-center">{hour}</span>)}</div>{activityHeatmap.map((row,r)=><div key={days[r]} className="grid grid-cols-[28px_repeat(9,1fr)] gap-1 mb-1"><span className="text-[10px] text-[#777] self-center">{days[r]}</span>{row.map((value,c)=>editMode?<input key={c} aria-label={`${days[r]} ${hours[c]}`} type="number" min="0" max="100" value={value} onChange={(event)=>setActivityHeatmap((current)=>current.map((line,lineIndex)=>lineIndex===r?line.map((item,columnIndex)=>columnIndex===c?Math.max(0,Math.min(100,Number(event.target.value))):item):line))} className="h-7 min-w-0 rounded text-center text-[9px] font-semibold text-white border border-[rgba(255,255,255,.12)]" style={{background:`rgba(228,54,120,${.12+value/115})`}}/>:<div key={c} className="h-7 rounded flex items-center justify-center text-[9px] font-semibold text-white" style={{background:`rgba(228,54,120,${.12+value/115})`}}>{value}</div>)}</div>)}</div></section></div>
     </div>{editingGlobal && <GlobalMetricsModal channel="instagram" values={global} onClose={()=>setEditingGlobal(false)} onSave={(values)=>setGlobalMetrics((current)=>({...current,instagram:values}))}/>}</div>
@@ -416,7 +417,7 @@ function DashboardFigma({ posts, metrics, channel, setChannel, globalMetrics, se
 
       <div><div className="flex items-center gap-2 mb-3"><Eye size={14} className="text-[#8C82FF]"/><h3 className="text-sm font-semibold text-[#F0F0F5]">Vídeo & Documento — Analytics</h3></div><div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><section className="bg-[#17171A] rounded-2xl p-5 border border-[rgba(255,255,255,.1)]"><p className="text-xs font-semibold text-[#D9D9D9]">Vídeo — Taxa de Conclusão</p><p className="text-3xl font-bold text-[#507AE6] mt-3">62<span className="text-sm">%</span></p><p className="text-xs text-[#777] mt-2">Visualizações que chegaram ao final</p></section><section className="bg-[#17171A] rounded-2xl p-5 border border-[rgba(255,255,255,.1)]"><p className="text-xs font-semibold text-[#D9D9D9]">Documento PDF — Swipe-through</p><p className="text-3xl font-bold text-[#7D1AD7] mt-3">48<span className="text-sm">%</span></p><p className="text-xs text-[#777] mt-2">Leitores que chegaram até o fim</p></section></div></div>
 
-      {visibleMetrics.length>0&&<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{visibleMetrics.slice(0,2).map((metric)=><div key={metric.id} className="bg-[#17171A] rounded-xl p-4 border" style={{borderColor:metric.color+'55'}}><p className="text-xs text-[#999]">{metric.name}</p><p className="text-xl font-semibold mt-2" style={{color:metric.color}}>{metric.value.toLocaleString('pt-BR')} <span className="text-xs text-[#777]">{metric.unit}</span></p></div>)}</div>}
+      {visibleMetrics.length>0&&<div className="grid gap-3" style={{gridTemplateColumns:`repeat(${visibleMetrics.length}, minmax(0, 1fr))`}}>{visibleMetrics.map((metric)=><div key={metric.id} className="bg-[#17171A] rounded-xl p-4 border" style={{borderColor:metric.color+'55'}}><p className="text-xs text-[#999]">{metric.name}</p><p className="text-xl font-semibold mt-2" style={{color:metric.color}}>{metric.value.toLocaleString('pt-BR')} <span className="text-xs text-[#777]">{UNIT_LABELS[metric.unit] ?? metric.unit}</span></p></div>)}</div>}
 
       <div><div className="flex items-center gap-2 mb-3"><Users size={14} className="text-[#507AE6]"/><h3 className="text-sm font-semibold text-[#F0F0F5]">Audiência Profissional — Demographics</h3><span className="text-[10px] px-2 py-1 rounded-md text-[#8C82FF] bg-[rgba(108,99,255,.12)]">LinkedIn B2B</span></div><section className="bg-[#17171A] rounded-2xl p-5 border border-[rgba(255,255,255,.1)]"><h3 className="text-sm font-semibold text-[#F0F0F5]">Perfil da Audiência</h3><p className="text-xs text-[#777] mt-1">Segmentação por cargo, senioridade, setor e localização</p><div className="flex flex-wrap gap-1.5 my-4">{(['Cargo / Função','Senioridade','Setor','Localização'] as const).map((tab)=><button key={tab} onClick={()=>setAudienceTab(tab)} className="px-3 py-2 rounded-lg text-xs" style={audienceTab===tab?{background:'#0A66C2',color:'#fff'}:{background:'rgba(255,255,255,.05)',color:'#999'}}>{tab}</button>)}</div><div className="space-y-3">{linkedAudience.map((item,index)=><div key={item.label} className="grid grid-cols-[170px_1fr_54px] items-center gap-3"><span className="text-xs text-[#999]">{item.label}</span><div className="h-2 rounded-full bg-[rgba(255,255,255,.06)]"><div className="h-full rounded-full bg-[#318ACB]" style={{width:`${item.value/Math.max(...linkedAudience.map((entry)=>entry.value))*100}%`}}/></div>{editMode?<input type="number" min="0" max="100" value={item.value} onChange={(event)=>setAudienceData((current)=>({...current,[audienceTab]:current[audienceTab].map((entry,i)=>i===index?{...entry,value:Number(event.target.value)}:entry)}))} className="w-14 px-2 py-1 rounded-md text-xs border border-[rgba(255,255,255,.12)] bg-[rgba(255,255,255,.04)]"/>:<strong className="text-xs text-right">{item.value}%</strong>}</div>)}</div></section></div>
     </div>{editingGlobal&&<GlobalMetricsModal channel="linkedin" values={global} onClose={()=>setEditingGlobal(false)} onSave={(values)=>setGlobalMetrics((current)=>({...current,linkedin:values}))}/>}</div>
@@ -490,16 +491,23 @@ function DashboardFigma({ posts, metrics, channel, setChannel, globalMetrics, se
 
 const METRIC_COLORS = ['#7D1AD7', '#E1306C', '#0A66C2', '#00C853', '#FFB300', '#40C4FF', '#FF5252', '#507AE6']
 const CH_LABELS: Record<ChannelType, string> = { instagram: 'Instagram', linkedin: 'LinkedIn', site: 'Site', email: 'Email' }
+// Canais aceitos para métricas personalizadas: apenas Instagram, LinkedIn ou Todos (canal nulo)
+const METRIC_CHANNELS: Extract<ChannelType, 'instagram' | 'linkedin'>[] = ['instagram', 'linkedin']
+const UNIT_OPTIONS = [
+  { value: 'PERCENT', label: '%' }, { value: 'LEADS', label: 'Leads' },
+  { value: 'SESSOES', label: 'Sessões' }, { value: 'NUMERO', label: 'Número' },
+] as const
+const UNIT_LABELS: Record<string, string> = Object.fromEntries(UNIT_OPTIONS.map((u) => [u.value, u.label]))
 
 interface MetricForm {
-  name: string; value: string; unit: string; formula: string; channel: ChannelType | ''; color: string
+  name: string; value: string; unit: string; formula: string; channel: ChannelType | ''
 }
 
 function MetricModal({ initial, onSave, onClose }: { initial?: CustomMetric; onSave: (m: CustomMetric) => void; onClose: () => void }) {
   const [form, setForm] = useState<MetricForm>({
     name: initial?.name ?? '', value: String(initial?.value ?? ''),
-    unit: initial?.unit ?? '%', formula: initial?.formula ?? '',
-    channel: initial?.channel ?? '', color: initial?.color ?? '#7D1AD7',
+    unit: initial?.unit ?? 'PERCENT', formula: initial?.formula ?? '',
+    channel: initial?.channel ?? '',
   })
 
   function save() {
@@ -509,7 +517,7 @@ function MetricModal({ initial, onSave, onClose }: { initial?: CustomMetric; onS
       name: form.name, value: parseFloat(form.value) || 0,
       unit: form.unit, formula: form.formula,
       channel: form.channel ? form.channel as ChannelType : undefined,
-      color: form.color,
+      color: initial?.color ?? '#7D1AD7',
     })
     onClose()
   }
@@ -530,8 +538,10 @@ function MetricModal({ initial, onSave, onClose }: { initial?: CustomMetric; onS
           </div>
           <div>
             <label className="block text-xs font-medium text-[#8A8A9A] mb-1">Unidade</label>
-            <input value={form.unit} onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))} placeholder="%, leads, sessões…"
-              className="w-full text-sm px-3 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#7D1AD7]" />
+            <select value={form.unit} onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
+              className="w-full text-sm px-3 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#7D1AD7] bg-[#17171A]">
+              {UNIT_OPTIONS.map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
+            </select>
           </div>
           <div className="col-span-2">
             <label className="block text-xs font-medium text-[#8A8A9A] mb-1">Regra de cálculo / fórmula</label>
@@ -540,24 +550,14 @@ function MetricModal({ initial, onSave, onClose }: { initial?: CustomMetric; onS
               className="w-full text-sm px-3 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#7D1AD7] resize-none" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-[#8A8A9A] mb-1">Canal (opcional)</label>
+            <label className="block text-xs font-medium text-[#8A8A9A] mb-1">Canal</label>
             <select value={form.channel} onChange={(e) => setForm((f) => ({ ...f, channel: e.target.value as ChannelType | '' }))}
               className="w-full text-sm px-3 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#7D1AD7] bg-[#17171A]">
               <option value="">Todos</option>
-              {(['instagram', 'linkedin', 'site', 'email'] as ChannelType[]).map((ch) => (
+              {METRIC_CHANNELS.map((ch) => (
                 <option key={ch} value={ch}>{CH_LABELS[ch]}</option>
               ))}
             </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-[#8A8A9A] mb-1">Cor</label>
-            <div className="flex gap-2 flex-wrap">
-              {METRIC_COLORS.map((c) => (
-                <button key={c} onClick={() => setForm((f) => ({ ...f, color: c }))}
-                  className="w-6 h-6 rounded-full transition-all"
-                  style={{ background: c, outline: form.color === c ? `3px solid ${c}` : 'none', outlineOffset: 2 }} />
-              ))}
-            </div>
           </div>
         </div>
       </div>
@@ -572,28 +572,49 @@ function MetricModal({ initial, onSave, onClose }: { initial?: CustomMetric; onS
   )
 }
 
+function mapMetric(row: any): CustomMetric {
+  return { id: row.id, name: row.nome, value: row.valor, unit: row.unidade, formula: row.formula, channel: row.canal ? (row.canal.toLowerCase() as ChannelType) : undefined, color: '#7D1AD7' }
+}
+function toApiMetric(m: CustomMetric) {
+  return { nome: m.name, canal: m.channel === 'instagram' || m.channel === 'linkedin' ? m.channel.toUpperCase() : null, formula: m.formula, valor: m.value, unidade: m.unit }
+}
+
 function InsertMetrics({ metrics, setMetrics }: { metrics: CustomMetric[]; setMetrics: (fn: (prev: CustomMetric[]) => CustomMetric[]) => void }) {
   const [modal, setModal] = useState<{ metric?: CustomMetric } | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editVal, setEditVal] = useState('')
   const [deleteId, setDeleteId] = useState<string | null>(null)
 
-  function saveMetric(m: CustomMetric) {
-    setMetrics((prev) => {
-      const idx = prev.findIndex((x) => x.id === m.id)
-      if (idx >= 0) return prev.map((x, i) => i === idx ? m : x)
-      return [...prev, m]
-    })
+  async function saveMetric(m: CustomMetric) {
+    const isNew = !metrics.some((x) => x.id === m.id)
+    try {
+      if (isNew) {
+        const created = mapMetric(await api.metrics.createCustom(toApiMetric(m)))
+        setMetrics((prev) => [...prev, { ...created, color: METRIC_COLORS[prev.length % METRIC_COLORS.length] }])
+      } else {
+        const updated = mapMetric(await api.metrics.updateCustom(m.id, toApiMetric(m)))
+        setMetrics((prev) => prev.map((x) => x.id === m.id ? { ...updated, color: x.color } : x))
+      }
+    } catch (error) { console.error(error) }
   }
 
-  function deleteMetric(id: string) {
-    setMetrics((prev) => prev.filter((m) => m.id !== id))
+  async function deleteMetric(id: string) {
+    try {
+      await api.metrics.removeCustom(id)
+      setMetrics((prev) => prev.filter((m) => m.id !== id))
+    } catch (error) { console.error(error) }
     setDeleteId(null)
   }
 
-  function commitValueEdit(id: string) {
-    setMetrics((prev) => prev.map((m) => m.id === id ? { ...m, value: parseFloat(editVal) || 0 } : m))
+  async function commitValueEdit(id: string) {
+    const value = parseFloat(editVal) || 0
+    const metric = metrics.find((m) => m.id === id)
     setEditingId(null)
+    if (!metric) return
+    try {
+      const updated = mapMetric(await api.metrics.updateCustom(id, toApiMetric({ ...metric, value })))
+      setMetrics((prev) => prev.map((m) => m.id === id ? { ...updated, color: m.color } : m))
+    } catch (error) { console.error(error) }
   }
 
   return (
@@ -650,7 +671,7 @@ function InsertMetrics({ metrics, setMetrics }: { metrics: CustomMetric[]; setMe
                       <button onClick={() => { setEditingId(m.id); setEditVal(String(m.value)) }}
                         className="text-lg font-bold cursor-pointer hover:opacity-70 transition-opacity"
                         style={{ color: m.color }}>
-                        {m.value.toLocaleString('pt-BR')} <span className="text-sm font-normal text-[#555566]">{m.unit}</span>
+                        {m.value.toLocaleString('pt-BR')} <span className="text-sm font-normal text-[#555566]">{UNIT_LABELS[m.unit] ?? m.unit}</span>
                       </button>
                     )}
                     <button onClick={() => setModal({ metric: m })} className="p-1.5 rounded-lg text-[#555566] hover:text-[#7D1AD7] hover:bg-[rgba(125,26,215,0.08)] opacity-0 group-hover:opacity-100 transition-all">
@@ -837,8 +858,14 @@ interface Props {
 
 export default function Metricas({ channel, setChannel, posts }: Props) {
   const [tab, setTab] = useState<Tab>('dashboard')
-  const [metrics, setMetrics] = useState<CustomMetric[]>(defaultMetrics)
+  const [metrics, setMetrics] = useState<CustomMetric[]>([])
   const [mql, setMql] = useState(mqlData)
+
+  useEffect(() => {
+    api.metrics.custom()
+      .then((rows) => setMetrics(rows.map((row, i) => ({ ...mapMetric(row), color: METRIC_COLORS[i % METRIC_COLORS.length] }))))
+      .catch(console.error)
+  }, [])
   const [globalMetrics, setGlobalMetrics] = useState<GlobalMetricsState>({
     instagram: { followersTotal: 18420, followersGrowth: 342, channelClicks: 624, profileVisits: 27130, roi: 184.5, conversions: 93, reachOverride: 48200, impressionsOverride: 0, engagementRateOverride: 4.8, followerReachShare: 62 },
     linkedin: { followersTotal: 9780, followersGrowth: 127, channelClicks: 624, profileVisits: 14860, roi: 163.2, conversions: 61, reachOverride: 0, impressionsOverride: 28400, engagementRateOverride: 4.2, followerReachShare: 68 },

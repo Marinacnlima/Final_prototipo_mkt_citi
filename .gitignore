@@ -4,7 +4,9 @@ dist-api/
 build/
 .cache/
 .env*
+!.env.example
 .vite/
+uploads/
 vite.config.*.timestamp-*
 *.tsbuildinfo
 *-debug.log*

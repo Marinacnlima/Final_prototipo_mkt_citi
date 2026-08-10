@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Eye, EyeOff, Lock, Mail, ShieldCheck, ArrowLeft, ArrowRight, Check } from 'lucide-react'
+import { Eye, EyeOff, Lock, Mail, ShieldCheck, ArrowLeft, ArrowRight } from 'lucide-react'
 import type { AppUser } from '../data'
 import citiLogo from '../assets/citi-logo-white.png'
 import LiquidBackground from '../components/LiquidBackground'
@@ -28,10 +28,10 @@ export function ChangePasswordScreen({ user, onSave, onBack }: ChangePwProps) {
   return (
     <div className="login-scene min-h-screen flex items-center justify-center px-4" style={{ background: 'linear-gradient(135deg, rgba(125,26,215,0.08) 0%, #202024 100%)' }}>
       <div className="w-full max-w-sm">
-        <div className="flex items-center justify-center gap-2.5 mb-8">
+        <div className="flex items-center justify-center gap-2.5 mb-6">
           <div>
-            <div className="brand-wordmark !text-3xl text-center"><span>CITi</span></div>
-            <div className="text-[10px] uppercase tracking-[.2em] text-[#6F6F7B]">Marketing Intelligence</div>
+            <img src={citiLogo} alt="CITi" className="h-8 w-auto mx-auto" />
+            <div className="text-[10px] uppercase tracking-[.2em] text-[#6F6F7B] text-center mt-1.5">Marketing Intelligence</div>
           </div>
         </div>
 
@@ -90,20 +90,153 @@ export function ChangePasswordScreen({ user, onSave, onBack }: ChangePwProps) {
   )
 }
 
+// ─── Forgot password (esqueci minha senha) ─────────────────────────────────
+
+type ForgotStep = 'email' | 'code' | 'newpw'
+
+interface ForgotPasswordPanelProps {
+  onDone: (message: string) => void
+  onCancel: () => void
+  forgotPassword: (email: string) => Promise<void>
+  verifyCode: (email: string, code: string) => Promise<string>
+  resetPassword: (resetToken: string, newPassword: string) => Promise<void>
+}
+
+function ForgotPasswordPanel({ onDone, onCancel, forgotPassword, verifyCode, resetPassword }: ForgotPasswordPanelProps) {
+  const [step, setStep] = useState<ForgotStep>('email')
+  const [email, setEmail] = useState('')
+  const [code, setCode] = useState('')
+  const [resetToken, setResetToken] = useState('')
+  const [newPw, setNewPw] = useState('')
+  const [confirmPw, setConfirmPw] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  async function submitEmail(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true); setError('')
+    try { await forgotPassword(email); setStep('code') }
+    catch { setError('Não foi possível enviar o código. Tente novamente.') }
+    finally { setLoading(false) }
+  }
+
+  async function submitCode(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true); setError('')
+    try { setResetToken(await verifyCode(email, code)); setStep('newpw') }
+    catch { setError('Código inválido ou expirado.') }
+    finally { setLoading(false) }
+  }
+
+  async function submitNewPassword(e: React.FormEvent) {
+    e.preventDefault()
+    if (newPw.length < 8) { setError('A senha deve ter pelo menos 8 caracteres.'); return }
+    if (newPw !== confirmPw) { setError('As senhas não coincidem.'); return }
+    setLoading(true); setError('')
+    try { await resetPassword(resetToken, newPw); onDone('Senha redefinida! Faça login com sua nova senha.') }
+    catch { setError('Não foi possível redefinir a senha. Solicite um novo código.') }
+    finally { setLoading(false) }
+  }
+
+  return (
+    <>
+      <div className="original-login__panel-heading">
+        <div>
+          <span>Recuperação de acesso</span>
+          <h2>Esqueceu a<br />senha?</h2>
+          <p>
+            {step === 'email' && 'Informe seu e-mail para receber um código de verificação.'}
+            {step === 'code' && `Digite o código de 6 dígitos enviado para ${email}.`}
+            {step === 'newpw' && 'Defina uma nova senha para sua conta.'}
+          </p>
+        </div>
+        <button type="button" onClick={onCancel} className="original-login__lock" aria-label="Voltar ao login" style={{ cursor: 'pointer' }}>
+          <ArrowLeft size={19} />
+        </button>
+      </div>
+
+      {step === 'email' && (
+        <form onSubmit={submitEmail} className="original-login__form">
+          <div>
+            <label>E-mail corporativo</label>
+            <div className="relative">
+              <Mail size={15} />
+              <input type="email" value={email} onChange={(e) => { setEmail(e.target.value); setError('') }} required
+                placeholder="nome@citi.org.br" autoComplete="email" />
+            </div>
+          </div>
+          {error && <div className="original-login__error">{error}</div>}
+          <button type="submit" disabled={loading} className="original-login__submit">
+            <span>{loading ? 'Enviando…' : 'Enviar código'}</span><ArrowRight size={19} />
+          </button>
+        </form>
+      )}
+
+      {step === 'code' && (
+        <form onSubmit={submitCode} className="original-login__form">
+          <div>
+            <label>Código de verificação</label>
+            <div className="relative">
+              <ShieldCheck size={15} />
+              <input type="text" inputMode="numeric" maxLength={6} value={code}
+                onChange={(e) => { setCode(e.target.value.replace(/\D/g, '')); setError('') }} required
+                placeholder="000000" autoComplete="one-time-code" />
+            </div>
+          </div>
+          {error && <div className="original-login__error">{error}</div>}
+          <button type="submit" disabled={loading || code.length !== 6} className="original-login__submit">
+            <span>{loading ? 'Validando…' : 'Validar código'}</span><ArrowRight size={19} />
+          </button>
+        </form>
+      )}
+
+      {step === 'newpw' && (
+        <form onSubmit={submitNewPassword} className="original-login__form">
+          <div>
+            <label>Nova senha</label>
+            <div className="relative">
+              <Lock size={15} />
+              <input type="password" value={newPw} onChange={(e) => { setNewPw(e.target.value); setError('') }} required minLength={8}
+                placeholder="Mínimo 8 caracteres" autoComplete="new-password" />
+            </div>
+          </div>
+          <div>
+            <label>Confirmar nova senha</label>
+            <div className="relative">
+              <Lock size={15} />
+              <input type="password" value={confirmPw} onChange={(e) => { setConfirmPw(e.target.value); setError('') }} required minLength={8}
+                placeholder="Repita a nova senha" autoComplete="new-password" />
+            </div>
+          </div>
+          {error && <div className="original-login__error">{error}</div>}
+          <button type="submit" disabled={loading} className="original-login__submit">
+            <span>{loading ? 'Salvando…' : 'Confirmar nova senha'}</span><ArrowRight size={19} />
+          </button>
+        </form>
+      )}
+    </>
+  )
+}
+
 // ─── Login ─────────────────────────────────────────────────────────────────
 
 interface LoginProps {
   users: AppUser[]
   onLogin: (user: AppUser) => void
   authenticate?: (email: string, password: string) => Promise<AppUser>
+  forgotPassword: (email: string) => Promise<void>
+  verifyCode: (email: string, code: string) => Promise<string>
+  resetPassword: (resetToken: string, newPassword: string) => Promise<void>
 }
 
-export default function Login({ users, onLogin, authenticate }: LoginProps) {
+export default function Login({ users, onLogin, authenticate, forgotPassword, verifyCode, resetPassword }: LoginProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [screen, setScreen] = useState<'login' | 'forgot'>('login')
+  const [notice, setNotice] = useState('')
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -122,13 +255,6 @@ export default function Login({ users, onLogin, authenticate }: LoginProps) {
     } finally { setLoading(false) }
   }
 
-  function fillDemo(u: AppUser) {
-    setEmail(u.email)
-    setPassword(u.password)
-    setError('')
-  }
-
-  const demoManager = users.find((u) => u.role === 'gerente')
   return (
     <main className="original-login min-h-screen">
       <LiquidBackground />
@@ -147,54 +273,68 @@ export default function Login({ users, onLogin, authenticate }: LoginProps) {
 
       <section className="original-login__panel" aria-label="Área de acesso">
         <div className="original-login__panel-glow" aria-hidden="true" />
-        <div className="original-login__panel-heading">
-          <div>
-            <span>Área restrita</span>
-            <h2>Bem-vindo de<br />volta</h2>
-            <p>Entre para continuar sua jornada.</p>
-          </div>
-          <div className="original-login__lock"><Lock size={19} /></div>
-        </div>
 
-        <form onSubmit={submit} className="original-login__form">
-            <div>
-              <label>E-mail corporativo</label>
-              <div className="relative">
-                <Mail size={15} />
-                <input type="email" value={email} onChange={(e) => { setEmail(e.target.value); setError('') }} required
-                  placeholder="nome@citi.org.br" autoComplete="email" />
+        {screen === 'forgot' ? (
+          <ForgotPasswordPanel
+            onCancel={() => setScreen('login')}
+            onDone={(message) => { setScreen('login'); setNotice(message) }}
+            forgotPassword={forgotPassword}
+            verifyCode={verifyCode}
+            resetPassword={resetPassword}
+          />
+        ) : (
+          <>
+            <div className="original-login__panel-heading">
+              <div>
+                <span>Área restrita</span>
+                <h2>Bem-vindo de<br />volta</h2>
+                <p>Entre para continuar sua jornada.</p>
               </div>
+              <div className="original-login__lock"><Lock size={19} /></div>
             </div>
 
-            <div>
-              <label>Senha</label>
-              <div className="relative">
-                <Lock size={15} />
-                <input type={showPw ? 'text' : 'password'} value={password} onChange={(e) => { setPassword(e.target.value); setError('') }} required
-                  placeholder="Digite sua senha" autoComplete="current-password" />
-                <button type="button" onClick={() => setShowPw((s) => !s)}
-                  className="original-login__eye" aria-label={showPw ? 'Ocultar senha' : 'Mostrar senha'}>
-                  {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
-                </button>
+            <form onSubmit={submit} className="original-login__form">
+              <div>
+                <label>E-mail corporativo</label>
+                <div className="relative">
+                  <Mail size={15} />
+                  <input type="email" value={email} onChange={(e) => { setEmail(e.target.value); setError('') }} required
+                    placeholder="nome@citi.org.br" autoComplete="email" />
+                </div>
               </div>
-            </div>
 
-            {error && (
-              <div className="original-login__error">{error}</div>
-            )}
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className="!mb-0">Senha</label>
+                  <button type="button" onClick={() => { setScreen('forgot'); setNotice('') }}
+                    style={{ background: 'none', border: 0, padding: 0, marginBottom: '.65rem', color: '#a76cff', fontSize: '11px', cursor: 'pointer' }}>
+                    Esqueceu a senha?
+                  </button>
+                </div>
+                <div className="relative">
+                  <Lock size={15} />
+                  <input type={showPw ? 'text' : 'password'} value={password} onChange={(e) => { setPassword(e.target.value); setError('') }} required
+                    placeholder="Digite sua senha" autoComplete="current-password" />
+                  <button type="button" onClick={() => setShowPw((s) => !s)}
+                    className="original-login__eye" aria-label={showPw ? 'Ocultar senha' : 'Mostrar senha'}>
+                    {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
+              </div>
 
-            <button type="submit" disabled={loading}
-              className="original-login__submit">
-              <span>{loading ? 'Entrando…' : 'Entrar na plataforma'}</span><ArrowRight size={19} />
-            </button>
-        </form>
+              {notice && (
+                <div className="original-login__error" style={{ color: '#50e678', background: 'rgba(80,230,120,.1)', borderColor: 'rgba(80,230,120,.25)' }}>{notice}</div>
+              )}
+              {error && (
+                <div className="original-login__error">{error}</div>
+              )}
 
-        {demoManager && (
-          <button type="button" className="original-login__demo" onClick={() => fillDemo(demoManager)}>
-            <span className="original-login__demo-check"><Check size={12} /></span>
-            <span><b>Explorar demonstração</b><small>Preencher acesso de gerente</small></span>
-            <ArrowRight size={15} />
-          </button>
+              <button type="submit" disabled={loading}
+                className="original-login__submit">
+                <span>{loading ? 'Entrando…' : 'Entrar na plataforma'}</span><ArrowRight size={19} />
+              </button>
+            </form>
+          </>
         )}
       </section>
 

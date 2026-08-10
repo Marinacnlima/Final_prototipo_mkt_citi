@@ -8,6 +8,13 @@ import { ApiError, asyncRoute } from './http.js'
 declare global { namespace Express { interface Request { user?: { id: string; perfil: PerfilUsuario; primeiroAcesso: boolean } } } }
 
 export const signToken = (id: string, perfil: PerfilUsuario) => jwt.sign({ perfil }, config.JWT_SECRET, { subject: id, expiresIn: config.JWT_EXPIRES_IN as jwt.SignOptions['expiresIn'] })
+export const signResetToken = (id: string) => jwt.sign({ purpose: 'password_reset' }, config.JWT_SECRET, { subject: id, expiresIn: '15m' })
+export const verifyResetToken = (token: string): string => {
+  let payload: jwt.JwtPayload
+  try { payload = jwt.verify(token, config.JWT_SECRET) as jwt.JwtPayload } catch { throw new ApiError(401, 'RESET_TOKEN_INVALID') }
+  if (payload.purpose !== 'password_reset' || !payload.sub) throw new ApiError(401, 'RESET_TOKEN_INVALID')
+  return payload.sub
+}
 export const authenticate: RequestHandler = asyncRoute(async (req, _res, next) => {
   const header = req.header('authorization')
   if (!header?.startsWith('Bearer ')) throw new ApiError(401, 'UNAUTHENTICATED')

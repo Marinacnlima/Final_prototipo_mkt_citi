@@ -5,7 +5,7 @@ import { asyncRoute } from '../http.js'
 import { authenticate, managerOnly } from '../auth.js'
 
 export const metricsRouter=Router();metricsRouter.use(authenticate)
-const customBody=z.object({nome:z.string().trim().min(1),canal:z.enum(['INSTAGRAM','LINKEDIN','SITE','EMAIL']),formula:z.string(),valor:z.number(),unidade:z.enum(['PERCENT','LEADS','SESSOES','NUMERO'])})
+const customBody=z.object({nome:z.string().trim().min(1),canal:z.enum(['INSTAGRAM','LINKEDIN']).nullable().optional(),formula:z.string(),valor:z.number(),unidade:z.enum(['PERCENT','LEADS','SESSOES','NUMERO'])})
 metricsRouter.get('/custom',asyncRoute(async(_req,res)=>res.json(await prisma.customMetric.findMany({orderBy:{createdAt:'asc'}}))))
 metricsRouter.post('/custom',asyncRoute(async(req,res)=>res.status(201).json(await prisma.customMetric.create({data:customBody.parse(req.body)}))))
 metricsRouter.patch('/custom/:id',asyncRoute(async(req,res)=>{const body=customBody.partial().parse(req.body);res.json(await prisma.customMetric.update({where:{id:String(req.params.id)},data:{...body,...(body.valor!==undefined?{atualizadoEm:new Date()}: {})}}))}))

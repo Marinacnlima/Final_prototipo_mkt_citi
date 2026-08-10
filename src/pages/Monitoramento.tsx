@@ -65,18 +65,19 @@ function ChannelBadge({ ch, small }: { ch: ChannelType; small?: boolean }) {
   )
 }
 
+// Card individual por filtro, em linha — mesma estética/espaçamento dos filtros de Materiais Ricos e Prompts
 function ChannelFilter({ channel, setChannel }: { channel: Channel; setChannel: (c: Channel) => void }) {
   const opts: { id: Channel; label: string }[] = [
     { id: 'todos', label: 'Todos' }, { id: 'instagram', label: 'Instagram' },
     { id: 'linkedin', label: 'LinkedIn' }, { id: 'site', label: 'Site' }, { id: 'email', label: 'Email' },
   ]
   return (
-    <div className="flex items-center gap-1.5 flex-wrap">
+    <div className="flex items-center gap-2 flex-wrap">
       {opts.map((o) => {
         const active = channel === o.id
         const c = o.id !== 'todos' ? CH[o.id as ChannelType] : null
         return (
-          <button key={o.id} onClick={() => setChannel(o.id)} className="filter-pill text-xs px-3 py-1.5 rounded-full font-medium transition-all"
+          <button key={o.id} onClick={() => setChannel(o.id)} className="text-xs px-3 py-1.5 rounded-full font-medium transition-all"
             style={active ? { background: c ? c.dot : '#7D1AD7', color: '#fff' } : { background: 'rgba(255,255,255,0.06)', color: '#8A8A9A' }}>
             {o.label}
           </button>
@@ -311,7 +312,7 @@ function TaskModal({ initial, colId, isManager, members, onMembersLoaded, onSave
 
 // ─── Kanban ───────────────────────────────────────────────────────────────
 
-function KanbanBoard({ channel, isManager, members, setMembers, columns, setColumns }: { channel: Channel; isManager: boolean; members: TaskMember[]; setMembers: React.Dispatch<React.SetStateAction<TaskMember[]>>; columns: KanbanColumn[]; setColumns: React.Dispatch<React.SetStateAction<KanbanColumn[]>> }) {
+function KanbanBoard({ channel, setChannel, isManager, members, setMembers, columns, setColumns }: { channel: Channel; setChannel: (c: Channel) => void; isManager: boolean; members: TaskMember[]; setMembers: React.Dispatch<React.SetStateAction<TaskMember[]>>; columns: KanbanColumn[]; setColumns: React.Dispatch<React.SetStateAction<KanbanColumn[]>> }) {
   const [dragging, setDragging] = useState<{ taskId: string; fromColId: string } | null>(null)
   const [dragOverColId, setDragOverColId] = useState<string | null>(null)
   const [editingColId, setEditingColId] = useState<string | null>(null)
@@ -387,6 +388,9 @@ function KanbanBoard({ channel, isManager, members, setMembers, columns, setColu
   return (
     <>
       <div className="h-full overflow-x-auto">
+        <div className="flex items-center gap-2 px-5 pt-4">
+          <ChannelFilter channel={channel} setChannel={setChannel} />
+        </div>
         <div className="flex gap-4 h-full p-5 items-start min-w-max">
           {columns.map((col, ci) => {
             const tasks = filterTasks(col.tasks)
@@ -911,7 +915,7 @@ const statusStyle = {
   encerrada: { label: 'Encerrada', bg: 'rgba(255,255,255,0.06)', color: '#8A8A9A' },
 }
 
-function CampaignsView({ channel }: { channel: Channel }) {
+function CampaignsView({ channel, setChannel }: { channel: Channel; setChannel: (c: Channel) => void }) {
   const [campaigns, setCampaigns] = useState<Campaign[]>(campaignsData)
   const [showForm, setShowForm] = useState(false)
   const [expandedMetrics, setExpandedMetrics] = useState<Record<number, boolean>>({})
@@ -967,10 +971,13 @@ function CampaignsView({ channel }: { channel: Channel }) {
   return (
     <div className="h-full overflow-auto p-5">
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <h2 className="text-base font-semibold text-[#F0F0F5]">Campanhas</h2>
-            <p className="text-sm text-[#8A8A9A]">{filtered.length} campanha{filtered.length !== 1 ? 's' : ''}</p>
+        <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div>
+              <h2 className="text-base font-semibold text-[#F0F0F5]">Campanhas</h2>
+              <p className="text-sm text-[#8A8A9A]">{filtered.length} campanha{filtered.length !== 1 ? 's' : ''}</p>
+            </div>
+            <ChannelFilter channel={channel} setChannel={setChannel} />
           </div>
           <button onClick={() => setShowForm(true)} className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl text-white transition-all hover:opacity-90 btn-glow"
             style={{ background: 'linear-gradient(135deg, #7D1AD7, #50E678)' }}>
@@ -1448,16 +1455,15 @@ export default function Monitoramento({ profile, isManager, channel, setChannel 
             <h1 className="text-lg md:text-xl font-semibold text-[#F0F0F5] leading-tight">Monitoramento</h1>
             <p className="text-xs md:text-sm text-[#8A8A9A] mt-0.5 hidden sm:block">Gerencie tasks, calendário e campanhas do time</p>
           </div>
-          {tab !== 'calendario' && <ChannelFilter channel={channel} setChannel={setChannel} />}
         </div>
         <div className="px-4 md:px-6 pt-2 md:pt-3 pb-0 overflow-x-auto">
           <TabNav tabs={tabs} active={tab} setTab={setTab} />
         </div>
       </header>
       <div className="module-stage flex-1 overflow-hidden">
-        {tab === 'kanban' && <KanbanBoard channel={channel} isManager={isManager} members={members} setMembers={setMembers} columns={columns} setColumns={setColumns} />}
+        {tab === 'kanban' && <KanbanBoard channel={channel} setChannel={setChannel} isManager={isManager} members={members} setMembers={setMembers} columns={columns} setColumns={setColumns} />}
         {tab === 'calendario' && <CalendarView />}
-        {tab === 'campanhas' && <CampaignsView channel={channel} />}
+        {tab === 'campanhas' && <CampaignsView channel={channel} setChannel={setChannel} />}
         {tab === 'engajamento' && isManager && <EngagementView columns={columns} />}
       </div>
     </div>

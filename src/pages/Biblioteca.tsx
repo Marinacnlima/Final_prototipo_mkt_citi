@@ -1,11 +1,18 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   BookOpen, FileText, MessageSquare, Download, Star, Copy, Check,
-  ChevronLeft, ChevronRight, Hash, Eye, Plus, Edit2, Trash2, X, Search,
+  ChevronLeft, ChevronRight, ChevronDown, Hash, Eye, Plus, Edit2, Trash2, X, Search, Link as LinkIcon,
 } from 'lucide-react'
 import type { Channel } from '../App'
-import type { ChannelType, Prompt, Material, Post } from '../data'
-import { materialsData, promptsData } from '../data'
+import type { ChannelType, Prompt, Material, Post, PostMedia } from '../data'
+import { promptsData } from '../data'
+import { api } from '../api'
+
+function formatBytes(bytes: number | null | undefined): string {
+  if (!bytes) return ''
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
 
 // ─── Shared ────────────────────────────────────────────────────────────────
 
@@ -103,7 +110,7 @@ function Inp({ value, onChange, placeholder, type = 'text', as }: { value: strin
 interface PostFormData {
   title: string; channel: ChannelType; campaign: string
   format: Post['format']
-  images: string; caption: string
+  images: PostMedia[]; linkUrl: string; ctr: string; profileVisits: string; caption: string
   publishedAt: string; validUntil: string
   likes: string; reach: string; impressions: string; engagement: string; saves: string
   shares: string; comments: string
@@ -119,7 +126,10 @@ function PostModal({ initial, onSave, onClose }: {
     channel: initial?.channel ?? 'instagram',
     campaign: initial?.campaign ?? '',
     format: initial?.format ?? 'carousel',
-    images: initial?.images.join('\n') ?? '',
+    images: initial?.images ?? [],
+    linkUrl: initial?.linkUrl ?? '',
+    ctr: initial?.ctr !== undefined ? String(initial.ctr) : '',
+    profileVisits: initial?.profileVisits !== undefined ? String(initial.profileVisits) : '',
     caption: initial?.caption ?? '',
     publishedAt: initial?.publishedAt ?? '',
     validUntil: initial?.validUntil ?? '',
@@ -131,14 +141,51 @@ function PostModal({ initial, onSave, onClose }: {
     shares: String(initial?.insights.shares ?? ''),
     comments: String(initial?.insights.comments ?? ''),
   })
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState('')
+  const [linkError, setLinkError] = useState('')
+  const [metricError, setMetricError] = useState('')
+
+  async function handleFiles(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0) return
+    setUploading(true); setUploadError('')
+    try {
+      const uploaded = await Promise.all(Array.from(fileList).map((file) => api.posts.uploadMedia(file)))
+      setForm((f) => ({ ...f, images: [...f.images, ...uploaded.map((u): PostMedia => ({ url: u.url, tipo: u.tipo === 'VIDEO' ? 'video' : 'imagem' }))] }))
+    } catch {
+      setUploadError('Falha ao enviar arquivo. Tente novamente.')
+    } finally { setUploading(false) }
+  }
+
+  function removeImage(idx: number) {
+    setForm((f) => ({ ...f, images: f.images.filter((_, i) => i !== idx) }))
+  }
+
+  function validateLink(value: string) {
+    if (!value) { setLinkError(''); return true }
+    try { new URL(value); setLinkError(''); return true }
+    catch { setLinkError('Informe uma URL válida (ex: https://...)'); return false }
+  }
 
   function save() {
     if (!form.title.trim()) return
-    const images = form.images.split('\n').map((s) => s.trim()).filter(Boolean)
+    if (!validateLink(form.linkUrl)) return
+    let ctr: number | undefined
+    let profileVisits: number | undefined
+    if (form.channel === 'linkedin' && form.ctr.trim() !== '') {
+      ctr = parseFloat(form.ctr.replace(',', '.'))
+      if (Number.isNaN(ctr)) { setMetricError('Informe um CTR numérico válido (ex: 2.5).'); return }
+    } else if (form.channel === 'instagram' && form.profileVisits.trim() !== '') {
+      profileVisits = parseInt(form.profileVisits, 10)
+      if (Number.isNaN(profileVisits)) { setMetricError('Informe uma quantidade numérica válida de visitas ao perfil (ex: 150).'); return }
+    }
+    setMetricError('')
     const post: Post = {
       id: initial?.id ?? Date.now(),
       title: form.title, channel: form.channel, campaign: form.campaign, format: form.format,
-      images: images.length ? images : ['https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=400&fit=crop&auto=format'],
+      images: form.images.length ? form.images : [{ url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=400&fit=crop&auto=format', tipo: 'imagem' }],
+      linkUrl: form.linkUrl || undefined,
+      ctr, profileVisits,
       caption: form.caption, publishedAt: form.publishedAt, validUntil: form.validUntil,
       insights: {
         likes: parseInt(form.likes) || 0, reach: parseInt(form.reach) || 0, impressions: parseInt(form.impressions) || 0,
@@ -149,7 +196,7 @@ function PostModal({ initial, onSave, onClose }: {
     onSave(post); onClose()
   }
 
-  const channels: ChannelType[] = ['instagram', 'linkedin', 'site', 'email']
+  const channels: ChannelType[] = ['instagram', 'linkedin']
 
   return (
     <Modal title={initial ? 'Editar post' : 'Novo post'} onClose={onClose} wide>
@@ -178,8 +225,33 @@ function PostModal({ initial, onSave, onClose }: {
             <option value="article">Artigo</option><option value="poll">Enquete</option>
           </select>
         </FormRow>
-        <FormRow label="URLs das imagens (uma por linha)">
-          <Inp as="textarea" value={form.images} onChange={(v) => setForm((f) => ({ ...f, images: v }))} placeholder="https://..." />
+        <FormRow label="Imagens / vídeos do post">
+          <div className="space-y-2">
+            {form.images.length > 0 && (
+              <div className="flex gap-2 flex-wrap">
+                {form.images.map((img, i) => (
+                  <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0" style={{ background: '#202024' }}>
+                    {img.tipo === 'video'
+                      ? <video src={img.url} className="w-full h-full object-cover" muted />
+                      : <img src={img.url} className="w-full h-full object-cover" alt="" />}
+                    <button type="button" onClick={() => removeImage(i)}
+                      className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/60 text-white flex items-center justify-center">
+                      <X size={10} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <input type="file" multiple accept="image/*,video/*" disabled={uploading}
+              onChange={(e) => { handleFiles(e.target.files); e.target.value = '' }}
+              className="w-full text-xs text-[#8A8A9A] file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-[rgba(125,26,215,0.08)] file:text-[#507AE6] file:cursor-pointer" />
+            {uploading && <p className="text-xs text-[#8A8A9A]">Enviando...</p>}
+            {uploadError && <p className="text-xs text-[#FF5252]">{uploadError}</p>}
+          </div>
+        </FormRow>
+        <FormRow label="Link do post (opcional)">
+          <Inp value={form.linkUrl} onChange={(v) => { setForm((f) => ({ ...f, linkUrl: v })); validateLink(v) }} placeholder="https://..." />
+          {linkError && <p className="text-xs text-[#FF5252] mt-1">{linkError}</p>}
         </FormRow>
         <FormRow label="Legenda / Texto">
           <Inp as="textarea" value={form.caption} onChange={(v) => setForm((f) => ({ ...f, caption: v }))} placeholder="Texto do post..." />
@@ -200,7 +272,18 @@ function PostModal({ initial, onSave, onClose }: {
                 <Inp type="number" value={form[k] as string} onChange={(v) => setForm((f) => ({ ...f, [k]: v }))} placeholder="0" />
               </FormRow>
             ))}
+            {form.channel === 'linkedin' && (
+              <FormRow label="CTR do post (%)">
+                <Inp type="number" value={form.ctr} onChange={(v) => { setForm((f) => ({ ...f, ctr: v })); setMetricError('') }} placeholder="2.5" />
+              </FormRow>
+            )}
+            {form.channel === 'instagram' && (
+              <FormRow label="Visitas ao perfil">
+                <Inp type="number" value={form.profileVisits} onChange={(v) => { setForm((f) => ({ ...f, profileVisits: v })); setMetricError('') }} placeholder="150" />
+              </FormRow>
+            )}
           </div>
+          {metricError && <p className="text-xs text-[#FF5252] mt-2">{metricError}</p>}
         </div>
       </div>
       <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
@@ -214,16 +297,65 @@ function PostModal({ initial, onSave, onClose }: {
   )
 }
 
+type PostChannelOption = 'instagram' | 'linkedin' | 'todos'
+
+function PostChannelDropdown({ value, onChange }: { value: PostChannelOption; onChange: (c: PostChannelOption) => void }) {
+  const opts: { id: PostChannelOption; label: string }[] = [
+    { id: 'todos', label: 'Todos' }, { id: 'instagram', label: 'Instagram' }, { id: 'linkedin', label: 'LinkedIn' },
+  ]
+  const active = value !== 'todos' ? CH[value] : null
+  return (
+    <div className="relative inline-flex items-center">
+      <select value={value} onChange={(e) => onChange(e.target.value as PostChannelOption)}
+        className="appearance-none text-xs font-medium pl-3 pr-7 py-1.5 rounded-full cursor-pointer focus:outline-none"
+        style={{ background: active ? active.dot : '#7D1AD7', color: '#fff', border: 'none' }}>
+        {opts.map((o) => <option key={o.id} value={o.id} style={{ background: '#17171A', color: '#F0F0F5' }}>{o.label}</option>)}
+      </select>
+      <ChevronDown size={13} className="pointer-events-none absolute right-2 text-white" />
+    </div>
+  )
+}
+
+const POST_SORT_OPTIONS: Record<PostChannelOption, { id: string; label: string }[]> = {
+  instagram: [{ id: 'alcance', label: 'Alcance' }, { id: 'engajamento', label: 'Engajamento' }, { id: 'visitas', label: 'Visitas ao perfil' }],
+  linkedin: [{ id: 'alcance', label: 'Alcance' }, { id: 'engajamento', label: 'Engajamento' }, { id: 'ctr', label: 'CTR' }],
+  todos: [{ id: '', label: 'Sem filtro' }, { id: 'alcance', label: 'Alcance' }, { id: 'engajamento', label: 'Engajamento' }, { id: 'ctr', label: 'CTR' }, { id: 'visitas', label: 'Visitas ao perfil' }],
+}
+const POST_SORT_VALUE: Record<string, (p: Post) => number> = {
+  alcance: (p) => p.insights.reach,
+  engajamento: (p) => p.insights.engagement,
+  ctr: (p) => p.ctr ?? 0,
+  visitas: (p) => p.profileVisits ?? 0,
+}
+
+function PostSortFilter({ channel, sortBy, setSortBy }: { channel: PostChannelOption; sortBy: string; setSortBy: (v: string) => void }) {
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      {POST_SORT_OPTIONS[channel].map((o) => (
+        <button key={o.id} onClick={() => setSortBy(o.id)} className="text-xs px-3 py-1.5 rounded-full font-medium transition-all"
+          style={sortBy === o.id ? { background: '#7D1AD7', color: '#fff' } : { background: 'rgba(255,255,255,0.06)', color: '#8A8A9A' }}>
+          {o.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 function PostsView({ channel, posts, setPosts }: { channel: Channel; posts: Post[]; setPosts: (fn: (prev: Post[]) => Post[]) => void }) {
-  const [slides, setSlides] = useState<Record<number, number>>({})
-  const [expanded, setExpanded] = useState<Record<number, boolean>>({})
+  const [slides, setSlides] = useState<Record<string, number>>({})
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const [modal, setModal] = useState<{ post?: Post } | null>(null)
-  const [deleteId, setDeleteId] = useState<number | null>(null)
+  const [deleteId, setDeleteId] = useState<Post['id'] | null>(null)
+  const [sortBy, setSortBy] = useState('')
 
-  const filtered = channel === 'todos' ? posts : posts.filter((p) => p.channel === channel)
+  const postChannel: PostChannelOption = channel === 'instagram' || channel === 'linkedin' ? channel : 'todos'
+  useEffect(() => { setSortBy('') }, [postChannel])
 
-  function setSlide(id: number, idx: number) { setSlides((s) => ({ ...s, [id]: idx })) }
-  function toggleExpand(id: number) { setExpanded((e) => ({ ...e, [id]: !e[id] })) }
+  const filtered = postChannel === 'todos' ? posts : posts.filter((p) => p.channel === postChannel)
+  const sorted = sortBy && POST_SORT_VALUE[sortBy] ? [...filtered].sort((a, b) => POST_SORT_VALUE[sortBy](b) - POST_SORT_VALUE[sortBy](a)) : filtered
+
+  function setSlide(id: Post['id'], idx: number) { setSlides((s) => ({ ...s, [String(id)]: idx })) }
+  function toggleExpand(id: Post['id']) { setExpanded((e) => ({ ...e, [String(id)]: !e[String(id)] })) }
 
   function savePost(post: Post) {
     setPosts((prev) => {
@@ -233,15 +365,18 @@ function PostsView({ channel, posts, setPosts }: { channel: Channel; posts: Post
     })
   }
 
-  function deletePost(id: number) {
+  function deletePost(id: Post['id']) {
     setPosts((prev) => prev.filter((p) => p.id !== id))
     setDeleteId(null)
   }
 
   return (
     <div className="h-full overflow-auto p-5">
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-[#8A8A9A]">{filtered.length} post{filtered.length !== 1 ? 's' : ''}</p>
+      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+        <div className="flex items-center gap-3 flex-wrap">
+          <p className="text-sm text-[#8A8A9A]">{sorted.length} post{sorted.length !== 1 ? 's' : ''}</p>
+          <PostSortFilter channel={postChannel} sortBy={sortBy} setSortBy={setSortBy} />
+        </div>
         <button onClick={() => setModal({})} className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl text-white hover:opacity-90 btn-glow"
           style={{ background: 'linear-gradient(135deg, #7D1AD7, #50E678)' }}>
           <Plus size={15} /> Adicionar post
@@ -249,15 +384,18 @@ function PostsView({ channel, posts, setPosts }: { channel: Channel; posts: Post
       </div>
 
       <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
-        {filtered.map((post) => {
-          const slide = slides[post.id] ?? 0
-          const isExpanded = expanded[post.id]
+        {sorted.map((post) => {
+          const slide = slides[String(post.id)] ?? 0
+          const isExpanded = expanded[String(post.id)]
           const caption = isExpanded ? post.caption : post.caption.slice(0, 120) + (post.caption.length > 120 ? '…' : '')
+          const media = post.images[slide]
           return (
             <div key={post.id} className="editorial-card bg-[#17171A] rounded-2xl overflow-hidden flex flex-col group"
               style={{ border: '1.5px solid rgba(255,255,255,0.1)', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
               <div className="relative" style={{ background: '#202024', aspectRatio: '1/1' }}>
-                <img src={post.images[slide]} alt={post.title} className="w-full h-full object-cover" />
+                {media?.tipo === 'video'
+                  ? <video src={media.url} className="w-full h-full object-cover" controls />
+                  : <img src={media?.url} alt={post.title} className="w-full h-full object-cover" />}
                 {post.images.length > 1 && (
                   <>
                     <button onClick={() => setSlide(post.id, Math.max(0, slide - 1))} disabled={slide === 0}
@@ -293,6 +431,12 @@ function PostsView({ channel, posts, setPosts }: { channel: Channel; posts: Post
                     até {post.validUntil.slice(5).split('-').reverse().join('/')}
                   </span>
                 </div>
+                {post.linkUrl && (
+                  <a href={post.linkUrl} target="_blank" rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-[#7D1AD7] hover:underline mb-2">
+                    <LinkIcon size={11} /> Ver post original
+                  </a>
+                )}
                 <p className="text-sm text-[#F0F0F5] leading-relaxed whitespace-pre-line flex-1">{caption}</p>
                 {post.caption.length > 120 && (
                   <button onClick={() => toggleExpand(post.id)} className="text-xs text-[#7D1AD7] hover:text-[#7D1AD7] mt-1 text-left">
@@ -301,12 +445,14 @@ function PostsView({ channel, posts, setPosts }: { channel: Channel; posts: Post
                 )}
                 <div className="mt-4 pt-3 grid grid-cols-3 gap-2 text-center" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                   {[
-                    { label: 'Alcance', value: post.insights.reach },
-                    { label: 'Engajamento', value: post.insights.engagement },
-                    { label: 'Saves', value: post.insights.saves },
+                    { label: 'Alcance', value: post.insights.reach, suffix: '' },
+                    { label: 'Engajamento', value: post.insights.engagement, suffix: '' },
+                    post.channel === 'linkedin'
+                      ? { label: 'CTR', value: post.ctr ?? 0, suffix: '%' }
+                      : { label: 'Visitas ao perfil', value: post.profileVisits ?? 0, suffix: '' },
                   ].map((kpi) => (
                     <div key={kpi.label}>
-                      <div className="text-sm font-semibold text-[#F0F0F5]">{kpi.value.toLocaleString('pt-BR')}</div>
+                      <div className="text-sm font-semibold text-[#F0F0F5]">{kpi.value.toLocaleString('pt-BR')}{kpi.suffix}</div>
                       <div className="text-xs text-[#555566]">{kpi.label}</div>
                     </div>
                   ))}
@@ -315,7 +461,7 @@ function PostsView({ channel, posts, setPosts }: { channel: Channel; posts: Post
             </div>
           )
         })}
-        {filtered.length === 0 && <div className="col-span-full text-center py-16 text-[#555566]">Nenhum post neste canal</div>}
+        {sorted.length === 0 && <div className="col-span-full text-center py-16 text-[#555566]">Nenhum post neste canal</div>}
       </div>
 
       {modal && <PostModal initial={modal.post} onSave={savePost} onClose={() => setModal(null)} />}
@@ -347,16 +493,33 @@ const matTypeStyle = {
 interface MatForm {
   type: 'ebook' | 'newsletter' | 'case'
   title: string; description: string; cover: string; downloads: string
+  arquivoUrl: string; arquivoNome: string; arquivoTamanho: number | null
 }
 
-function MaterialModal({ initial, onSave, onClose }: { initial?: Material; onSave: (m: Material) => void; onClose: () => void }) {
+function MaterialModal({ initial, onSave, onClose }: { initial?: Material; onSave: (m: Material, isNew: boolean) => void; onClose: () => void }) {
   const [form, setForm] = useState<MatForm>({
     type: initial?.type ?? 'ebook',
     title: initial?.title ?? '',
     description: initial?.description ?? '',
     cover: initial?.cover ?? '',
     downloads: String(initial?.downloads ?? '0'),
+    arquivoUrl: initial?.arquivoUrl ?? '',
+    arquivoNome: initial?.arquivoNome ?? '',
+    arquivoTamanho: initial?.arquivoTamanho ?? null,
   })
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState('')
+
+  async function handleFile(file: File | undefined) {
+    if (!file) return
+    setUploading(true); setUploadError('')
+    try {
+      const result = await api.materials.upload(file)
+      setForm((f) => ({ ...f, arquivoUrl: result.arquivoUrl, arquivoNome: result.nomeArquivo, arquivoTamanho: result.tamanhoBytes }))
+    } catch {
+      setUploadError('Falha ao enviar o arquivo. Tente novamente.')
+    } finally { setUploading(false) }
+  }
 
   function save() {
     if (!form.title.trim()) return
@@ -366,7 +529,10 @@ function MaterialModal({ initial, onSave, onClose }: { initial?: Material; onSav
       cover: form.cover || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=250&fit=crop&auto=format',
       downloads: parseInt(form.downloads) || 0,
       createdAt: initial?.createdAt ?? new Date().toISOString().slice(0, 10),
-    })
+      arquivoUrl: form.arquivoUrl || undefined,
+      arquivoNome: form.arquivoNome || undefined,
+      arquivoTamanho: form.arquivoTamanho ?? undefined,
+    }, !initial)
     onClose()
   }
 
@@ -395,6 +561,16 @@ function MaterialModal({ initial, onSave, onClose }: { initial?: Material; onSav
         <FormRow label="URL da capa">
           <Inp value={form.cover} onChange={(v) => setForm((f) => ({ ...f, cover: v }))} placeholder="https://..." />
         </FormRow>
+        <FormRow label="Arquivo (PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX)">
+          <input type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx" disabled={uploading}
+            onChange={(e) => { handleFile(e.target.files?.[0]); e.target.value = '' }}
+            className="w-full text-xs text-[#8A8A9A] file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-[rgba(125,26,215,0.08)] file:text-[#507AE6] file:cursor-pointer" />
+          {uploading && <p className="text-xs text-[#8A8A9A] mt-1">Enviando...</p>}
+          {uploadError && <p className="text-xs text-[#FF5252] mt-1">{uploadError}</p>}
+          {form.arquivoNome && !uploading && (
+            <p className="text-xs text-[#8A8A9A] mt-1">{form.arquivoNome} · {formatBytes(form.arquivoTamanho)}</p>
+          )}
+        </FormRow>
         <FormRow label="Downloads">
           <Inp type="number" value={form.downloads} onChange={(v) => setForm((f) => ({ ...f, downloads: v }))} placeholder="0" />
         </FormRow>
@@ -410,25 +586,65 @@ function MaterialModal({ initial, onSave, onClose }: { initial?: Material; onSav
   )
 }
 
+function mapMaterial(row: any): Material {
+  return {
+    id: row.id,
+    type: row.tipo.toLowerCase() as Material['type'],
+    title: row.titulo,
+    description: row.descricao,
+    cover: row.capaUrl || '',
+    downloads: row.downloads,
+    createdAt: row.createdAt?.slice(0, 10) ?? '',
+    arquivoUrl: row.arquivoUrl ?? undefined,
+    arquivoNome: row.nomeArquivo ?? undefined,
+    arquivoTamanho: row.tamanhoBytes ?? undefined,
+  }
+}
+
 function MaterialsView() {
-  const [materials, setMaterials] = useState<Material[]>(materialsData)
+  const [materials, setMaterials] = useState<Material[]>([])
+  const [loading, setLoading] = useState(true)
   const [typeFilter, setTypeFilter] = useState<'todos' | 'ebook' | 'newsletter' | 'case'>('todos')
   const [modal, setModal] = useState<{ mat?: Material } | null>(null)
-  const [deleteId, setDeleteId] = useState<number | null>(null)
+  const [deleteId, setDeleteId] = useState<Material['id'] | null>(null)
+
+  useEffect(() => {
+    api.materials.list().then((rows) => setMaterials(rows.map(mapMaterial))).catch(console.error).finally(() => setLoading(false))
+  }, [])
 
   const filtered = typeFilter === 'todos' ? materials : materials.filter((m) => m.type === typeFilter)
 
-  function saveMaterial(mat: Material) {
-    setMaterials((prev) => {
-      const idx = prev.findIndex((m) => m.id === mat.id)
-      if (idx >= 0) return prev.map((m, i) => i === idx ? mat : m)
-      return [...prev, mat]
-    })
+  async function saveMaterial(mat: Material, isNew: boolean) {
+    const payload = {
+      titulo: mat.title, descricao: mat.description, tipo: mat.type.toUpperCase(),
+      capaUrl: mat.cover || null, arquivoUrl: mat.arquivoUrl || null,
+      nomeArquivo: mat.arquivoNome || null, tamanhoBytes: mat.arquivoTamanho ?? null, mimeType: null,
+    }
+    try {
+      if (isNew) {
+        const created = mapMaterial(await api.materials.create(payload))
+        setMaterials((prev) => [created, ...prev])
+      } else {
+        const updated = mapMaterial(await api.materials.update(mat.id, payload))
+        setMaterials((prev) => prev.map((m) => m.id === mat.id ? updated : m))
+      }
+    } catch (error) { console.error(error) }
   }
 
-  function deleteMaterial(id: number) {
-    setMaterials((prev) => prev.filter((m) => m.id !== id))
+  async function deleteMaterial(id: Material['id']) {
+    try {
+      await api.materials.remove(id)
+      setMaterials((prev) => prev.filter((m) => m.id !== id))
+    } catch (error) { console.error(error) }
     setDeleteId(null)
+  }
+
+  async function downloadMaterial(mat: Material) {
+    try {
+      const result = await api.materials.download(mat.id)
+      setMaterials((prev) => prev.map((m) => m.id === mat.id ? { ...m, downloads: result.downloads } : m))
+      if (result.arquivoUrl) window.open(result.arquivoUrl, '_blank')
+    } catch (error) { console.error(error) }
   }
 
   return (
@@ -452,6 +668,9 @@ function MaterialsView() {
           </button>
         </div>
 
+        {loading ? (
+          <div className="text-center py-16 text-[#555566]">Carregando...</div>
+        ) : (
         <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
           {filtered.map((mat) => {
             const s = matTypeStyle[mat.type]
@@ -474,12 +693,16 @@ function MaterialsView() {
                 <div className="p-4 flex-1 flex flex-col">
                   <h3 className="text-sm font-semibold text-[#F0F0F5] mb-1 leading-snug">{mat.title}</h3>
                   <p className="text-xs text-[#8A8A9A] flex-1">{mat.description}</p>
+                  {mat.arquivoNome && (
+                    <p className="text-xs text-[#555566] mt-1 truncate">{mat.arquivoNome} · {formatBytes(mat.arquivoTamanho)}</p>
+                  )}
                   <div className="flex items-center justify-between mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                     <div className="flex items-center gap-1 text-xs text-[#555566]">
                       <Download size={11} />
                       <span>{mat.downloads.toLocaleString('pt-BR')}</span>
                     </div>
-                    <button className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg font-medium hover:opacity-80"
+                    <button onClick={() => downloadMaterial(mat)} disabled={!mat.arquivoUrl}
+                      className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg font-medium hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed"
                       style={{ background: 'rgba(125,26,215,0.08)', color: '#507AE6' }}>
                       <Download size={11} /> Baixar
                     </button>
@@ -488,7 +711,9 @@ function MaterialsView() {
               </div>
             )
           })}
+          {filtered.length === 0 && <div className="col-span-full text-center py-16 text-[#555566]">Nenhum material encontrado</div>}
         </div>
+        )}
 
         {modal && <MaterialModal initial={modal.mat} onSave={saveMaterial} onClose={() => setModal(null)} />}
         {deleteId !== null && (
@@ -760,6 +985,7 @@ interface Props {
 
 export default function Biblioteca({ channel, setChannel, posts, setPosts }: Props) {
   const [tab, setTab] = useState<Tab>('posts')
+  const postChannel: PostChannelOption = channel === 'instagram' || channel === 'linkedin' ? channel : 'todos'
 
   return (
     <div className="flex flex-col h-full">
@@ -770,7 +996,7 @@ export default function Biblioteca({ channel, setChannel, posts, setPosts }: Pro
             <h1 className="text-lg md:text-xl font-semibold text-[#F0F0F5] leading-tight">Biblioteca</h1>
             <p className="text-xs md:text-sm text-[#8A8A9A] mt-0.5 hidden sm:block">Posts publicados, materiais ricos e biblioteca de prompts</p>
           </div>
-          {tab === 'posts' && <ChannelFilter channel={channel} setChannel={setChannel} />}
+          {tab === 'posts' && <PostChannelDropdown value={postChannel} onChange={setChannel} />}
         </div>
         <div className="px-4 md:px-6 pt-2 md:pt-3 pb-0 overflow-x-auto">
           <TabNav active={tab} setTab={setTab} />
