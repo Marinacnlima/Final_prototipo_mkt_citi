@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: marketops
+      POSTGRES_PASSWORD: marketops
+      POSTGRES_DB: marketops
+    ports: ["5432:5432"]
+    volumes: ["marketops_pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U marketops"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+volumes:
+  marketops_pgdata:

@@ -1,5 +1,5 @@
 export interface AppUser {
-  id: number
+  id: number | string
   name: string
   initials: string
   color: string
@@ -22,7 +22,7 @@ export type Difficulty = 'fácil' | 'médio' | 'difícil'
 export type CampaignStatus = 'ativa' | 'planejada' | 'encerrada'
 
 export interface TaskAssignee {
-  memberId: number
+  memberId: number | string
   note: number | null
 }
 
@@ -33,6 +33,7 @@ export interface Task {
   assignees: TaskAssignee[]
   priority: Priority
   difficulty: Difficulty
+  startDate?: string
   dueDate: string
 }
 
@@ -74,7 +75,7 @@ export interface TeamMember {
 }
 
 export interface EngagementData {
-  memberId: number
+  memberId: number | string
   name: string
   punctuality: number
   quality: number
@@ -95,7 +96,7 @@ export interface CalendarEvent {
 }
 
 export interface Post {
-  id: number
+  id: number | string
   title: string
   channel: ChannelType
   campaign: string

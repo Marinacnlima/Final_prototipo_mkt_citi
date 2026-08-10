@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Plus, Calendar, Columns3, Users, Target, Edit2, Check, X,
   Clock, Flame, Trash2, BarChart2, ChevronLeft, ChevronRight,
@@ -8,7 +8,37 @@ import {
 } from 'recharts'
 import type { Profile, Channel } from '../App'
 import type { KanbanColumn, Task, TaskAssignee, ChannelType, Campaign, CalendarEvent, CampaignMetricEntry } from '../data'
-import { initialKanban, campaignsData, calendarEventsData, engagementData, team, type Difficulty } from '../data'
+import { campaignsData, calendarEventsData, engagementData, type Difficulty } from '../data'
+import { api } from '../api'
+
+interface TaskMember {
+  id: string
+  name: string
+  role: string
+  initials: string
+  color: string
+}
+
+const CHANNEL_TO_API: Record<ChannelType, string> = { instagram: 'INSTAGRAM', linkedin: 'LINKEDIN', site: 'SITE', email: 'EMAIL' }
+const DIFFICULTY_TO_API: Record<Difficulty, string> = { fácil: 'FACIL', médio: 'MEDIO', difícil: 'DIFICIL' }
+const DIFFICULTY_FROM_API: Record<string, Difficulty> = { FACIL: 'fácil', MEDIO: 'médio', DIFICIL: 'difícil' }
+
+function mapTask(task: any): Task {
+  return {
+    id: task.id,
+    title: task.titulo,
+    channel: task.redeSocial.toLowerCase() as ChannelType,
+    assignees: (task.responsaveis ?? []).map((assignment: any) => ({ memberId: assignment.userId, note: assignment.nota ?? null })),
+    priority: 'média',
+    difficulty: DIFFICULTY_FROM_API[task.dificuldade] ?? 'médio',
+    startDate: task.dataInicio?.slice(0, 10) ?? '',
+    dueDate: task.dataEntrega?.slice(0, 10) ?? '',
+  }
+}
+
+function mapColumn(column: any): KanbanColumn {
+  return { id: column.id, name: column.nome, tasks: (column.tasks ?? []).map(mapTask) }
+}
 
 // ─── Shared ────────────────────────────────────────────────────────────────
 
@@ -56,23 +86,11 @@ function ChannelFilter({ channel, setChannel }: { channel: Channel; setChannel: 
   )
 }
 
-function MemberAvatar({ memberId, size = 'sm' }: { memberId: number; size?: 'sm' | 'md' }) {
-  const member = team.find((t) => t.id === memberId)
-  if (!member) return null
-  const dim = size === 'sm' ? 22 : 28
-  return (
-    <div title={member.name} className="flex-shrink-0 flex items-center justify-center rounded-full text-white font-bold"
-      style={{ width: dim, height: dim, background: member.color, fontSize: size === 'sm' ? 9 : 11 }}>
-      {member.initials}
-    </div>
-  )
-}
-
-function AvatarStack({ assignees }: { assignees: TaskAssignee[] }) {
+function AvatarStack({ assignees, members }: { assignees: TaskAssignee[]; members: TaskMember[] }) {
   return (
     <div className="flex items-center">
       {assignees.slice(0, 4).map((a, i) => {
-        const member = team.find((t) => t.id === a.memberId)
+        const member = members.find((t) => t.id === String(a.memberId))
         if (!member) return null
         return (
           <div key={a.memberId} title={`${member.name}${a.note !== null ? ` — nota: ${a.note}` : ''}`}
@@ -143,22 +161,33 @@ function TabNav({ tabs, active, setTab }: { tabs: { id: Tab; label: string; icon
 
 // ─── Task Form ─────────────────────────────────────────────────────────────
 
-function TaskModal({ initial, colId, isManager, onSave, onClose }: {
+function TaskModal({ initial, colId, isManager, members, onMembersLoaded, onSave, onClose }: {
   initial?: Task
   colId: string
   isManager: boolean
-  onSave: (colId: string, task: Omit<Task, 'id'> & { id?: string }) => void
+  members: TaskMember[]
+  onMembersLoaded: (members: TaskMember[]) => void
+  onSave: (colId: string, task: Omit<Task, 'id'> & { id?: string }) => Promise<void>
   onClose: () => void
 }) {
   const [title, setTitle] = useState(initial?.title ?? '')
   const [channel, setChannel] = useState<ChannelType>(initial?.channel ?? 'instagram')
   const [difficulty, setDifficulty] = useState<Difficulty>(initial?.difficulty ?? 'médio')
+  const [startDate, setStartDate] = useState(initial?.startDate ?? '')
   const [dueDate, setDueDate] = useState(initial?.dueDate ?? '')
   const [assignees, setAssignees] = useState<TaskAssignee[]>(initial?.assignees ?? [])
+  const [availableMembers, setAvailableMembers] = useState<TaskMember[]>(members)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
 
-  const members = team.filter((t) => t.id !== 1)
+  useEffect(() => {
+    api.kanban.assignees().then((rawMembers) => {
+      const mapped = rawMembers.map((member: any, index: number) => ({ id: member.id, name: member.nomeCompleto, role: member.cargo ?? 'Analista', initials: member.nomeCompleto.split(/\s+/).slice(0, 2).map((part: string) => part[0]).join('').toUpperCase(), color: ['#507AE6', '#50E678', '#E1306C', '#FFB300', '#7D1AD7'][index % 5] }))
+      setAvailableMembers(mapped); onMembersLoaded(mapped)
+    }).catch(() => setError('Não foi possível carregar as analistas.'))
+  }, [])
 
-  function toggleMember(memberId: number) {
+  function toggleMember(memberId: string) {
     setAssignees((prev) => {
       const exists = prev.find((a) => a.memberId === memberId)
       if (exists) return prev.filter((a) => a.memberId !== memberId)
@@ -166,15 +195,22 @@ function TaskModal({ initial, colId, isManager, onSave, onClose }: {
     })
   }
 
-  function setNote(memberId: number, val: string) {
+  function setNote(memberId: string, val: string) {
     const num = val === '' ? null : Math.max(0, Math.min(5, parseFloat(val) || 0))
     setAssignees((prev) => prev.map((a) => a.memberId === memberId ? { ...a, note: num } : a))
   }
 
-  function save() {
+  async function save() {
     if (!title.trim()) return
-    onSave(colId, { title, channel, assignees, difficulty, dueDate, priority: 'média', id: initial?.id })
-    onClose()
+    if (startDate && dueDate && dueDate < startDate) { setError('O prazo deve ser igual ou posterior à data de início.'); return }
+    setSaving(true); setError('')
+    try {
+      await onSave(colId, { title, channel, assignees, difficulty, startDate, dueDate, priority: 'média', id: initial?.id })
+      onClose()
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Não foi possível salvar a task.')
+      setSaving(false)
+    }
   }
 
   const difficulties: Difficulty[] = ['fácil', 'médio', 'difícil']
@@ -198,9 +234,10 @@ function TaskModal({ initial, colId, isManager, onSave, onClose }: {
           </div>
         </FormField>
 
-        <FormField label={isManager ? 'Responsáveis e notas individuais (0–5)' : 'Responsáveis'}>
+        <FormField label={isManager ? 'Responsáveis e notas individuais (0–5)' : 'Analistas responsáveis'}>
           <div className="space-y-2">
-            {members.map((m) => {
+            {availableMembers.length === 0 && <div className="text-sm text-[#8A8A9A] rounded-xl px-3 py-3 bg-[#202024]">Nenhuma analista ativa cadastrada. Use “Gerenciar usuários” para criar uma conta de Analista.</div>}
+            {availableMembers.map((m) => {
               const a = assignees.find((x) => x.memberId === m.id)
               const selected = !!a
               return (
@@ -222,10 +259,11 @@ function TaskModal({ initial, colId, isManager, onSave, onClose }: {
                         <>
                           <label className="text-xs text-[#8A8A9A] whitespace-nowrap">Nota:</label>
                           <input type="number" min={0} max={5} step={0.1}
-                            value={a!.note ?? ''} placeholder="—"
-                            onChange={(e) => setNote(m.id, e.target.value)}
+                            value={initial ? (a!.note ?? '') : ''} placeholder="—" disabled={!initial}
+                            onChange={(e) => initial && setNote(m.id, e.target.value)}
                             onClick={(e) => e.stopPropagation()}
-                            className="w-16 text-xs px-2 py-1 rounded-lg border border-[rgba(125,26,215,0.2)] focus:outline-none focus:border-[#7D1AD7] text-center bg-[#17171A]" />
+                            title={initial ? 'Avaliar execução da task' : 'A nota fica disponível após criar a task'}
+                            className="w-16 text-xs px-2 py-1 rounded-lg border border-[rgba(125,26,215,0.2)] focus:outline-none focus:border-[#7D1AD7] text-center bg-[#17171A] disabled:opacity-50" />
                           <span className="text-xs text-[#555566]">/5</span>
                         </>
                       )}
@@ -240,7 +278,7 @@ function TaskModal({ initial, colId, isManager, onSave, onClose }: {
           </div>
         </FormField>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <FormField label="Nível de dificuldade">
             <div className="flex gap-2">
               {difficulties.map((d) => (
@@ -251,15 +289,19 @@ function TaskModal({ initial, colId, isManager, onSave, onClose }: {
               ))}
             </div>
           </FormField>
-          <FormField label="Data de entrega">
+          <FormField label="Data de início">
+            <Inp type="date" value={startDate} onChange={setStartDate} />
+          </FormField>
+          <FormField label="Prazo">
             <Inp type="date" value={dueDate} onChange={setDueDate} />
           </FormField>
         </div>
+        {error && <p className="text-xs text-[#FF6B6B]" role="alert">{error}</p>}
       </div>
       <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-        <button onClick={save} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90 btn-glow"
+        <button onClick={save} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90 btn-glow disabled:opacity-50"
           style={{ background: 'linear-gradient(135deg, #7D1AD7, #50E678)' }}>
-          {initial ? 'Salvar alterações' : 'Criar task'}
+          {saving ? 'Salvando…' : initial ? 'Salvar alterações' : 'Criar task'}
         </button>
         <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-medium text-[#8A8A9A] hover:bg-[rgba(255,255,255,0.08)]">Cancelar</button>
       </div>
@@ -269,7 +311,7 @@ function TaskModal({ initial, colId, isManager, onSave, onClose }: {
 
 // ─── Kanban ───────────────────────────────────────────────────────────────
 
-function KanbanBoard({ channel, isManager, columns, setColumns }: { channel: Channel; isManager: boolean; columns: KanbanColumn[]; setColumns: React.Dispatch<React.SetStateAction<KanbanColumn[]>> }) {
+function KanbanBoard({ channel, isManager, members, setMembers, columns, setColumns }: { channel: Channel; isManager: boolean; members: TaskMember[]; setMembers: React.Dispatch<React.SetStateAction<TaskMember[]>>; columns: KanbanColumn[]; setColumns: React.Dispatch<React.SetStateAction<KanbanColumn[]>> }) {
   const [dragging, setDragging] = useState<{ taskId: string; fromColId: string } | null>(null)
   const [dragOverColId, setDragOverColId] = useState<string | null>(null)
   const [editingColId, setEditingColId] = useState<string | null>(null)
@@ -277,10 +319,12 @@ function KanbanBoard({ channel, isManager, columns, setColumns }: { channel: Cha
   const [taskModal, setTaskModal] = useState<{ colId: string; task?: Task } | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'task' | 'col'; id: string; colId?: string } | null>(null)
 
-  function handleDrop(toColId: string) {
+  async function handleDrop(toColId: string) {
     if (!dragging) return
     const { taskId, fromColId } = dragging
     if (fromColId === toColId) { setDragging(null); return }
+    const targetOrder = columns.find((column) => column.id === toColId)?.tasks.length ?? 0
+    try { await api.kanban.moveTask(taskId, { colunaId: toColId, ordem: targetOrder }) } catch { setDragging(null); setDragOverColId(null); return }
     setColumns((prev) => {
       const task = prev.find((c) => c.id === fromColId)?.tasks.find((t) => t.id === taskId)
       if (!task) return prev
@@ -293,38 +337,48 @@ function KanbanBoard({ channel, isManager, columns, setColumns }: { channel: Cha
     setDragging(null); setDragOverColId(null)
   }
 
-  function commitRename() {
+  async function commitRename() {
     if (editingColId && editingColName.trim()) {
+      await api.kanban.updateColumn(editingColId, { nome: editingColName.trim() }).catch(() => undefined)
       setColumns((prev) => prev.map((c) => c.id === editingColId ? { ...c, name: editingColName.trim() } : c))
     }
     setEditingColId(null)
   }
 
-  function saveTask(colId: string, data: Omit<Task, 'id'> & { id?: string }) {
+  async function saveTask(colId: string, data: Omit<Task, 'id'> & { id?: string }) {
+    const payload = {
+      titulo: data.title,
+      redeSocial: CHANNEL_TO_API[data.channel],
+      dificuldade: DIFFICULTY_TO_API[data.difficulty],
+      dataInicio: data.startDate || null,
+      dataEntrega: data.dueDate || null,
+      colunaId: colId,
+      responsaveis: data.assignees.map((assignment) => ({ userId: String(assignment.memberId), nota: assignment.note })),
+    }
+    const saved = data.id ? await api.kanban.updateTask(data.id, payload) : await api.kanban.createTask(payload)
+    const mapped = mapTask(saved)
     setColumns((prev) => prev.map((col) => {
-      if (col.id !== colId) {
-        if (data.id) return { ...col, tasks: col.tasks.filter((t) => t.id !== data.id) }
-        return col
-      }
-      if (data.id) {
-        return { ...col, tasks: col.tasks.map((t) => t.id === data.id ? { ...t, ...data, id: data.id } : t) }
-      }
-      return { ...col, tasks: [...col.tasks, { ...data, id: `t-${Date.now()}` }] }
+      if (col.id !== colId) return data.id ? { ...col, tasks: col.tasks.filter((task) => task.id !== data.id) } : col
+      if (data.id) return { ...col, tasks: col.tasks.map((task) => task.id === data.id ? mapped : task) }
+      return { ...col, tasks: [...col.tasks, mapped] }
     }))
   }
 
-  function deleteTask(taskId: string) {
+  async function deleteTask(taskId: string) {
+    await api.kanban.removeTask(taskId)
     setColumns((prev) => prev.map((col) => ({ ...col, tasks: col.tasks.filter((t) => t.id !== taskId) })))
     setDeleteConfirm(null)
   }
 
-  function deleteColumn(colId: string) {
+  async function deleteColumn(colId: string) {
+    await api.kanban.removeColumn(colId)
     setColumns((prev) => prev.filter((c) => c.id !== colId))
     setDeleteConfirm(null)
   }
 
-  function addColumn() {
-    setColumns((prev) => [...prev, { id: `col-${Date.now()}`, name: 'Nova Coluna', tasks: [] }])
+  async function addColumn() {
+    const created = await api.kanban.createColumn({ nome: 'Nova Coluna' })
+    setColumns((prev) => [...prev, mapColumn({ ...created, tasks: [] })])
   }
 
   const filterTasks = (tasks: Task[]) => channel === 'todos' ? tasks : tasks.filter((t) => t.channel === channel)
@@ -381,7 +435,7 @@ function KanbanBoard({ channel, isManager, columns, setColumns }: { channel: Cha
                       </div>
                       <p className="text-sm font-medium text-[#F0F0F5] leading-snug mb-3">{task.title}</p>
                       <div className="flex items-center justify-between">
-                        <AvatarStack assignees={task.assignees} />
+                        <AvatarStack assignees={task.assignees} members={members} />
                         <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button onClick={() => setTaskModal({ colId: col.id, task })} className="p-1 rounded hover:bg-[rgba(255,255,255,0.08)] text-[#555566] hover:text-[#7D1AD7]">
                             <Edit2 size={12} />
@@ -403,7 +457,7 @@ function KanbanBoard({ channel, isManager, columns, setColumns }: { channel: Cha
                   )}
                 </div>
 
-                <button onClick={() => setTaskModal({ colId: col.id })}
+                <button type="button" onClick={() => setTaskModal({ colId: col.id })}
                   className="flex items-center gap-1.5 text-xs text-[#555566] hover:text-[#7D1AD7] hover:bg-[rgba(125,26,215,0.08)] rounded-xl mx-3 mb-3 px-3 py-2.5 transition-colors font-medium border border-dashed border-[rgba(255,255,255,0.1)] hover:border-[rgba(125,26,215,0.3)]">
                   <Plus size={13} /> Adicionar task
                 </button>
@@ -419,7 +473,7 @@ function KanbanBoard({ channel, isManager, columns, setColumns }: { channel: Cha
 
       {/* Task modal */}
       {taskModal && (
-        <TaskModal colId={taskModal.colId} initial={taskModal.task} isManager={isManager} onSave={saveTask} onClose={() => setTaskModal(null)} />
+        <TaskModal colId={taskModal.colId} initial={taskModal.task} isManager={isManager} members={members} onMembersLoaded={setMembers} onSave={saveTask} onClose={() => setTaskModal(null)} />
       )}
 
       {/* Delete confirm */}
@@ -1090,20 +1144,40 @@ function CampaignsView({ channel }: { channel: Channel }) {
 
 type NoteCategory = 'feedbacks' | 'alertas' | 'outros'
 interface MemberNotes { feedbacks: string; alertas: string; outros: string }
+type EngagementRow = (typeof engagementData)[number] & { role: string; initials: string; color: string }
 
 function EngagementView({ columns }: { columns: KanbanColumn[] }) {
-  const [data, setData] = useState(engagementData)
+  const period = new Date().toISOString().slice(0, 7)
+  const [data, setData] = useState<EngagementRow[]>([])
   const [editMode, setEditMode] = useState(false)
-  const [expandedMember, setExpandedMember] = useState<number | null>(null)
-  const [notes, setNotes] = useState<Record<number, MemberNotes>>(() =>
-    Object.fromEntries(engagementData.map((r) => [r.memberId, { feedbacks: '', alertas: '', outros: '' }]))
-  )
+  const [expandedMember, setExpandedMember] = useState<number | string | null>(null)
+  const [notes, setNotes] = useState<Record<string, MemberNotes>>({})
   // null = use auto-calculated; number = manual override
-  const [qualityOverride, setQualityOverride] = useState<Record<number, number | null>>(
-    () => Object.fromEntries(engagementData.map((r) => [r.memberId, null]))
-  )
+  async function loadEngagement() {
+    const result = await api.engagement.get(period)
+    const nextNotes: Record<string, MemberNotes> = {}
+    const rows = result.membros.map((member: any, index: number) => {
+      let observation: MemberNotes = { feedbacks: '', alertas: '', outros: '' }
+      if (member.observacoes) {
+        try { observation = { ...observation, ...JSON.parse(member.observacoes) } } catch { observation.feedbacks = member.observacoes }
+      }
+      nextNotes[member.userId] = observation
+      return { memberId: member.userId, name: member.nome, role: member.cargo ?? 'Analista', initials: member.nome.split(/\s+/).slice(0, 2).map((part: string) => part[0]).join('').toUpperCase(), color: ['#507AE6', '#50E678', '#E1306C', '#FFB300', '#7D1AD7'][index % 5], punctuality: member.compromisso ?? 0, quality: member.qualidade ?? 0, presence: member.presenca ?? 0, tasksCompleted: member.tasksConcluidas, tasksTotal: member.tasksTotal }
+    })
+    setData(rows); setNotes(nextNotes)
+  }
 
-  function calcQuality(memberId: number): number | null {
+  useEffect(() => { loadEngagement().catch(console.error) }, [])
+
+  async function toggleEditMode() {
+    if (editMode) {
+      await Promise.all(data.map((row) => api.engagement.update(row.memberId, period, { compromisso: row.punctuality, presenca: row.presence, observacoes: JSON.stringify(notes[String(row.memberId)] ?? {}) })))
+      await loadEngagement()
+    }
+    setEditMode((value) => !value)
+  }
+
+  function calcQuality(memberId: number | string): number | null {
     const rated: number[] = []
     columns.forEach((col) => col.tasks.forEach((task) => {
       const a = task.assignees.find((x) => x.memberId === memberId)
@@ -1113,24 +1187,18 @@ function EngagementView({ columns }: { columns: KanbanColumn[] }) {
     return parseFloat((rated.reduce((s, v) => s + v, 0) / rated.length).toFixed(2))
   }
 
-  function effectiveQuality(memberId: number): number {
-    const override = qualityOverride[memberId]
-    if (override !== null) return override
-    return calcQuality(memberId) ?? data.find((r) => r.memberId === memberId)!.quality
+  function effectiveQuality(memberId: number | string): number {
+    return data.find((r) => r.memberId === memberId)?.quality ?? calcQuality(memberId) ?? 0
   }
 
-  function updateScore(memberId: number, field: 'punctuality' | 'quality' | 'presence', value: string) {
+  function updateScore(memberId: number | string, field: 'punctuality' | 'quality' | 'presence', value: string) {
     const num = Math.max(0, Math.min(5, parseFloat(value) || 0))
     setData((prev) => prev.map((r) => r.memberId !== memberId ? r : { ...r, [field]: num }))
   }
 
-  function updateTasks(memberId: number, field: 'tasksCompleted' | 'tasksTotal', value: string) {
-    const num = Math.max(0, parseInt(value) || 0)
-    setData((prev) => prev.map((r) => r.memberId !== memberId ? r : { ...r, [field]: num }))
-  }
-
-  function updateNote(memberId: number, cat: NoteCategory, value: string) {
-    setNotes((prev) => ({ ...prev, [memberId]: { ...prev[memberId], [cat]: value } }))
+  function updateNote(memberId: number | string, cat: NoteCategory, value: string) {
+    const key = String(memberId)
+    setNotes((prev) => ({ ...prev, [key]: { ...(prev[key] ?? { feedbacks: '', alertas: '', outros: '' }), [cat]: value } }))
   }
 
   function StarDisplay({ val, color }: { val: number; color: string }) {
@@ -1149,37 +1217,18 @@ function EngagementView({ columns }: { columns: KanbanColumn[] }) {
     )
   }
 
-  function StarScore({ memberId, field, color }: { memberId: number; field: 'punctuality' | 'quality' | 'presence'; color: string }) {
+  function StarScore({ memberId, field, color }: { memberId: number | string; field: 'punctuality' | 'quality' | 'presence'; color: string }) {
     const row = data.find((r) => r.memberId === memberId)!
     const isQuality = field === 'quality'
     const val = isQuality ? effectiveQuality(memberId) : row[field]
     const autoVal = isQuality ? calcQuality(memberId) : null
-    const isOverridden = isQuality && qualityOverride[memberId] !== null
+    const isOverridden = false
 
     if (editMode && isQuality) {
       return (
-        <div className="flex flex-col gap-1.5">
-          <div className="flex items-center gap-1.5">
-            <input type="number" min={0} max={5} step={0.1} value={isOverridden ? qualityOverride[memberId]! : (autoVal ?? val)}
-              onChange={(e) => {
-                const n = Math.max(0, Math.min(5, parseFloat(e.target.value) || 0))
-                setQualityOverride((prev) => ({ ...prev, [memberId]: n }))
-              }}
-              className="w-16 text-xs px-2 py-1 rounded border border-[rgba(125,26,215,0.2)] focus:outline-none focus:border-[#7D1AD7] text-center" />
-            <span className="text-xs text-[#555566]">/ 5</span>
-            {isOverridden && (
-              <button onClick={() => setQualityOverride((prev) => ({ ...prev, [memberId]: null }))}
-                className="text-xs px-1.5 py-0.5 rounded text-[#FFB300] hover:bg-[rgba(255,179,0,0.15)] border border-[rgba(255,179,0,0.3)]" title="Voltar ao cálculo automático">
-                <X size={10} />
-              </button>
-            )}
-          </div>
-          {autoVal !== null && (
-            <div className="text-xs text-[#555566]">
-              auto: <span>{autoVal.toFixed(1)}</span>
-              {isOverridden && <span className="ml-1 text-[#FFB300]">(sobrescrito)</span>}
-            </div>
-          )}
+        <div className="flex flex-col gap-0.5">
+          <div className="flex items-center gap-1.5"><StarDisplay val={val} color={color} /><span className="text-xs text-[#8A8A9A]">{val.toFixed(1)}</span></div>
+          <span className="text-xs text-[#00C853]">calculada pelas notas das tasks</span>
         </div>
       )
     }
@@ -1214,9 +1263,9 @@ function EngagementView({ columns }: { columns: KanbanColumn[] }) {
     )
   }
 
-  const avgCommitment = (data.reduce((a, r) => a + r.punctuality, 0) / data.length).toFixed(1)
-  const avgQuality = (data.reduce((a, r) => a + effectiveQuality(r.memberId), 0) / data.length).toFixed(1)
-  const avgPresence = (data.reduce((a, r) => a + r.presence, 0) / data.length).toFixed(1)
+  const avgCommitment = (data.length ? data.reduce((a, r) => a + r.punctuality, 0) / data.length : 0).toFixed(1)
+  const avgQuality = (data.length ? data.reduce((a, r) => a + effectiveQuality(r.memberId), 0) / data.length : 0).toFixed(1)
+  const avgPresence = (data.length ? data.reduce((a, r) => a + r.presence, 0) / data.length : 0).toFixed(1)
 
   const NOTE_CATS: { key: NoteCategory; label: string; color: string; bg: string }[] = [
     { key: 'feedbacks', label: 'Feedbacks', color: '#507AE6', bg: 'rgba(125,26,215,0.08)' },
@@ -1232,9 +1281,9 @@ function EngagementView({ columns }: { columns: KanbanColumn[] }) {
             <h2 className="text-base font-semibold text-[#F0F0F5] flex items-center gap-2">
               <Users size={18} className="text-[#7D1AD7]" /> Engajamento do Time
             </h2>
-            <p className="text-sm text-[#8A8A9A] mt-0.5">Visível apenas para a Gerente · Julho 2026 · Escala 0–5</p>
+            <p className="text-sm text-[#8A8A9A] mt-0.5">Visível apenas para a Gerente · {new Date(`${period}-02`).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })} · Escala 0–5</p>
           </div>
-          <button onClick={() => setEditMode((e) => !e)} className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl transition-all"
+          <button onClick={toggleEditMode} className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl transition-all"
             style={editMode ? { background: '#00C853', color: '#fff' } : { background: 'rgba(125,26,215,0.08)', color: '#507AE6' }}>
             {editMode ? <><Check size={15} /> Salvar</> : <><Edit2 size={15} /> Editar</>}
           </button>
@@ -1255,9 +1304,9 @@ function EngagementView({ columns }: { columns: KanbanColumn[] }) {
 
         <div className="space-y-3">
           {data.map((row) => {
-            const member = team.find((t) => t.id === row.memberId)!
+            const member = row
             const isExpanded = expandedMember === row.memberId
-            const memberNotes = notes[row.memberId]
+            const memberNotes = notes[String(row.memberId)] ?? { feedbacks: '', alertas: '', outros: '' }
             const hasNotes = memberNotes.feedbacks || memberNotes.alertas || memberNotes.outros
 
             return (
@@ -1296,24 +1345,12 @@ function EngagementView({ columns }: { columns: KanbanColumn[] }) {
                     {/* Tasks */}
                     <div className="flex-shrink-0 w-36">
                       <div className="text-xs text-[#555566] mb-1">Tasks</div>
-                      {editMode ? (
-                        <div className="flex items-center gap-1 text-xs">
-                          <input type="number" min={0} value={row.tasksCompleted} onChange={(e) => updateTasks(row.memberId, 'tasksCompleted', e.target.value)}
-                            className="w-12 px-1.5 py-1 rounded border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#7D1AD7] text-center" />
-                          <span className="text-[#555566]">/</span>
-                          <input type="number" min={0} value={row.tasksTotal} onChange={(e) => updateTasks(row.memberId, 'tasksTotal', e.target.value)}
-                            className="w-12 px-1.5 py-1 rounded border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#7D1AD7] text-center" />
+                      <div className="flex items-center gap-2">
+                        <div className="h-1.5 w-20 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                          <div className="h-full rounded-full" style={{ width: `${row.tasksTotal ? (row.tasksCompleted / row.tasksTotal) * 100 : 0}%`, background: '#7D1AD7' }} />
                         </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <div className="h-1.5 w-20 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                            <div className="h-full rounded-full" style={{ width: `${(row.tasksCompleted / row.tasksTotal) * 100}%`, background: '#7D1AD7' }} />
-                          </div>
-                          <span className="text-xs" style={{ color: '#8A8A9A' }}>
-                            {row.tasksCompleted}/{row.tasksTotal}
-                          </span>
-                        </div>
-                      )}
+                        <span className="text-xs" style={{ color: '#8A8A9A' }}>{row.tasksCompleted}/{row.tasksTotal}</span>
+                      </div>
                     </div>
 
                     {/* Expand button */}
@@ -1377,7 +1414,21 @@ interface Props {
 
 export default function Monitoramento({ profile, isManager, channel, setChannel }: Props) {
   const [tab, setTab] = useState<Tab>('kanban')
-  const [columns, setColumns] = useState<KanbanColumn[]>(initialKanban)
+  const [columns, setColumns] = useState<KanbanColumn[]>([])
+  const [members, setMembers] = useState<TaskMember[]>([])
+
+  useEffect(() => {
+    Promise.all([api.kanban.columns(), api.kanban.assignees()]).then(([rawColumns, rawMembers]) => {
+      setColumns(rawColumns.map(mapColumn))
+      setMembers(rawMembers.map((member: any, index: number) => ({
+        id: member.id,
+        name: member.nomeCompleto,
+        role: member.cargo,
+        initials: member.nomeCompleto.split(/\s+/).slice(0, 2).map((part: string) => part[0]).join('').toUpperCase(),
+        color: ['#507AE6', '#50E678', '#E1306C', '#FFB300', '#7D1AD7'][index % 5],
+      })))
+    }).catch(console.error)
+  }, [])
 
   const allTabs: { id: Tab; label: string; icon: React.ReactNode; gOnly?: boolean }[] = [
     { id: 'kanban', label: 'Kanban', icon: <Columns3 size={14} /> },
@@ -1404,7 +1455,7 @@ export default function Monitoramento({ profile, isManager, channel, setChannel 
         </div>
       </header>
       <div className="module-stage flex-1 overflow-hidden">
-        {tab === 'kanban' && <KanbanBoard channel={channel} isManager={isManager} columns={columns} setColumns={setColumns} />}
+        {tab === 'kanban' && <KanbanBoard channel={channel} isManager={isManager} members={members} setMembers={setMembers} columns={columns} setColumns={setColumns} />}
         {tab === 'calendario' && <CalendarView />}
         {tab === 'campanhas' && <CampaignsView channel={channel} />}
         {tab === 'engajamento' && isManager && <EngagementView columns={columns} />}
