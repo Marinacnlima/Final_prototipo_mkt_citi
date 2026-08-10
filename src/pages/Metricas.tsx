@@ -686,7 +686,7 @@ function InsertMetrics({ metrics, setMetrics }: { metrics: CustomMetric[]; setMe
             </div>
           ))}
           {metrics.length === 0 && (
-            <div className="text-center py-12 text-[#555566]">Nenhuma métrica. Clique em "Nova métrica" para começar.</div>
+            <div className="empty-state text-center py-12 text-[#8A8A9A]">Nenhuma métrica. Clique em "Nova métrica" para começar.</div>
           )}
         </div>
 

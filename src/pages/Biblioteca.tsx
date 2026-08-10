@@ -461,7 +461,7 @@ function PostsView({ channel, posts, setPosts }: { channel: Channel; posts: Post
             </div>
           )
         })}
-        {sorted.length === 0 && <div className="col-span-full text-center py-16 text-[#555566]">Nenhum post neste canal</div>}
+        {sorted.length === 0 && <div className="empty-state col-span-full text-center py-16 text-[#8A8A9A]">Nenhum post neste canal</div>}
       </div>
 
       {modal && <PostModal initial={modal.post} onSave={savePost} onClose={() => setModal(null)} />}
@@ -711,7 +711,7 @@ function MaterialsView() {
               </div>
             )
           })}
-          {filtered.length === 0 && <div className="col-span-full text-center py-16 text-[#555566]">Nenhum material encontrado</div>}
+          {filtered.length === 0 && <div className="empty-state col-span-full text-center py-16 text-[#8A8A9A]">Nenhum material encontrado</div>}
         </div>
         )}
 
@@ -949,7 +949,7 @@ function PromptsView() {
             )
           })}
           {filtered.length === 0 && (
-            <div className="text-center py-12 text-[#555566]">
+            <div className="empty-state text-center py-12 text-[#8A8A9A]">
               {search ? `Nenhum resultado para "${search}"` : 'Nenhum prompt encontrado'}
             </div>
           )}

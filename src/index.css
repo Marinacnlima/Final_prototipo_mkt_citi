@@ -357,6 +357,98 @@ main, [class*='overflow-auto'] { scroll-behavior: smooth; }
     radial-gradient(700px 420px at 100% 5%, rgba(80,230,120,.065), transparent 64%),
     #0d0d0e !important;
 }
+
+/* Persistent passive liquid canvas for every authenticated module. */
+.internal-app.app-shell {
+  isolation: isolate;
+  background: transparent !important;
+}
+.internal-liquid-background {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  opacity: 1;
+  pointer-events: none !important;
+  filter: saturate(1.02) brightness(.94);
+}
+.internal-app.app-shell::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(105deg, rgba(4,4,7,.28), rgba(9,8,13,.08) 48%, rgba(4,4,7,.24));
+}
+.internal-app.app-shell > :not(.internal-liquid-background) {
+  z-index: 1;
+}
+.internal-app .app-sidebar {
+  background: rgba(13,13,16,.76) !important;
+  backdrop-filter: blur(26px) saturate(125%);
+  -webkit-backdrop-filter: blur(26px) saturate(125%);
+  border-right-color: rgba(255,255,255,.1) !important;
+}
+.internal-app .mobile-topbar,
+.internal-app .page-header {
+  background: rgba(15,15,18,.66) !important;
+  backdrop-filter: blur(24px) saturate(120%);
+  -webkit-backdrop-filter: blur(24px) saturate(120%);
+}
+.internal-app .module-stage {
+  margin: 12px;
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 24px;
+  overflow: hidden;
+  background: rgba(11,11,14,.10) !important;
+  box-shadow: 0 28px 70px rgba(0,0,0,.3), inset 0 1px rgba(255,255,255,.035);
+  backdrop-filter: blur(6px) saturate(108%);
+  -webkit-backdrop-filter: blur(6px) saturate(108%);
+}
+.internal-app .surface,
+.internal-app .analytic-card,
+.internal-app .kpi-card,
+.internal-app .editorial-card,
+.internal-app [class*='bg-[#17171A]'],
+.internal-app [class*='bg-[#202024]'] {
+  background-color: rgba(22,22,26,.72) !important;
+  backdrop-filter: blur(14px) saturate(118%);
+  -webkit-backdrop-filter: blur(14px) saturate(118%);
+}
+.internal-app table {
+  background: rgba(13,13,16,.62);
+  border-radius: 14px;
+}
+.internal-app input,
+.internal-app select,
+.internal-app textarea {
+  background-color: rgba(8,8,11,.72) !important;
+  backdrop-filter: blur(10px);
+}
+.internal-app .kanban-column[data-empty='true'] {
+  background: rgba(18,18,23,.08) !important;
+  border-color: rgba(255,255,255,.16) !important;
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+.internal-app .kanban-column[data-empty='false'] {
+  background: rgba(24,24,29,.62) !important;
+  backdrop-filter: blur(14px) saturate(116%);
+  -webkit-backdrop-filter: blur(14px) saturate(116%);
+}
+.internal-app .empty-state {
+  border: 1px dashed rgba(255,255,255,.14);
+  border-radius: 18px;
+  background: rgba(15,15,19,.07) !important;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  text-shadow: 0 1px 8px rgba(0,0,0,.9);
+}
+.internal-app [class*='fixed'][class*='inset-0'] {
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+}
 .internal-app .app-sidebar { width: 248px !important; }
 .internal-app .app-sidebar > div:first-of-type { min-height: 92px; padding-inline: 20px; }
 .internal-app .app-sidebar .brand-wordmark { font-size: 1.8rem; }
@@ -440,4 +532,6 @@ main, [class*='overflow-auto'] { scroll-behavior: smooth; }
   .internal-app .page-header > div:last-child { padding: 10px 16px 0 !important; }
   .internal-app .page-header h1 { font-size: 1.35rem !important; }
   .internal-app .module-stage::before { display: none; }
+  .internal-app .module-stage { margin: 7px; border-radius: 18px; }
+  .internal-liquid-background { opacity: .82; filter: saturate(.86) brightness(.78); }
 }
