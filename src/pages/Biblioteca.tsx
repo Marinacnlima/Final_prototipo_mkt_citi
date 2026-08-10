@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import {
   BookOpen, FileText, MessageSquare, Download, Star, Copy, Check,
   ChevronLeft, ChevronRight, ChevronDown, Hash, Eye, Plus, Edit2, Trash2, X, Search, Link as LinkIcon,
@@ -74,19 +75,24 @@ function TabNav({ active, setTab }: { active: Tab; setTab: (t: Tab) => void }) {
   )
 }
 
-function Modal({ title, onClose, children, wide }: { title: string; onClose: () => void; children: React.ReactNode; wide?: boolean }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+function Modal({ title, onClose, children, footer, wide }: { title: string; onClose: () => void; children: React.ReactNode; footer?: React.ReactNode; wide?: boolean }) {
+  // Renderizado via portal direto no <body>: um ancestral (.module-stage) usa overflow+backdrop-filter,
+  // o que cria um containing block para position:fixed e corta o modal. O portal escapa disso de vez.
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div
         className={`bg-[#17171A] rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden ${wide ? 'w-full max-w-2xl' : 'w-full max-w-md'}`}
-        style={{ margin: 16 }} onClick={(e) => e.stopPropagation()}>
+        onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 flex-shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <h3 className="font-semibold text-[#F0F0F5]">{title}</h3>
           <button onClick={onClose} className="text-[#555566] hover:text-[#8A8A9A]"><X size={18} /></button>
         </div>
-        <div className="overflow-y-auto flex-1">{children}</div>
+        {/* min-h-0 é necessário: sem ele, um flex item cresce para caber o conteúdo em vez de respeitar max-h-[90vh] do pai e rolar internamente */}
+        <div className="overflow-y-auto flex-1 min-h-0">{children}</div>
+        {footer && <div className="flex-shrink-0">{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
@@ -199,7 +205,15 @@ function PostModal({ initial, onSave, onClose }: {
   const channels: ChannelType[] = ['instagram', 'linkedin']
 
   return (
-    <Modal title={initial ? 'Editar post' : 'Novo post'} onClose={onClose} wide>
+    <Modal title={initial ? 'Editar post' : 'Novo post'} onClose={onClose} wide footer={
+      <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <button onClick={save} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90 btn-glow"
+          style={{ background: 'linear-gradient(135deg, #7D1AD7, #50E678)' }}>
+          {initial ? 'Salvar alterações' : 'Criar post'}
+        </button>
+        <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-medium text-[#8A8A9A] hover:bg-[rgba(255,255,255,0.08)]">Cancelar</button>
+      </div>
+    }>
       <div className="px-6 py-4 space-y-4">
         <FormRow label="Título *">
           <Inp value={form.title} onChange={(v) => setForm((f) => ({ ...f, title: v }))} placeholder="Título do post" />
@@ -285,13 +299,6 @@ function PostModal({ initial, onSave, onClose }: {
           </div>
           {metricError && <p className="text-xs text-[#FF5252] mt-2">{metricError}</p>}
         </div>
-      </div>
-      <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-        <button onClick={save} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90 btn-glow"
-          style={{ background: 'linear-gradient(135deg, #7D1AD7, #50E678)' }}>
-          {initial ? 'Salvar alterações' : 'Criar post'}
-        </button>
-        <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-medium text-[#8A8A9A] hover:bg-[rgba(255,255,255,0.08)]">Cancelar</button>
       </div>
     </Modal>
   )
@@ -537,7 +544,15 @@ function MaterialModal({ initial, onSave, onClose }: { initial?: Material; onSav
   }
 
   return (
-    <Modal title={initial ? 'Editar material' : 'Novo material'} onClose={onClose}>
+    <Modal title={initial ? 'Editar material' : 'Novo material'} onClose={onClose} footer={
+      <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <button onClick={save} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90 btn-glow"
+          style={{ background: 'linear-gradient(135deg, #7D1AD7, #50E678)' }}>
+          {initial ? 'Salvar' : 'Criar material'}
+        </button>
+        <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-medium text-[#8A8A9A] hover:bg-[rgba(255,255,255,0.08)]">Cancelar</button>
+      </div>
+    }>
       <div className="px-6 py-4 space-y-4">
         <FormRow label="Tipo">
           <div className="flex gap-2">
@@ -574,13 +589,6 @@ function MaterialModal({ initial, onSave, onClose }: { initial?: Material; onSav
         <FormRow label="Downloads">
           <Inp type="number" value={form.downloads} onChange={(v) => setForm((f) => ({ ...f, downloads: v }))} placeholder="0" />
         </FormRow>
-      </div>
-      <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-        <button onClick={save} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90 btn-glow"
-          style={{ background: 'linear-gradient(135deg, #7D1AD7, #50E678)' }}>
-          {initial ? 'Salvar' : 'Criar material'}
-        </button>
-        <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-medium text-[#8A8A9A] hover:bg-[rgba(255,255,255,0.08)]">Cancelar</button>
       </div>
     </Modal>
   )
@@ -776,7 +784,15 @@ function PromptModal({ initial, onSave, onClose }: { initial?: Prompt; onSave: (
   }
 
   return (
-    <Modal title={initial ? 'Editar prompt' : 'Novo prompt'} onClose={onClose} wide>
+    <Modal title={initial ? 'Editar prompt' : 'Novo prompt'} onClose={onClose} wide footer={
+      <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <button onClick={save} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90 btn-glow"
+          style={{ background: 'linear-gradient(135deg, #7D1AD7, #50E678)' }}>
+          {initial ? 'Salvar alterações' : 'Criar prompt'}
+        </button>
+        <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-medium text-[#8A8A9A] hover:bg-[rgba(255,255,255,0.08)]">Cancelar</button>
+      </div>
+    }>
       <div className="px-6 py-4 space-y-4">
         <FormRow label="Categoria">
           <div className="flex gap-2 flex-wrap">
@@ -803,13 +819,6 @@ function PromptModal({ initial, onSave, onClose }: { initial?: Prompt; onSave: (
         <FormRow label="Tags (separadas por vírgula)">
           <Inp value={form.tags} onChange={(v) => setForm((f) => ({ ...f, tags: v }))} placeholder="caption, cta, engajamento" />
         </FormRow>
-      </div>
-      <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-        <button onClick={save} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90 btn-glow"
-          style={{ background: 'linear-gradient(135deg, #7D1AD7, #50E678)' }}>
-          {initial ? 'Salvar alterações' : 'Criar prompt'}
-        </button>
-        <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-medium text-[#8A8A9A] hover:bg-[rgba(255,255,255,0.08)]">Cancelar</button>
       </div>
     </Modal>
   )

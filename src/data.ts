@@ -155,6 +155,7 @@ export interface CustomMetric {
   formula: string
   channel?: ChannelType
   color: string
+  updatedAt?: string
 }
 
 export interface SEOState {
