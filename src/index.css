@@ -426,6 +426,11 @@ main, [class*='overflow-auto'] { scroll-behavior: smooth; }
   background-color: rgba(8,8,11,.72) !important;
   backdrop-filter: blur(10px);
 }
+/* Células de heatmap precisam vencer o !important acima para manter a cor de intensidade durante a edição */
+.internal-app input.heatmap-cell {
+  background-color: var(--heatmap-cell-color) !important;
+  backdrop-filter: none;
+}
 .internal-app .kanban-column[data-empty='true'] {
   background: rgba(18,18,23,.08) !important;
   border-color: rgba(255,255,255,.16) !important;
