@@ -84,5 +84,5 @@ usersRouter.patch('/:id', asyncRoute(async (req, res) => {
 usersRouter.delete('/:id', asyncRoute(async (req, res) => {
   if (String(req.params.id) === req.user!.id) throw new ApiError(409, 'CANNOT_DELETE_SELF')
   const found = await prisma.user.findUnique({ where: { id: String(req.params.id) } }); if (!found) throw new ApiError(404, 'NOT_FOUND')
-  await prisma.user.update({ where: { id: found.id }, data: { ativo: false } }); res.status(204).send()
+  await prisma.user.update({ where: { id: found.id }, data: { ativo: false, email: `deleted+${found.id}+${found.email}` } }); res.status(204).send()
 }))
