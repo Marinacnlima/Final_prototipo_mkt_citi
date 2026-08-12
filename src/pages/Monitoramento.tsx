@@ -554,7 +554,7 @@ const typeStyle = {
 }
 
 interface EventForm {
-  date: string; title: string; time: string; duration: string
+  id?: string; date: string; title: string; time: string; duration: string
   type: 'meeting' | 'deadline' | 'task'; channel: ChannelType | ''; participantIds: string[]
 }
 
@@ -609,6 +609,13 @@ function CalendarView() {
     loadParticipants().catch(() => setError('Não foi possível carregar a lista de participantes.'))
   }
 
+  function openEdit(ev: CalendarEvent) {
+    setForm({ id: ev.id, date: ev.date, title: ev.title, time: ev.time, duration: ev.duration, type: ev.type, channel: ev.channel ?? '', participantIds: ev.attendees.map((a) => a.userId) })
+    setError('')
+    setAddModal(ev.date)
+    loadParticipants().catch(() => setError('Não foi possível carregar a lista de participantes.'))
+  }
+
   function toggleParticipant(userId: string) {
     setForm((f) => ({ ...f, participantIds: f.participantIds.includes(userId) ? f.participantIds.filter((id) => id !== userId) : [...f.participantIds, userId] }))
   }
@@ -617,12 +624,13 @@ function CalendarView() {
     if (!form.title.trim()) return
     setSaving(true); setError('')
     try {
-      const created = await api.calendar.create({
+      const payload = {
         titulo: form.title, data: form.date, horario: form.time, duracao: form.duration || null,
         tipo: TIPO_TO_API[form.type], canal: form.channel ? CHANNEL_TO_API[form.channel] : null,
         participantIds: form.participantIds,
-      })
-      setEvents((prev) => [...prev, mapEvent(created)])
+      }
+      const saved = form.id ? await api.calendar.update(form.id, payload) : await api.calendar.create(payload)
+      setEvents((prev) => form.id ? prev.map((e) => e.id === form.id ? mapEvent(saved) : e) : [...prev, mapEvent(saved)])
       setAddModal(null)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Não foi possível salvar o evento.')
@@ -684,9 +692,14 @@ function CalendarView() {
                       </div>
                     )}
                   </div>
-                  <button onClick={() => deleteEvent(ev.id)} className="flex-shrink-0 opacity-0 group-hover:opacity-100 text-[#FF5252] hover:text-[#FF5252] transition-all mt-0.5">
-                    <X size={13} />
-                  </button>
+                  <div className="flex items-center gap-2 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-all mt-0.5">
+                    <button onClick={() => { setDayDetail(null); openEdit(ev) }} className="text-[#8A8A9A] hover:text-[#F0F0F5]">
+                      <Edit2 size={13} />
+                    </button>
+                    <button onClick={() => deleteEvent(ev.id)} className="text-[#FF5252] hover:text-[#FF5252]">
+                      <X size={13} />
+                    </button>
+                  </div>
                 </div>
               )
             })}
@@ -900,12 +913,12 @@ function CalendarView() {
 
       {/* Add event modal */}
       {addModal && (
-        <Modal title="Novo evento" onClose={() => setAddModal(null)} wide
+        <Modal title={form.id ? 'Editar evento' : 'Novo evento'} onClose={() => setAddModal(null)} wide
           footer={
             <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
               <button onClick={saveEvent} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90 btn-glow disabled:opacity-50"
                 style={{ background: 'linear-gradient(135deg, #7D1AD7, #50E678)' }}>
-                {saving ? 'Salvando…' : 'Salvar evento'}
+                {saving ? 'Salvando…' : form.id ? 'Salvar alterações' : 'Salvar evento'}
               </button>
               <button onClick={() => setAddModal(null)} className="px-4 py-2 rounded-xl text-sm font-medium text-[#8A8A9A] hover:bg-[rgba(255,255,255,0.08)]">Cancelar</button>
             </div>
