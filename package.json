@@ -13,16 +13,17 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed",
+    "gmail:token": "tsx server/scripts/get-gmail-refresh-token.ts",
     "preview": "vite preview",
     "format": "oxfmt"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
-    "@sendgrid/mail": "^8.1.6",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
+    "googleapis": "^174.0.1",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^1.28.0",
     "multer": "^2.2.0",
