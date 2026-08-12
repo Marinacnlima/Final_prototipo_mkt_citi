@@ -565,11 +565,11 @@ interface EventForm {
 interface EventParticipant { id: string; name: string; role: string; initials: string; color: string }
 
 function CalendarView() {
-  const TODAY = '2026-07-31'
+  const TODAY = dateStr(new Date())
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [participants, setParticipants] = useState<EventParticipant[]>([])
   const [view, setView] = useState<CalView>('week')
-  const [navDate, setNavDate] = useState(new Date('2026-07-28'))
+  const [navDate, setNavDate] = useState(new Date())
   const [dayDetail, setDayDetail] = useState<string | null>(null)
   const [addModal, setAddModal] = useState<string | null>(null)
   const [form, setForm] = useState<EventForm>({ date: '', title: '', time: '09:00', endTime: '09:30', type: 'meeting', channel: '', participantIds: [] })
