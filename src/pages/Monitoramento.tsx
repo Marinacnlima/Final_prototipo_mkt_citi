@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Plus, Calendar, Columns3, Users, Target, Edit2, Check, X,
   Clock, Flame, Trash2, BarChart2, ChevronLeft, ChevronRight,
@@ -128,21 +129,25 @@ function AvatarStack({ assignees, members }: { assignees: TaskAssignee[]; member
   )
 }
 
-function Modal({ title, onClose, children, wide }: { title: string; onClose: () => void; children: React.ReactNode; wide?: boolean }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+function Modal({ title, onClose, children, footer, wide }: { title: string; onClose: () => void; children: React.ReactNode; footer?: React.ReactNode; wide?: boolean }) {
+  // Renderizado via portal direto no <body>: .module-stage usa overflow+backdrop-filter,
+  // o que cria um containing block para position:fixed e corta o modal. O portal escapa disso.
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div
         className={`bg-[#17171A] rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden ${wide ? 'w-full max-w-2xl' : 'w-full max-w-md'}`}
-        style={{ margin: 16 }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-6 py-4 flex-shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <h3 className="font-semibold text-[#F0F0F5]">{title}</h3>
           <button onClick={onClose} className="text-[#555566] hover:text-[#8A8A9A]"><X size={18} /></button>
         </div>
-        <div className="overflow-y-auto flex-1">{children}</div>
+        {/* min-h-0: sem isso, o flex item cresce pra caber o conteúdo em vez de respeitar max-h-[90vh] e rolar internamente */}
+        <div className="overflow-y-auto flex-1 min-h-0">{children}</div>
+        {footer && <div className="flex-shrink-0">{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
@@ -235,7 +240,16 @@ function TaskModal({ initial, colId, isManager, members, onMembersLoaded, onSave
   const channels: ChannelType[] = ['instagram', 'linkedin', 'site', 'email']
 
   return (
-    <Modal title={initial ? 'Editar task' : 'Nova task'} onClose={onClose} wide>
+    <Modal title={initial ? 'Editar task' : 'Nova task'} onClose={onClose} wide
+      footer={
+        <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <button onClick={save} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90 btn-glow disabled:opacity-50"
+            style={{ background: 'linear-gradient(135deg, #7D1AD7, #50E678)' }}>
+            {saving ? 'Salvando…' : initial ? 'Salvar alterações' : 'Criar task'}
+          </button>
+          <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-medium text-[#8A8A9A] hover:bg-[rgba(255,255,255,0.08)]">Cancelar</button>
+        </div>
+      }>
       <div className="px-6 py-4 space-y-4">
         <FormField label="Título *">
           <Inp value={title} onChange={setTitle} placeholder="Ex: Carrossel — 5 dicas de produtividade" />
@@ -315,13 +329,6 @@ function TaskModal({ initial, colId, isManager, members, onMembersLoaded, onSave
           </FormField>
         </div>
         {error && <p className="text-xs text-[#FF6B6B]" role="alert">{error}</p>}
-      </div>
-      <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-        <button onClick={save} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90 btn-glow disabled:opacity-50"
-          style={{ background: 'linear-gradient(135deg, #7D1AD7, #50E678)' }}>
-          {saving ? 'Salvando…' : initial ? 'Salvar alterações' : 'Criar task'}
-        </button>
-        <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-medium text-[#8A8A9A] hover:bg-[rgba(255,255,255,0.08)]">Cancelar</button>
       </div>
     </Modal>
   )
@@ -565,14 +572,19 @@ function CalendarView() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    Promise.all([api.calendar.list(), api.calendar.participants()]).then(([rawEvents, rawParticipants]) => {
-      setEvents(rawEvents.map(mapEvent))
+  function loadParticipants() {
+    return api.calendar.participants().then((rawParticipants) => {
       setParticipants(rawParticipants.map((p: any, index: number) => ({
         id: p.id, name: p.nomeCompleto, role: p.cargo ?? (p.perfil === 'GERENTE' ? 'Gerente' : 'Analista'),
         initials: p.nomeCompleto.split(/\s+/).slice(0, 2).map((part: string) => part[0]).join('').toUpperCase(),
         color: ['#507AE6', '#50E678', '#E1306C', '#FFB300', '#7D1AD7'][index % 5],
       })))
+    })
+  }
+
+  useEffect(() => {
+    Promise.all([api.calendar.list(), loadParticipants()]).then(([rawEvents]) => {
+      setEvents(rawEvents.map(mapEvent))
     }).catch(() => setError('Não foi possível carregar o calendário.'))
   }, [])
 
@@ -594,6 +606,7 @@ function CalendarView() {
     setForm({ date, title: '', time: '09:00', duration: '30min', type: 'meeting', channel: '', participantIds: [] })
     setError('')
     setAddModal(date)
+    loadParticipants().catch(() => setError('Não foi possível carregar a lista de participantes.'))
   }
 
   function toggleParticipant(userId: string) {
@@ -876,7 +889,16 @@ function CalendarView() {
 
       {/* Add event modal */}
       {addModal && (
-        <Modal title="Novo evento" onClose={() => setAddModal(null)} wide>
+        <Modal title="Novo evento" onClose={() => setAddModal(null)} wide
+          footer={
+            <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+              <button onClick={saveEvent} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90 btn-glow disabled:opacity-50"
+                style={{ background: 'linear-gradient(135deg, #7D1AD7, #50E678)' }}>
+                {saving ? 'Salvando…' : 'Salvar evento'}
+              </button>
+              <button onClick={() => setAddModal(null)} className="px-4 py-2 rounded-xl text-sm font-medium text-[#8A8A9A] hover:bg-[rgba(255,255,255,0.08)]">Cancelar</button>
+            </div>
+          }>
           <div className="px-6 py-4 space-y-4">
             <FormField label="Título *">
               <Inp value={form.title} onChange={(v) => setForm((f) => ({ ...f, title: v }))} placeholder="Ex: Reunião de planning" />
@@ -947,13 +969,6 @@ function CalendarView() {
               </div>
             </FormField>
             {error && <p className="text-xs text-[#FF6B6B]" role="alert">{error}</p>}
-          </div>
-          <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-            <button onClick={saveEvent} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90 btn-glow disabled:opacity-50"
-              style={{ background: 'linear-gradient(135deg, #7D1AD7, #50E678)' }}>
-              {saving ? 'Salvando…' : 'Salvar evento'}
-            </button>
-            <button onClick={() => setAddModal(null)} className="px-4 py-2 rounded-xl text-sm font-medium text-[#8A8A9A] hover:bg-[rgba(255,255,255,0.08)]">Cancelar</button>
           </div>
         </Modal>
       )}
