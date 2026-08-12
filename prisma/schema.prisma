@@ -168,6 +168,7 @@ model CalendarEvent {
   horarioFim  String?
   tipo        TipoEvento              @default(REUNIAO)
   canal       CanalSocial?
+  googleEventId String?
   createdAt   DateTime                @default(now())
   updatedAt   DateTime                @updatedAt
   participantes CalendarEventAttendee[]

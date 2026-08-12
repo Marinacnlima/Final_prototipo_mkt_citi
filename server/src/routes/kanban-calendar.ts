@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { prisma } from '../prisma.js'
 import { ApiError, asyncRoute } from '../http.js'
 import { authenticate } from '../auth.js'
+import { createGoogleEvent, updateGoogleEvent, deleteGoogleEvent } from '../calendar-google.js'
 
 const assignment = z.object({ userId: z.string().uuid(), nota: z.number().min(0).max(5).nullable().optional() })
 const taskFields = z.object({ titulo: z.string().trim().min(1), redeSocial: z.enum(['INSTAGRAM','LINKEDIN','SITE','EMAIL']), dificuldade: z.enum(['FACIL','MEDIO','DIFICIL']), dataInicio: z.coerce.date().nullable().optional(), dataEntrega: z.coerce.date().nullable().optional(), colunaId: z.string().uuid(), responsaveis: z.array(assignment).default([]) })
@@ -39,16 +40,17 @@ kanbanRouter.post('/tasks', asyncRoute(async (req, res) => {
 }))
 kanbanRouter.patch('/tasks/:id', asyncRoute(async (req, res) => {
   const body = taskPatch.parse(req.body)
-  if (body.responsaveis) {
-    const analystCount = await prisma.user.count({ where: { id: { in: body.responsaveis.map((assignment) => assignment.userId) }, perfil: 'ANALISTA', ativo: true } })
-    if (analystCount !== new Set(body.responsaveis.map((assignment) => assignment.userId)).size) throw new ApiError(422, 'INVALID_ASSIGNEE', 'Somente analistas ativos podem ser responsáveis por tasks')
+  const responsaveisProvided = req.body.responsaveis !== undefined
+  if (responsaveisProvided) {
+    const analystCount = await prisma.user.count({ where: { id: { in: body.responsaveis!.map((assignment) => assignment.userId) }, perfil: 'ANALISTA', ativo: true } })
+    if (analystCount !== new Set(body.responsaveis!.map((assignment) => assignment.userId)).size) throw new ApiError(422, 'INVALID_ASSIGNEE', 'Somente analistas ativos podem ser responsáveis por tasks')
     if (req.user!.perfil !== 'GERENTE') {
       const current = await prisma.taskAssignment.findMany({ where: { taskId: String(req.params.id) } })
       const grades = new Map(current.map((assignment) => [assignment.userId, assignment.nota]))
-      if (body.responsaveis.some((assignment) => (assignment.nota ?? null) !== (grades.get(assignment.userId) ?? null))) throw new ApiError(403, 'MANAGER_ONLY_GRADING', 'Somente a gerente pode avaliar a execução da task')
+      if (body.responsaveis!.some((assignment) => (assignment.nota ?? null) !== (grades.get(assignment.userId) ?? null))) throw new ApiError(403, 'MANAGER_ONLY_GRADING', 'Somente a gerente pode avaliar a execução da task')
     }
   }
-  const task = await prisma.$transaction(async (tx) => { if (body.responsaveis) { await tx.taskAssignment.deleteMany({ where: { taskId: String(req.params.id) } }); await tx.taskAssignment.createMany({ data: body.responsaveis.map((a) => ({ taskId: String(req.params.id), userId: a.userId, nota: a.nota })) }) } const { responsaveis, ...data } = body; return tx.task.update({ where: { id: String(req.params.id) }, data, include: taskInclude }) })
+  const task = await prisma.$transaction(async (tx) => { if (responsaveisProvided) { await tx.taskAssignment.deleteMany({ where: { taskId: String(req.params.id) } }); await tx.taskAssignment.createMany({ data: body.responsaveis!.map((a) => ({ taskId: String(req.params.id), userId: a.userId, nota: a.nota })) }) } const { responsaveis, ...data } = body; return tx.task.update({ where: { id: String(req.params.id) }, data, include: taskInclude }) })
   res.json(serializeTask(task))
 }))
 kanbanRouter.patch('/tasks/:id/move', asyncRoute(async (req, res) => { const body = z.object({ colunaId: z.string().uuid(), ordem: z.number().int().min(0).default(0) }).parse(req.body); res.json(await prisma.task.update({ where: { id: String(req.params.id) }, data: body })) }))
@@ -67,21 +69,43 @@ calendarRouter.get('/participants', asyncRoute(async (_req, res) => {
   res.json(users)
 }))
 calendarRouter.get('/events', asyncRoute(async (req, res) => { const q = z.object({ inicio: z.coerce.date().optional(), fim: z.coerce.date().optional(), canal: z.enum(['INSTAGRAM','LINKEDIN','SITE','EMAIL']).optional() }).parse(req.query); const events = await prisma.calendarEvent.findMany({ where: { ...(q.canal?{canal:q.canal}:{}), ...(q.inicio||q.fim?{data:{gte:q.inicio,lte:q.fim}}:{}) }, orderBy: [{data:'asc'},{horario:'asc'}], include: eventInclude }); res.json(events.map(serializeEvent)) }))
+const googleInput = (event: any) => ({
+  titulo: event.titulo,
+  dataISO: event.data.toISOString().slice(0, 10),
+  horario: event.horario,
+  horarioFim: event.horarioFim,
+  attendeeEmails: event.participantes.map((p: any) => p.user.email),
+})
 calendarRouter.post('/events', asyncRoute(async (req, res) => {
   const body = eventBody.parse(req.body)
   await assertParticipantsValid(body.participantIds)
   const { participantIds, ...data } = body
-  const event = await prisma.calendarEvent.create({ data: { ...data, participantes: { create: participantIds.map((userId) => ({ userId })) } }, include: eventInclude })
+  let event = await prisma.calendarEvent.create({ data: { ...data, participantes: { create: participantIds.map((userId) => ({ userId })) } }, include: eventInclude })
+  const googleEventId = await createGoogleEvent(googleInput(event))
+  if (googleEventId) event = await prisma.calendarEvent.update({ where: { id: event.id }, data: { googleEventId }, include: eventInclude })
   res.status(201).json(serializeEvent(event))
 }))
 calendarRouter.patch('/events/:id', asyncRoute(async (req, res) => {
   const body = eventBody.partial().parse(req.body)
-  if (body.participantIds) await assertParticipantsValid(body.participantIds)
+  const participantsProvided = req.body.participantIds !== undefined
+  if (participantsProvided) await assertParticipantsValid(body.participantIds!)
   const { participantIds, ...data } = body
-  const event = await prisma.$transaction(async (tx) => {
-    if (participantIds) { await tx.calendarEventAttendee.deleteMany({ where: { eventId: String(req.params.id) } }); await tx.calendarEventAttendee.createMany({ data: participantIds.map((userId) => ({ eventId: String(req.params.id), userId })) }) }
+  const existing = await prisma.calendarEvent.findUniqueOrThrow({ where: { id: String(req.params.id) } })
+  let event = await prisma.$transaction(async (tx) => {
+    if (participantsProvided) { await tx.calendarEventAttendee.deleteMany({ where: { eventId: String(req.params.id) } }); await tx.calendarEventAttendee.createMany({ data: participantIds!.map((userId) => ({ eventId: String(req.params.id), userId })) }) }
     return tx.calendarEvent.update({ where: { id: String(req.params.id) }, data, include: eventInclude })
   })
+  if (existing.googleEventId) {
+    await updateGoogleEvent(existing.googleEventId, googleInput(event))
+  } else {
+    const googleEventId = await createGoogleEvent(googleInput(event))
+    if (googleEventId) event = await prisma.calendarEvent.update({ where: { id: event.id }, data: { googleEventId }, include: eventInclude })
+  }
   res.json(serializeEvent(event))
 }))
-calendarRouter.delete('/events/:id', asyncRoute(async (req, res) => { await prisma.calendarEvent.delete({ where: { id: String(req.params.id) } }); res.status(204).send() }))
+calendarRouter.delete('/events/:id', asyncRoute(async (req, res) => {
+  const existing = await prisma.calendarEvent.findUniqueOrThrow({ where: { id: String(req.params.id) } })
+  await prisma.calendarEvent.delete({ where: { id: existing.id } })
+  if (existing.googleEventId) await deleteGoogleEvent(existing.googleEventId)
+  res.status(204).send()
+}))

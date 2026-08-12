@@ -17,11 +17,14 @@ const oauth2Client = new google.auth.OAuth2(clientId, clientSecret, REDIRECT_URI
 const authUrl = oauth2Client.generateAuthUrl({
   access_type: 'offline',
   prompt: 'consent',
-  scope: ['https://www.googleapis.com/auth/gmail.send'],
+  scope: [
+    'https://www.googleapis.com/auth/gmail.send',
+    'https://www.googleapis.com/auth/calendar.events',
+  ],
 })
 
 console.log(`\nCadastre esta URI de redirecionamento no seu Client ID (se ainda não fez): ${REDIRECT_URI}\n`)
-console.log('Abra esta URL no navegador, logado com a conta Gmail que vai ENVIAR os e-mails:\n')
+console.log('Abra esta URL no navegador, logado com a conta Google que vai ENVIAR e-mails e CRIAR eventos de calendário:\n')
 console.log(authUrl)
 console.log('\nAguardando você autorizar no navegador...\n')
 
