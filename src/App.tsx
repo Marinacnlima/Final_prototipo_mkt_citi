@@ -23,7 +23,6 @@ export default function App() {
   const [activeModule, setActiveModule] = useState<Module>('monitoramento')
   const [channel, setChannel] = useState<Channel>('todos')
   const [posts, setPostsState] = useState<Post[]>([])
-  const [currentPassword, setCurrentPassword] = useState('')
 
   const mapUser = (user: any): AppUser => ({ id: user.id, name: user.nomeCompleto, initials: user.nomeCompleto.split(/\s+/).slice(0,2).map((part:string)=>part[0]).join('').toUpperCase(), color: user.perfil === 'GERENTE' ? '#7D1AD7' : '#507AE6', email: user.email, password: '', role: user.perfil === 'GERENTE' ? 'gerente' : 'analista', mustChangePassword: user.primeiroAcesso })
   const mapPost = (post: any): Post => ({ id: post.id, title: post.titulo, channel: post.canal.toLowerCase(), campaign: post.campanhaNome ?? '', images: post.imagens.map((image:any)=>({url:image.url,tipo:image.tipo==='VIDEO'?'video':'imagem'})), linkUrl: post.linkUrl ?? undefined, ctr: post.ctr ?? undefined, profileVisits: post.visitasPerfil ?? undefined, caption: post.conteudo, format: ({REELS:'reel',CARROSSEL:'carousel',POST_ESTATICO:'static',STORIES:'story',PDF_DOCUMENTO:'document',TEXTO_IMAGEM:'static',VIDEO:'video',ARTIGO_NEWSLETTER:'article',ENQUETE:'poll'} as any)[post.formato] ?? 'static', insights: { likes: post.curtidas, reach: post.alcance, impressions: post.impressoes, engagement: post.engajamento, saves: post.saves, shares: post.compartilhamentos, comments: post.comentarios }, publishedAt: post.dataPublicacao?.slice(0,10), validUntil: post.dataLimite?.slice(0,10) ?? '' })
@@ -39,7 +38,7 @@ export default function App() {
   useEffect(() => { if (api.hasToken) api.me().then((raw) => { const user=mapUser(raw); setCurrentUser(user); if(user.mustChangePassword){setChangingPw(true)} else loadPrivateData(user) }).catch(()=>api.setToken(null)) }, [])
 
   async function authenticate(email: string, password: string) {
-    const result=await api.login(email,password); api.setToken(result.token); setCurrentPassword(password); return mapUser(result.user)
+    const result=await api.login(email,password); api.setToken(result.token); return mapUser(result.user)
   }
 
   async function forgotPassword(email: string) { await api.forgotPassword(email) }
@@ -52,9 +51,8 @@ export default function App() {
     else loadPrivateData(user)
   }
 
-  async function handleChangePassword(newPw: string) {
-    await api.changePassword(currentPassword,newPw)
-    setCurrentPassword(newPw)
+  async function handleChangePassword(currentPw: string, newPw: string) {
+    await api.changePassword(currentPw,newPw)
     setUsers((prev) => prev.map((u) => u.id === currentUser!.id ? { ...u, password: '', mustChangePassword: false } : u))
     setCurrentUser((u) => u ? { ...u, password: newPw, mustChangePassword: false } : null)
     setChangingPw(false)

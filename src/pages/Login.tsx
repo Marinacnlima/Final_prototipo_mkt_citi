@@ -8,11 +8,12 @@ import LiquidBackground from '../components/LiquidBackground'
 
 interface ChangePwProps {
   user: AppUser
-  onSave: (newPw: string) => Promise<void>
+  onSave: (currentPw: string, newPw: string) => Promise<void>
   onBack?: () => void
 }
 
 export function ChangePasswordScreen({ user, onSave, onBack }: ChangePwProps) {
+  const [currentPw, setCurrentPw] = useState('')
   const [pw, setPw] = useState('')
   const [confirm, setConfirm] = useState('')
   const [showPw, setShowPw] = useState(false)
@@ -21,11 +22,12 @@ export function ChangePasswordScreen({ user, onSave, onBack }: ChangePwProps) {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
+    if (!currentPw) { setError('Informe sua senha atual.'); return }
     if (pw.length < 8) { setError('A senha deve ter pelo menos 8 caracteres.'); return }
     if (pw !== confirm) { setError('As senhas não coincidem.'); return }
     setSaving(true); setError('')
     try {
-      await onSave(pw)
+      await onSave(currentPw, pw)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Não foi possível salvar a senha.')
       setSaving(false)
@@ -59,6 +61,16 @@ export function ChangePasswordScreen({ user, onSave, onBack }: ChangePwProps) {
           </div>
 
           <form onSubmit={submit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-[#8A8A9A] mb-1">Senha atual</label>
+              <div className="relative">
+                <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#555566]" />
+                <input type={showPw ? 'text' : 'password'} value={currentPw} onChange={(e) => setCurrentPw(e.target.value)} required
+                  placeholder="Sua senha atual"
+                  className="w-full text-sm pl-9 pr-3 py-2.5 rounded-xl border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#7D1AD7] focus:ring-2 focus:ring-[rgba(125,26,215,0.1)]" />
+              </div>
+            </div>
+
             <div>
               <label className="block text-xs font-medium text-[#8A8A9A] mb-1">Nova senha</label>
               <div className="relative">
