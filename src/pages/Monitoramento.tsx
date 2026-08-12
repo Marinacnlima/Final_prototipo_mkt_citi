@@ -586,10 +586,14 @@ function CalendarView() {
     })
   }
 
-  useEffect(() => {
-    Promise.all([api.calendar.list(), loadParticipants()]).then(([rawEvents]) => {
+  function loadEvents() {
+    return api.calendar.list().then((rawEvents) => {
       setEvents(rawEvents.map(mapEvent))
-    }).catch(() => setError('Não foi possível carregar o calendário.'))
+    })
+  }
+
+  useEffect(() => {
+    Promise.all([loadEvents(), loadParticipants()]).catch(() => setError('Não foi possível carregar o calendário.'))
   }, [])
 
   function navigate(dir: -1 | 1) {
@@ -604,6 +608,7 @@ function CalendarView() {
 
   function openDayDetail(date: string) {
     setDayDetail(date)
+    loadEvents().catch(() => setError('Não foi possível atualizar o calendário.'))
   }
 
   function openAdd(date: string) {
