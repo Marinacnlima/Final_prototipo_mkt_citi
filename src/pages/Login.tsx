@@ -8,7 +8,7 @@ import LiquidBackground from '../components/LiquidBackground'
 
 interface ChangePwProps {
   user: AppUser
-  onSave: (newPw: string) => void
+  onSave: (newPw: string) => Promise<void>
   onBack?: () => void
 }
 
@@ -17,12 +17,19 @@ export function ChangePasswordScreen({ user, onSave, onBack }: ChangePwProps) {
   const [confirm, setConfirm] = useState('')
   const [showPw, setShowPw] = useState(false)
   const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault()
-    if (pw.length < 6) { setError('A senha deve ter pelo menos 6 caracteres.'); return }
+    if (pw.length < 8) { setError('A senha deve ter pelo menos 8 caracteres.'); return }
     if (pw !== confirm) { setError('As senhas não coincidem.'); return }
-    onSave(pw)
+    setSaving(true); setError('')
+    try {
+      await onSave(pw)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Não foi possível salvar a senha.')
+      setSaving(false)
+    }
   }
 
   return (
@@ -56,8 +63,8 @@ export function ChangePasswordScreen({ user, onSave, onBack }: ChangePwProps) {
               <label className="block text-xs font-medium text-[#8A8A9A] mb-1">Nova senha</label>
               <div className="relative">
                 <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#555566]" />
-                <input type={showPw ? 'text' : 'password'} value={pw} onChange={(e) => setPw(e.target.value)} required minLength={6}
-                  placeholder="Mínimo 6 caracteres"
+                <input type={showPw ? 'text' : 'password'} value={pw} onChange={(e) => setPw(e.target.value)} required minLength={8}
+                  placeholder="Mínimo 8 caracteres"
                   className="w-full text-sm pl-9 pr-10 py-2.5 rounded-xl border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#7D1AD7] focus:ring-2 focus:ring-[rgba(125,26,215,0.1)]" />
                 <button type="button" onClick={() => setShowPw((s) => !s)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#555566] hover:text-[#8A8A9A]">
                   {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
@@ -79,9 +86,9 @@ export function ChangePasswordScreen({ user, onSave, onBack }: ChangePwProps) {
               <p className="text-xs text-[#FF5252] rounded-lg px-3 py-2" style={{ background: 'rgba(255,82,82,0.15)' }}>{error}</p>
             )}
 
-            <button type="submit" className="w-full py-2.5 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-opacity btn-glow"
+            <button type="submit" disabled={saving} className="w-full py-2.5 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-opacity btn-glow disabled:opacity-50"
               style={{ background: 'linear-gradient(135deg, #7D1AD7, #50E678)' }}>
-              Salvar e entrar
+              {saving ? 'Salvando…' : 'Salvar e entrar'}
             </button>
           </form>
         </div>
