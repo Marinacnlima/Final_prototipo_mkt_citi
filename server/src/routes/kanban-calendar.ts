@@ -55,7 +55,7 @@ kanbanRouter.patch('/tasks/:id/move', asyncRoute(async (req, res) => { const bod
 kanbanRouter.delete('/tasks/:id', asyncRoute(async (req, res) => { await prisma.task.delete({ where: { id: String(req.params.id) } }); res.status(204).send() }))
 
 export const calendarRouter = Router(); calendarRouter.use(authenticate)
-const eventBody = z.object({ titulo: z.string().trim().min(1), data: z.coerce.date(), horario: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/), duracao: z.string().nullable().optional(), tipo: z.enum(['REUNIAO','DEADLINE','TASK']), canal: z.enum(['INSTAGRAM','LINKEDIN','SITE','EMAIL']).nullable().optional(), participantIds: z.array(z.string().uuid()).default([]) })
+const eventBody = z.object({ titulo: z.string().trim().min(1), data: z.coerce.date(), horario: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/), horarioFim: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable().optional(), tipo: z.enum(['REUNIAO','DEADLINE','TASK']), canal: z.enum(['INSTAGRAM','LINKEDIN','SITE','EMAIL']).nullable().optional(), participantIds: z.array(z.string().uuid()).default([]) })
 const eventInclude = { participantes: { where: { user: { ativo: true } }, include: { user: true } } } as const
 const serializeEvent = (event: any) => ({ ...event, participantes: event.participantes.map((p: any) => ({ userId: p.userId, nome: p.user.nomeCompleto, email: p.user.email })) })
 async function assertParticipantsValid(participantIds: string[]) {

@@ -165,7 +165,7 @@ model CalendarEvent {
   titulo      String
   data        DateTime
   horario     String
-  duracao     String?
+  horarioFim  String?
   tipo        TipoEvento              @default(REUNIAO)
   canal       CanalSocial?
   createdAt   DateTime                @default(now())

@@ -89,7 +89,7 @@ export interface CalendarEvent {
   date: string // YYYY-MM-DD
   title: string
   time: string
-  duration: string
+  endTime: string
   type: 'meeting' | 'deadline' | 'task'
   channel: ChannelType | null
   attendees: { userId: string; nome: string }[]

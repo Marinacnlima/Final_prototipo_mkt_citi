@@ -41,6 +41,10 @@ function mapColumn(column: any): KanbanColumn {
   return { id: column.id, name: column.nome, tasks: (column.tasks ?? []).map(mapTask) }
 }
 
+function timeRange(ev: CalendarEvent): string {
+  return ev.endTime ? `${ev.time} - ${ev.endTime}` : ev.time
+}
+
 const TIPO_TO_API: Record<CalendarEvent['type'], string> = { meeting: 'REUNIAO', deadline: 'DEADLINE', task: 'TASK' }
 const TIPO_FROM_API: Record<string, CalendarEvent['type']> = { REUNIAO: 'meeting', DEADLINE: 'deadline', TASK: 'task' }
 const CHANNEL_FROM_API: Record<string, ChannelType> = { INSTAGRAM: 'instagram', LINKEDIN: 'linkedin', SITE: 'site', EMAIL: 'email' }
@@ -51,7 +55,7 @@ function mapEvent(ev: any): CalendarEvent {
     date: String(ev.data).slice(0, 10),
     title: ev.titulo,
     time: ev.horario,
-    duration: ev.duracao ?? '',
+    endTime: ev.horarioFim ?? '',
     type: TIPO_FROM_API[ev.tipo] ?? 'meeting',
     channel: ev.canal ? CHANNEL_FROM_API[ev.canal] : null,
     attendees: (ev.participantes ?? []).map((p: any) => ({ userId: p.userId, nome: p.nome })),
@@ -554,7 +558,7 @@ const typeStyle = {
 }
 
 interface EventForm {
-  id?: string; date: string; title: string; time: string; duration: string
+  id?: string; date: string; title: string; time: string; endTime: string
   type: 'meeting' | 'deadline' | 'task'; channel: ChannelType | ''; participantIds: string[]
 }
 
@@ -568,7 +572,7 @@ function CalendarView() {
   const [navDate, setNavDate] = useState(new Date('2026-07-28'))
   const [dayDetail, setDayDetail] = useState<string | null>(null)
   const [addModal, setAddModal] = useState<string | null>(null)
-  const [form, setForm] = useState<EventForm>({ date: '', title: '', time: '09:00', duration: '30min', type: 'meeting', channel: '', participantIds: [] })
+  const [form, setForm] = useState<EventForm>({ date: '', title: '', time: '09:00', endTime: '09:30', type: 'meeting', channel: '', participantIds: [] })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -603,14 +607,14 @@ function CalendarView() {
   }
 
   function openAdd(date: string) {
-    setForm({ date, title: '', time: '09:00', duration: '30min', type: 'meeting', channel: '', participantIds: [] })
+    setForm({ date, title: '', time: '09:00', endTime: '09:30', type: 'meeting', channel: '', participantIds: [] })
     setError('')
     setAddModal(date)
     loadParticipants().catch(() => setError('Não foi possível carregar a lista de participantes.'))
   }
 
   function openEdit(ev: CalendarEvent) {
-    setForm({ id: ev.id, date: ev.date, title: ev.title, time: ev.time, duration: ev.duration, type: ev.type, channel: ev.channel ?? '', participantIds: ev.attendees.map((a) => a.userId) })
+    setForm({ id: ev.id, date: ev.date, title: ev.title, time: ev.time, endTime: ev.endTime, type: ev.type, channel: ev.channel ?? '', participantIds: ev.attendees.map((a) => a.userId) })
     setError('')
     setAddModal(ev.date)
     loadParticipants().catch(() => setError('Não foi possível carregar a lista de participantes.'))
@@ -625,7 +629,7 @@ function CalendarView() {
     setSaving(true); setError('')
     try {
       const payload = {
-        titulo: form.title, data: form.date, horario: form.time, duracao: form.duration || null,
+        titulo: form.title, data: form.date, horario: form.time, horarioFim: form.endTime || null,
         tipo: TIPO_TO_API[form.type], canal: form.channel ? CHANNEL_TO_API[form.channel] : null,
         participantIds: form.participantIds,
       }
@@ -675,8 +679,7 @@ function CalendarView() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 mb-0.5">
                       <span style={{ color: s.color }}>{s.icon}</span>
-                      <span className="text-xs font-semibold" style={{ color: s.color }}>{ev.time}</span>
-                      {ev.duration && <span className="text-xs text-[#555566]">· {ev.duration}</span>}
+                      <span className="text-xs font-semibold" style={{ color: s.color }}>{timeRange(ev)}</span>
                     </div>
                     <p className="text-sm font-medium text-[#F0F0F5] leading-snug">{ev.title}</p>
                     {ev.channel && <div className="mt-1"><ChannelBadge ch={ev.channel} small /></div>}
@@ -755,7 +758,7 @@ function CalendarView() {
                       <div key={ev.id} className="group rounded-lg px-2.5 py-1.5" style={{ background: s.bg, borderLeft: `3px solid ${s.border}` }}>
                         <div className="flex items-center gap-1 mb-0.5">
                           <span style={{ color: s.color }}>{s.icon}</span>
-                          <span className="text-xs font-medium" style={{ color: s.color }}>{ev.time}</span>
+                          <span className="text-xs font-medium" style={{ color: s.color }}>{timeRange(ev)}</span>
                         </div>
                         <div className="flex items-start justify-between gap-1">
                           <p className="text-xs font-medium text-[#F0F0F5] leading-snug flex-1">{ev.title}</p>
@@ -818,9 +821,12 @@ function CalendarView() {
                   {dayEvents.slice(0, 2).map((ev) => {
                     const s = typeStyle[ev.type]
                     return (
-                      <div key={ev.id} className="flex items-center justify-between group/ev rounded px-1.5 py-0.5" style={{ background: s.bg }}>
-                        <p className="text-xs truncate leading-snug flex-1" style={{ color: s.color }}>{ev.title}</p>
-                        <button onClick={(e) => { e.stopPropagation(); deleteEvent(ev.id) }} className="flex-shrink-0 opacity-0 group-hover/ev:opacity-100 ml-1 text-[#FF5252]">
+                      <div key={ev.id} className="flex items-center justify-between group/ev rounded px-1.5 py-0.5 gap-1" style={{ background: s.bg }}>
+                        <div className="min-w-0 flex-1 flex items-baseline gap-1">
+                          <span className="flex-shrink-0" style={{ fontSize: 9, color: s.color, opacity: 0.8 }}>{timeRange(ev)}</span>
+                          <p className="text-xs truncate leading-snug" style={{ color: s.color }}>{ev.title}</p>
+                        </div>
+                        <button onClick={(e) => { e.stopPropagation(); deleteEvent(ev.id) }} className="flex-shrink-0 opacity-0 group-hover/ev:opacity-100 text-[#FF5252]">
                           <X size={9} />
                         </button>
                       </div>
@@ -932,17 +938,17 @@ function CalendarView() {
             <FormField label="Título *">
               <Inp value={form.title} onChange={(v) => setForm((f) => ({ ...f, title: v }))} placeholder="Ex: Reunião de planning" />
             </FormField>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <FormField label="Data">
                 <Inp type="date" value={form.date} onChange={(v) => setForm((f) => ({ ...f, date: v }))} />
               </FormField>
-              <FormField label="Horário">
-                <Inp value={form.time} onChange={(v) => setForm((f) => ({ ...f, time: v }))} placeholder="09:00" />
+              <FormField label="Horário de início">
+                <Inp type="time" value={form.time} onChange={(v) => setForm((f) => ({ ...f, time: v }))} />
+              </FormField>
+              <FormField label="Horário de término">
+                <Inp type="time" value={form.endTime} onChange={(v) => setForm((f) => ({ ...f, endTime: v }))} />
               </FormField>
             </div>
-            <FormField label="Duração">
-              <Inp value={form.duration} onChange={(v) => setForm((f) => ({ ...f, duration: v }))} placeholder="Ex: 30min, 1h" />
-            </FormField>
             <FormField label="Tipo">
               <div className="flex gap-2">
                 {(['meeting', 'deadline', 'task'] as const).map((t) => {
