@@ -54,7 +54,7 @@ function mapEvent(ev: any): CalendarEvent {
     duration: ev.duracao ?? '',
     type: TIPO_FROM_API[ev.tipo] ?? 'meeting',
     channel: ev.canal ? CHANNEL_FROM_API[ev.canal] : null,
-    attendees: (ev.participantes ?? []).map((p: any) => p.userId),
+    attendees: (ev.participantes ?? []).map((p: any) => ({ userId: p.userId, nome: p.nome })),
   }
 }
 
@@ -672,6 +672,17 @@ function CalendarView() {
                     </div>
                     <p className="text-sm font-medium text-[#F0F0F5] leading-snug">{ev.title}</p>
                     {ev.channel && <div className="mt-1"><ChannelBadge ch={ev.channel} small /></div>}
+                    {ev.attendees.length > 0 && (
+                      <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                        {ev.attendees.map((a) => (
+                          <span key={a.userId} title={a.nome} className="flex items-center justify-center rounded-full text-white font-bold flex-shrink-0"
+                            style={{ width: 18, height: 18, fontSize: 8, background: 'rgba(255,255,255,0.15)' }}>
+                            {a.nome.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase()}
+                          </span>
+                        ))}
+                        <span className="text-xs text-[#8A8A9A] ml-0.5">{ev.attendees.map((a) => a.nome.split(/\s+/)[0]).join(', ')}</span>
+                      </div>
+                    )}
                   </div>
                   <button onClick={() => deleteEvent(ev.id)} className="flex-shrink-0 opacity-0 group-hover:opacity-100 text-[#FF5252] hover:text-[#FF5252] transition-all mt-0.5">
                     <X size={13} />

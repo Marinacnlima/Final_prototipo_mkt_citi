@@ -92,7 +92,7 @@ export interface CalendarEvent {
   duration: string
   type: 'meeting' | 'deadline' | 'task'
   channel: ChannelType | null
-  attendees: string[] // userIds dos participantes
+  attendees: { userId: string; nome: string }[]
 }
 
 export interface PostMedia {
