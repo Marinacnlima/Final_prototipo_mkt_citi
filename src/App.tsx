@@ -124,7 +124,7 @@ export default function App() {
         {/* Module content */}
         <div className="flex-1 min-h-0 overflow-hidden">
           {activeModule === 'monitoramento' && (
-            <Monitoramento profile={profile} isManager={isManager} channel={channel} setChannel={setChannel} />
+            <Monitoramento profile={profile} isManager={isManager} channel={channel} setChannel={setChannel} currentUserId={currentUser.id} />
           )}
           {activeModule === 'biblioteca' && (
             <Biblioteca channel={channel} setChannel={setChannel} posts={posts} setPosts={setPosts} isManager={isManager} />

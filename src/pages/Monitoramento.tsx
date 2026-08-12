@@ -564,7 +564,7 @@ interface EventForm {
 
 interface EventParticipant { id: string; name: string; role: string; initials: string; color: string }
 
-function CalendarView() {
+function CalendarView({ currentUserId }: { currentUserId: string }) {
   const TODAY = dateStr(new Date())
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [participants, setParticipants] = useState<EventParticipant[]>([])
@@ -612,7 +612,7 @@ function CalendarView() {
   }
 
   function openAdd(date: string) {
-    setForm({ date, title: '', time: '09:00', endTime: '09:30', type: 'meeting', channel: '', participantIds: [] })
+    setForm({ date, title: '', time: '09:00', endTime: '09:30', type: 'meeting', channel: '', participantIds: [currentUserId] })
     setError('')
     setAddModal(date)
     loadParticipants().catch(() => setError('Não foi possível carregar a lista de participantes.'))
@@ -1542,9 +1542,10 @@ interface Props {
   isManager: boolean
   channel: Channel
   setChannel: (c: Channel) => void
+  currentUserId: string | number
 }
 
-export default function Monitoramento({ profile, isManager, channel, setChannel }: Props) {
+export default function Monitoramento({ profile, isManager, channel, setChannel, currentUserId }: Props) {
   const [tab, setTab] = useState<Tab>('kanban')
   const [columns, setColumns] = useState<KanbanColumn[]>([])
   const [members, setMembers] = useState<TaskMember[]>([])
@@ -1587,7 +1588,7 @@ export default function Monitoramento({ profile, isManager, channel, setChannel 
       </header>
       <div className="module-stage flex-1 overflow-hidden">
         {tab === 'kanban' && <KanbanBoard channel={channel} setChannel={setChannel} isManager={isManager} members={members} setMembers={setMembers} columns={columns} setColumns={setColumns} />}
-        {tab === 'calendario' && <CalendarView />}
+        {tab === 'calendario' && <CalendarView currentUserId={String(currentUserId)} />}
         {tab === 'campanhas' && <CampaignsView channel={channel} setChannel={setChannel} />}
         {tab === 'engajamento' && isManager && <EngagementView columns={columns} />}
       </div>
