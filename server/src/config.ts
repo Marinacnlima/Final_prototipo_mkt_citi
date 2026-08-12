@@ -12,6 +12,8 @@ export const config = z.object({
   GMAIL_REFRESH_TOKEN: z.string().optional(),
   GMAIL_SENDER: z.string().email().optional(),
   EMAIL_FROM_NAME: z.string().default('CITi HubSpot'),
+  GOOGLE_OAUTH_REDIRECT_URI: z.string().default('http://localhost:3001/api/v1/google/callback'),
+  FRONTEND_URL: z.string().default('http://localhost:5174'),
   RESET_CODE_TTL_MINUTES: z.coerce.number().int().positive().default(15),
   UPLOAD_DIR: z.string().default('uploads'),
   MAX_UPLOAD_MB: z.coerce.number().int().positive().default(20),

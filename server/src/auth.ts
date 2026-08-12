@@ -15,6 +15,13 @@ export const verifyResetToken = (token: string): string => {
   if (payload.purpose !== 'password_reset' || !payload.sub) throw new ApiError(401, 'RESET_TOKEN_INVALID')
   return payload.sub
 }
+export const signGoogleStateToken = (id: string) => jwt.sign({ purpose: 'google_oauth_state' }, config.JWT_SECRET, { subject: id, expiresIn: '10m' })
+export const verifyGoogleStateToken = (token: string): string => {
+  let payload: jwt.JwtPayload
+  try { payload = jwt.verify(token, config.JWT_SECRET) as jwt.JwtPayload } catch { throw new ApiError(401, 'GOOGLE_STATE_INVALID') }
+  if (payload.purpose !== 'google_oauth_state' || !payload.sub) throw new ApiError(401, 'GOOGLE_STATE_INVALID')
+  return payload.sub
+}
 export const authenticate: RequestHandler = asyncRoute(async (req, _res, next) => {
   const header = req.header('authorization')
   if (!header?.startsWith('Bearer ')) throw new ApiError(401, 'UNAUTHENTICATED')

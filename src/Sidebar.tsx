@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   LayoutDashboard, BookOpen, BarChart2, ChevronRight,
-  LogOut, Users, Plus, X, Eye, EyeOff, KeyRound, ChevronDown, Trash2,
+  LogOut, Users, Plus, X, Eye, EyeOff, KeyRound, ChevronDown, Trash2, CalendarDays, Link2Off,
 } from 'lucide-react'
 import type { Module } from './App'
 import type { AppUser } from './data'
@@ -220,6 +220,67 @@ function UserManagementModal({ users, setUsers, currentUserId, onClose }: UserMo
   )
 }
 
+// ─── Google Calendar connection ─────────────────────────────────────────────
+
+function GoogleCalendarConnect() {
+  const [status, setStatus] = useState<{ connected: boolean; email: string | null } | null>(null)
+  const [notice, setNotice] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  function load() {
+    api.google.status().then(setStatus).catch(() => undefined)
+  }
+
+  useEffect(() => {
+    load()
+    const params = new URLSearchParams(window.location.search)
+    const result = params.get('google')
+    if (result === 'connected') setNotice('Conta Google conectada com sucesso.')
+    else if (result === 'error') setNotice('Não foi possível conectar a conta Google. Tente de novo.')
+    if (result) { params.delete('google'); window.history.replaceState({}, '', `${window.location.pathname}${params.toString() ? `?${params}` : ''}`) }
+  }, [])
+
+  async function connect() {
+    setBusy(true)
+    try {
+      const { url } = await api.google.connect()
+      window.location.href = url
+    } catch {
+      setNotice('Não foi possível iniciar a conexão com o Google.')
+      setBusy(false)
+    }
+  }
+
+  async function disconnect() {
+    setBusy(true)
+    try { await api.google.disconnect(); setNotice('Conta Google desconectada.'); load() } catch { setNotice('Não foi possível desconectar.') } finally { setBusy(false) }
+  }
+
+  if (!status) return null
+
+  return (
+    <div className="px-3 pb-1">
+      {status.connected ? (
+        <button onClick={disconnect} disabled={busy} title={status.email ?? ''}
+          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left transition-all hover:bg-white/10 disabled:opacity-50">
+          <Link2Off size={15} style={{ color: '#00C853' }} />
+          <div className="min-w-0 flex-1">
+            <div className="text-sm" style={{ color: '#8A8A9A' }}>Google Calendar conectado</div>
+            <div className="text-xs truncate" style={{ color: '#555566' }}>{status.email}</div>
+          </div>
+        </button>
+      ) : (
+        <button onClick={connect} disabled={busy}
+          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left transition-all hover:bg-white/10 disabled:opacity-50">
+          <CalendarDays size={15} style={{ color: '#555566' }} />
+          <span className="text-sm" style={{ color: '#8A8A9A' }}>{busy ? 'Conectando…' : 'Conectar Google Calendar'}</span>
+        </button>
+      )}
+      {notice && <p className="text-xs px-3 pt-1" style={{ color: '#8A8A9A' }}>{notice}</p>}
+    </div>
+  )
+}
+
 // ─── Sidebar ───────────────────────────────────────────────────────────────
 
 export default function Sidebar({ currentUser, users, setUsers, activeModule, setModule, open, onClose, onLogout, onChangePassword }: Props) {
@@ -306,6 +367,7 @@ export default function Sidebar({ currentUser, users, setUsers, activeModule, se
               <span className="text-sm" style={{ color: '#8A8A9A' }}>Gerenciar usuários</span>
             </button>
           )}
+          <GoogleCalendarConnect />
           <button onClick={onChangePassword}
             className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left transition-all hover:bg-white/10">
             <KeyRound size={15} style={{ color: '#555566' }} />

@@ -8,6 +8,7 @@ import { kanbanRouter, calendarRouter } from './routes/kanban-calendar.js'
 import { campaignsRouter, engagementRouter } from './routes/campaigns-engagement.js'
 import { libraryRouter } from './routes/library.js'
 import { metricsRouter } from './routes/metrics.js'
+import { googleRouter } from './routes/google-accounts.js'
 
 export const app=express()
 app.disable('x-powered-by')
@@ -23,5 +24,6 @@ app.use('/api/v1/campaigns',campaignsRouter)
 app.use('/api/v1/engagement',engagementRouter)
 app.use('/api/v1/library',libraryRouter)
 app.use('/api/v1/metrics',metricsRouter)
+app.use('/api/v1/google',googleRouter)
 app.use((_req,res)=>res.status(404).json({error:{code:'NOT_FOUND',message:'Rota não encontrada'}}))
 app.use(errorHandler)

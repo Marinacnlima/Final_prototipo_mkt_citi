@@ -76,36 +76,54 @@ const googleInput = (event: any) => ({
   horarioFim: event.horarioFim,
   attendeeEmails: event.participantes.map((p: any) => p.user.email),
 })
+async function refreshTokenFor(userId: string | null): Promise<string | null> {
+  if (!userId) return null
+  const account = await prisma.googleAccount.findUnique({ where: { userId } })
+  return account?.refreshToken ?? null
+}
 calendarRouter.post('/events', asyncRoute(async (req, res) => {
   const body = eventBody.parse(req.body)
-  await assertParticipantsValid(body.participantIds)
-  const { participantIds, ...data } = body
-  let event = await prisma.calendarEvent.create({ data: { ...data, participantes: { create: participantIds.map((userId) => ({ userId })) } }, include: eventInclude })
-  const googleEventId = await createGoogleEvent(googleInput(event))
-  if (googleEventId) event = await prisma.calendarEvent.update({ where: { id: event.id }, data: { googleEventId }, include: eventInclude })
+  const participantIds = Array.from(new Set([...body.participantIds, req.user!.id]))
+  await assertParticipantsValid(participantIds)
+  const { participantIds: _ignored, ...data } = body
+  let event = await prisma.calendarEvent.create({ data: { ...data, criadorId: req.user!.id, participantes: { create: participantIds.map((userId) => ({ userId })) } }, include: eventInclude })
+  const refreshToken = await refreshTokenFor(req.user!.id)
+  if (refreshToken) {
+    const googleEventId = await createGoogleEvent(refreshToken, googleInput(event))
+    if (googleEventId) event = await prisma.calendarEvent.update({ where: { id: event.id }, data: { googleEventId }, include: eventInclude })
+  }
   res.status(201).json(serializeEvent(event))
 }))
 calendarRouter.patch('/events/:id', asyncRoute(async (req, res) => {
   const body = eventBody.partial().parse(req.body)
   const participantsProvided = req.body.participantIds !== undefined
-  if (participantsProvided) await assertParticipantsValid(body.participantIds!)
-  const { participantIds, ...data } = body
   const existing = await prisma.calendarEvent.findUniqueOrThrow({ where: { id: String(req.params.id) } })
+  if (participantsProvided) {
+    await assertParticipantsValid(body.participantIds!)
+    if (existing.criadorId && !body.participantIds!.includes(existing.criadorId)) throw new ApiError(422, 'CREATOR_REQUIRED', 'O criador do evento não pode ser removido dos participantes — para isso, apague o evento inteiro.')
+  }
+  const { participantIds, ...data } = body
   let event = await prisma.$transaction(async (tx) => {
     if (participantsProvided) { await tx.calendarEventAttendee.deleteMany({ where: { eventId: String(req.params.id) } }); await tx.calendarEventAttendee.createMany({ data: participantIds!.map((userId) => ({ eventId: String(req.params.id), userId })) }) }
     return tx.calendarEvent.update({ where: { id: String(req.params.id) }, data, include: eventInclude })
   })
-  if (existing.googleEventId) {
-    await updateGoogleEvent(existing.googleEventId, googleInput(event))
-  } else {
-    const googleEventId = await createGoogleEvent(googleInput(event))
-    if (googleEventId) event = await prisma.calendarEvent.update({ where: { id: event.id }, data: { googleEventId }, include: eventInclude })
+  const refreshToken = await refreshTokenFor(existing.criadorId)
+  if (refreshToken) {
+    if (existing.googleEventId) {
+      await updateGoogleEvent(refreshToken, existing.googleEventId, googleInput(event))
+    } else {
+      const googleEventId = await createGoogleEvent(refreshToken, googleInput(event))
+      if (googleEventId) event = await prisma.calendarEvent.update({ where: { id: event.id }, data: { googleEventId }, include: eventInclude })
+    }
   }
   res.json(serializeEvent(event))
 }))
 calendarRouter.delete('/events/:id', asyncRoute(async (req, res) => {
   const existing = await prisma.calendarEvent.findUniqueOrThrow({ where: { id: String(req.params.id) } })
   await prisma.calendarEvent.delete({ where: { id: existing.id } })
-  if (existing.googleEventId) await deleteGoogleEvent(existing.googleEventId)
+  if (existing.googleEventId) {
+    const refreshToken = await refreshTokenFor(existing.criadorId)
+    if (refreshToken) await deleteGoogleEvent(refreshToken, existing.googleEventId)
+  }
   res.status(204).send()
 }))

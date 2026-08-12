@@ -100,8 +100,19 @@ model User {
   engajamentos   TeamEngagement[]
   resetCodes     PasswordResetCode[]
   participacoes  CalendarEventAttendee[]
+  eventosCriados CalendarEvent[]
+  googleAccount  GoogleAccount?
 
   @@index([perfil, ativo])
+}
+
+model GoogleAccount {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  email        String
+  refreshToken String
+  connectedAt  DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model PasswordResetCode {
@@ -169,6 +180,8 @@ model CalendarEvent {
   tipo        TipoEvento              @default(REUNIAO)
   canal       CanalSocial?
   googleEventId String?
+  criadorId   String?
+  criador     User?                   @relation(fields: [criadorId], references: [id])
   createdAt   DateTime                @default(now())
   updatedAt   DateTime                @updatedAt
   participantes CalendarEventAttendee[]
