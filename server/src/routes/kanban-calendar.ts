@@ -103,13 +103,17 @@ calendarRouter.patch('/events/:id', asyncRoute(async (req, res) => {
     if (existing.criadorId && !body.participantIds!.includes(existing.criadorId)) throw new ApiError(422, 'CREATOR_REQUIRED', 'O criador do evento não pode ser removido dos participantes — para isso, apague o evento inteiro.')
   }
   const { participantIds, ...data } = body
+  const adoptingCreator = !existing.criadorId
+  const dataWithCreator = adoptingCreator ? { ...data, criadorId: req.user!.id } : data
   let event = await prisma.$transaction(async (tx) => {
     if (participantsProvided) { await tx.calendarEventAttendee.deleteMany({ where: { eventId: String(req.params.id) } }); await tx.calendarEventAttendee.createMany({ data: participantIds!.map((userId) => ({ eventId: String(req.params.id), userId })) }) }
-    return tx.calendarEvent.update({ where: { id: String(req.params.id) }, data, include: eventInclude })
+    return tx.calendarEvent.update({ where: { id: String(req.params.id) }, data: dataWithCreator, include: eventInclude })
   })
-  const refreshToken = await refreshTokenFor(existing.criadorId)
+  const refreshToken = await refreshTokenFor(event.criadorId)
+  // Ao "adotar" um evento sem criador, o googleEventId antigo pode pertencer à conta de outra pessoa
+  // (ex.: era da conta compartilhada usada antes da conexão por usuário) — trata como sincronização nova.
   if (refreshToken) {
-    if (existing.googleEventId) {
+    if (existing.googleEventId && !adoptingCreator) {
       await updateGoogleEvent(refreshToken, existing.googleEventId, googleInput(event))
     } else {
       const googleEventId = await createGoogleEvent(refreshToken, googleInput(event))
