@@ -759,9 +759,14 @@ function CalendarView() {
                         </div>
                         <div className="flex items-start justify-between gap-1">
                           <p className="text-xs font-medium text-[#F0F0F5] leading-snug flex-1">{ev.title}</p>
-                          <button onClick={() => deleteEvent(ev.id)} className="flex-shrink-0 opacity-0 group-hover:opacity-100 text-[#FF5252] hover:text-[#FF5252] transition-all">
-                            <X size={11} />
-                          </button>
+                          <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-all">
+                            <button onClick={() => openEdit(ev)} className="text-[#8A8A9A] hover:text-[#F0F0F5]">
+                              <Edit2 size={11} />
+                            </button>
+                            <button onClick={() => deleteEvent(ev.id)} className="text-[#FF5252] hover:text-[#FF5252]">
+                              <X size={11} />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     )
