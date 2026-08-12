@@ -99,6 +99,7 @@ model User {
   atribuicoes    TaskAssignment[]
   engajamentos   TeamEngagement[]
   resetCodes     PasswordResetCode[]
+  participacoes  CalendarEventAttendee[]
 
   @@index([perfil, ativo])
 }
@@ -160,18 +161,30 @@ model TaskAssignment {
 }
 
 model CalendarEvent {
-  id        String       @id @default(uuid())
-  titulo    String
-  data      DateTime
-  horario   String
-  duracao   String?
-  tipo      TipoEvento   @default(REUNIAO)
-  canal     CanalSocial?
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  id          String                  @id @default(uuid())
+  titulo      String
+  data        DateTime
+  horario     String
+  duracao     String?
+  tipo        TipoEvento              @default(REUNIAO)
+  canal       CanalSocial?
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+  participantes CalendarEventAttendee[]
 
   @@index([data])
   @@index([canal])
+}
+
+model CalendarEventAttendee {
+  id      String        @id @default(uuid())
+  eventId String
+  userId  String
+  event   CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([userId])
 }
 
 model Campaign {

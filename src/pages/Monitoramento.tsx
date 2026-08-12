@@ -8,7 +8,7 @@ import {
 } from 'recharts'
 import type { Profile, Channel } from '../App'
 import type { KanbanColumn, Task, TaskAssignee, ChannelType, Campaign, CalendarEvent, CampaignMetricEntry } from '../data'
-import { campaignsData, calendarEventsData, engagementData, type Difficulty } from '../data'
+import { campaignsData, engagementData, type Difficulty } from '../data'
 import { api } from '../api'
 
 interface TaskMember {
@@ -38,6 +38,23 @@ function mapTask(task: any): Task {
 
 function mapColumn(column: any): KanbanColumn {
   return { id: column.id, name: column.nome, tasks: (column.tasks ?? []).map(mapTask) }
+}
+
+const TIPO_TO_API: Record<CalendarEvent['type'], string> = { meeting: 'REUNIAO', deadline: 'DEADLINE', task: 'TASK' }
+const TIPO_FROM_API: Record<string, CalendarEvent['type']> = { REUNIAO: 'meeting', DEADLINE: 'deadline', TASK: 'task' }
+const CHANNEL_FROM_API: Record<string, ChannelType> = { INSTAGRAM: 'instagram', LINKEDIN: 'linkedin', SITE: 'site', EMAIL: 'email' }
+
+function mapEvent(ev: any): CalendarEvent {
+  return {
+    id: ev.id,
+    date: String(ev.data).slice(0, 10),
+    title: ev.titulo,
+    time: ev.horario,
+    duration: ev.duracao ?? '',
+    type: TIPO_FROM_API[ev.tipo] ?? 'meeting',
+    channel: ev.canal ? CHANNEL_FROM_API[ev.canal] : null,
+    attendees: (ev.participantes ?? []).map((p: any) => p.userId),
+  }
 }
 
 // ─── Shared ────────────────────────────────────────────────────────────────
@@ -531,17 +548,33 @@ const typeStyle = {
 
 interface EventForm {
   date: string; title: string; time: string; duration: string
-  type: 'meeting' | 'deadline' | 'task'; channel: ChannelType | ''
+  type: 'meeting' | 'deadline' | 'task'; channel: ChannelType | ''; participantIds: string[]
 }
+
+interface EventParticipant { id: string; name: string; role: string; initials: string; color: string }
 
 function CalendarView() {
   const TODAY = '2026-07-31'
-  const [events, setEvents] = useState<CalendarEvent[]>(calendarEventsData)
+  const [events, setEvents] = useState<CalendarEvent[]>([])
+  const [participants, setParticipants] = useState<EventParticipant[]>([])
   const [view, setView] = useState<CalView>('week')
   const [navDate, setNavDate] = useState(new Date('2026-07-28'))
   const [dayDetail, setDayDetail] = useState<string | null>(null)
   const [addModal, setAddModal] = useState<string | null>(null)
-  const [form, setForm] = useState<EventForm>({ date: '', title: '', time: '09:00', duration: '30min', type: 'meeting', channel: '' })
+  const [form, setForm] = useState<EventForm>({ date: '', title: '', time: '09:00', duration: '30min', type: 'meeting', channel: '', participantIds: [] })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    Promise.all([api.calendar.list(), api.calendar.participants()]).then(([rawEvents, rawParticipants]) => {
+      setEvents(rawEvents.map(mapEvent))
+      setParticipants(rawParticipants.map((p: any, index: number) => ({
+        id: p.id, name: p.nomeCompleto, role: p.cargo ?? (p.perfil === 'GERENTE' ? 'Gerente' : 'Analista'),
+        initials: p.nomeCompleto.split(/\s+/).slice(0, 2).map((part: string) => part[0]).join('').toUpperCase(),
+        color: ['#507AE6', '#50E678', '#E1306C', '#FFB300', '#7D1AD7'][index % 5],
+      })))
+    }).catch(() => setError('Não foi possível carregar o calendário.'))
+  }, [])
 
   function navigate(dir: -1 | 1) {
     setNavDate((d) => {
@@ -558,23 +591,36 @@ function CalendarView() {
   }
 
   function openAdd(date: string) {
-    setForm({ date, title: '', time: '09:00', duration: '30min', type: 'meeting', channel: '' })
+    setForm({ date, title: '', time: '09:00', duration: '30min', type: 'meeting', channel: '', participantIds: [] })
+    setError('')
     setAddModal(date)
   }
 
-  function saveEvent() {
-    if (!form.title.trim()) return
-    const ev: CalendarEvent = {
-      id: Date.now(), date: form.date, title: form.title, time: form.time,
-      duration: form.duration, type: form.type,
-      channel: form.channel ? form.channel as ChannelType : null, attendees: [],
-    }
-    setEvents((prev) => [...prev, ev])
-    setAddModal(null)
+  function toggleParticipant(userId: string) {
+    setForm((f) => ({ ...f, participantIds: f.participantIds.includes(userId) ? f.participantIds.filter((id) => id !== userId) : [...f.participantIds, userId] }))
   }
 
-  function deleteEvent(id: number) {
+  async function saveEvent() {
+    if (!form.title.trim()) return
+    setSaving(true); setError('')
+    try {
+      const created = await api.calendar.create({
+        titulo: form.title, data: form.date, horario: form.time, duracao: form.duration || null,
+        tipo: TIPO_TO_API[form.type], canal: form.channel ? CHANNEL_TO_API[form.channel] : null,
+        participantIds: form.participantIds,
+      })
+      setEvents((prev) => [...prev, mapEvent(created)])
+      setAddModal(null)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Não foi possível salvar o evento.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function deleteEvent(id: string) {
     setEvents((prev) => prev.filter((e) => e.id !== id))
+    await api.calendar.remove(id).catch(() => setError('Não foi possível apagar o evento.'))
   }
 
   const eventsOnDate = (d: string) => events.filter((e) => e.date === d)
@@ -830,7 +876,7 @@ function CalendarView() {
 
       {/* Add event modal */}
       {addModal && (
-        <Modal title="Novo evento" onClose={() => setAddModal(null)}>
+        <Modal title="Novo evento" onClose={() => setAddModal(null)} wide>
           <div className="px-6 py-4 space-y-4">
             <FormField label="Título *">
               <Inp value={form.title} onChange={(v) => setForm((f) => ({ ...f, title: v }))} placeholder="Ex: Reunião de planning" />
@@ -877,11 +923,35 @@ function CalendarView() {
                 ))}
               </div>
             </FormField>
+            <FormField label="Participantes">
+              <div className="space-y-2">
+                {participants.length === 0 && <div className="text-sm text-[#8A8A9A] rounded-xl px-3 py-3 bg-[#202024]">Nenhum usuário ativo cadastrado.</div>}
+                {participants.map((p) => {
+                  const selected = form.participantIds.includes(p.id)
+                  return (
+                    <button key={p.id} type="button" onClick={() => toggleParticipant(p.id)}
+                      className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all text-left"
+                      style={{ background: selected ? 'rgba(125,26,215,0.08)' : '#202024', border: `1.5px solid ${selected ? '#7D1AD7' : 'rgba(255,255,255,0.1)'}` }}>
+                      <div className="flex items-center justify-center rounded-full text-white font-bold flex-shrink-0"
+                        style={{ width: 28, height: 28, background: p.color, fontSize: 10 }}>
+                        {p.initials}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-medium text-[#F0F0F5]">{p.name}</div>
+                        <div className="text-xs text-[#555566]">{p.role}</div>
+                      </div>
+                      {selected ? <Check size={16} style={{ color: '#7D1AD7' }} /> : <span className="text-xs text-[#555566] flex-shrink-0">clique para convidar</span>}
+                    </button>
+                  )
+                })}
+              </div>
+            </FormField>
+            {error && <p className="text-xs text-[#FF6B6B]" role="alert">{error}</p>}
           </div>
           <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-            <button onClick={saveEvent} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90 btn-glow"
+            <button onClick={saveEvent} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90 btn-glow disabled:opacity-50"
               style={{ background: 'linear-gradient(135deg, #7D1AD7, #50E678)' }}>
-              Salvar evento
+              {saving ? 'Salvando…' : 'Salvar evento'}
             </button>
             <button onClick={() => setAddModal(null)} className="px-4 py-2 rounded-xl text-sm font-medium text-[#8A8A9A] hover:bg-[rgba(255,255,255,0.08)]">Cancelar</button>
           </div>

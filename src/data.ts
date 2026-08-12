@@ -85,14 +85,14 @@ export interface EngagementData {
 }
 
 export interface CalendarEvent {
-  id: number
+  id: string
   date: string // YYYY-MM-DD
   title: string
   time: string
   duration: string
   type: 'meeting' | 'deadline' | 'task'
   channel: ChannelType | null
-  attendees: string[]
+  attendees: string[] // userIds dos participantes
 }
 
 export interface PostMedia {
@@ -305,23 +305,6 @@ export const engagementData: EngagementData[] = [
   { memberId: 2, name: 'Carlos Melo', punctuality: 4.5, quality: 4.4, presence: 4.8, tasksCompleted: 14, tasksTotal: 16 },
   { memberId: 3, name: 'Beatriz Santos', punctuality: 3.9, quality: 4.6, presence: 5.0, tasksCompleted: 11, tasksTotal: 15 },
   { memberId: 4, name: 'Rafael Costa', punctuality: 4.3, quality: 4.7, presence: 4.0, tasksCompleted: 9, tasksTotal: 11 },
-]
-
-// ─── Calendar Events ──────────────────────────────────────────────────────────
-
-export const calendarEventsData: CalendarEvent[] = [
-  { id: 1, date: '2026-07-28', title: 'Daily de marketing', time: '09:00', duration: '30min', type: 'meeting', channel: null, attendees: ['AL', 'CM', 'BS', 'RC'] },
-  { id: 2, date: '2026-07-28', title: 'Entrega: Email Black November', time: '18:00', duration: '', type: 'deadline', channel: 'email', attendees: ['BS'] },
-  { id: 3, date: '2026-07-29', title: 'Daily de marketing', time: '09:00', duration: '30min', type: 'meeting', channel: null, attendees: ['AL', 'CM', 'BS', 'RC'] },
-  { id: 4, date: '2026-07-29', title: 'Revisão de conteúdo — Q3', time: '14:00', duration: '1h', type: 'meeting', channel: 'instagram', attendees: ['AL', 'BS', 'RC'] },
-  { id: 5, date: '2026-07-30', title: 'Daily de marketing', time: '09:00', duration: '30min', type: 'meeting', channel: null, attendees: ['AL', 'CM', 'BS', 'RC'] },
-  { id: 6, date: '2026-07-30', title: 'Sync com produto — Cases', time: '11:00', duration: '45min', type: 'meeting', channel: 'linkedin', attendees: ['AL', 'CM'] },
-  { id: 7, date: '2026-07-30', title: 'Entrega: Carrossel 5 dicas', time: '17:00', duration: '', type: 'deadline', channel: 'instagram', attendees: ['RC'] },
-  { id: 8, date: '2026-07-31', title: 'Daily de marketing', time: '09:00', duration: '30min', type: 'meeting', channel: null, attendees: ['AL', 'CM', 'BS', 'RC'] },
-  { id: 9, date: '2026-07-31', title: 'Apresentação métricas julho', time: '16:00', duration: '1h', type: 'meeting', channel: null, attendees: ['AL', 'CM', 'BS', 'RC'] },
-  { id: 10, date: '2026-08-01', title: 'Daily de marketing', time: '09:00', duration: '30min', type: 'meeting', channel: null, attendees: ['AL', 'CM', 'BS', 'RC'] },
-  { id: 11, date: '2026-08-01', title: 'Planning semana agosto', time: '10:00', duration: '1h30', type: 'meeting', channel: null, attendees: ['AL', 'CM', 'BS', 'RC'] },
-  { id: 12, date: '2026-08-01', title: 'Deadline: Post LinkedIn TL', time: '18:00', duration: '', type: 'deadline', channel: 'linkedin', attendees: ['CM'] },
 ]
 
 // ─── Posts Library ───────────────────────────────────────────────────────────

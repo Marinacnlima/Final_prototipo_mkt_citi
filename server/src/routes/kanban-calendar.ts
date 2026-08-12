@@ -55,8 +55,33 @@ kanbanRouter.patch('/tasks/:id/move', asyncRoute(async (req, res) => { const bod
 kanbanRouter.delete('/tasks/:id', asyncRoute(async (req, res) => { await prisma.task.delete({ where: { id: String(req.params.id) } }); res.status(204).send() }))
 
 export const calendarRouter = Router(); calendarRouter.use(authenticate)
-const eventBody = z.object({ titulo: z.string().trim().min(1), data: z.coerce.date(), horario: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/), duracao: z.string().nullable().optional(), tipo: z.enum(['REUNIAO','DEADLINE','TASK']), canal: z.enum(['INSTAGRAM','LINKEDIN','SITE','EMAIL']).nullable().optional() })
-calendarRouter.get('/events', asyncRoute(async (req, res) => { const q = z.object({ inicio: z.coerce.date().optional(), fim: z.coerce.date().optional(), canal: z.enum(['INSTAGRAM','LINKEDIN','SITE','EMAIL']).optional() }).parse(req.query); res.json(await prisma.calendarEvent.findMany({ where: { ...(q.canal?{canal:q.canal}:{}), ...(q.inicio||q.fim?{data:{gte:q.inicio,lte:q.fim}}:{}) }, orderBy: [{data:'asc'},{horario:'asc'}] })) }))
-calendarRouter.post('/events', asyncRoute(async (req, res) => res.status(201).json(await prisma.calendarEvent.create({ data: eventBody.parse(req.body) }))))
-calendarRouter.patch('/events/:id', asyncRoute(async (req, res) => res.json(await prisma.calendarEvent.update({ where: { id: String(req.params.id) }, data: eventBody.partial().parse(req.body) }))))
+const eventBody = z.object({ titulo: z.string().trim().min(1), data: z.coerce.date(), horario: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/), duracao: z.string().nullable().optional(), tipo: z.enum(['REUNIAO','DEADLINE','TASK']), canal: z.enum(['INSTAGRAM','LINKEDIN','SITE','EMAIL']).nullable().optional(), participantIds: z.array(z.string().uuid()).default([]) })
+const eventInclude = { participantes: { include: { user: true } } } as const
+const serializeEvent = (event: any) => ({ ...event, participantes: event.participantes.map((p: any) => ({ userId: p.userId, nome: p.user.nomeCompleto, email: p.user.email })) })
+async function assertParticipantsValid(participantIds: string[]) {
+  const count = await prisma.user.count({ where: { id: { in: participantIds }, ativo: true } })
+  if (count !== new Set(participantIds).size) throw new ApiError(422, 'INVALID_PARTICIPANT', 'Somente usuários ativos podem participar do evento')
+}
+calendarRouter.get('/participants', asyncRoute(async (_req, res) => {
+  const users = await prisma.user.findMany({ where: { ativo: true }, select: { id: true, nomeCompleto: true, cargo: true, perfil: true }, orderBy: { nomeCompleto: 'asc' } })
+  res.json(users)
+}))
+calendarRouter.get('/events', asyncRoute(async (req, res) => { const q = z.object({ inicio: z.coerce.date().optional(), fim: z.coerce.date().optional(), canal: z.enum(['INSTAGRAM','LINKEDIN','SITE','EMAIL']).optional() }).parse(req.query); const events = await prisma.calendarEvent.findMany({ where: { ...(q.canal?{canal:q.canal}:{}), ...(q.inicio||q.fim?{data:{gte:q.inicio,lte:q.fim}}:{}) }, orderBy: [{data:'asc'},{horario:'asc'}], include: eventInclude }); res.json(events.map(serializeEvent)) }))
+calendarRouter.post('/events', asyncRoute(async (req, res) => {
+  const body = eventBody.parse(req.body)
+  await assertParticipantsValid(body.participantIds)
+  const { participantIds, ...data } = body
+  const event = await prisma.calendarEvent.create({ data: { ...data, participantes: { create: participantIds.map((userId) => ({ userId })) } }, include: eventInclude })
+  res.status(201).json(serializeEvent(event))
+}))
+calendarRouter.patch('/events/:id', asyncRoute(async (req, res) => {
+  const body = eventBody.partial().parse(req.body)
+  if (body.participantIds) await assertParticipantsValid(body.participantIds)
+  const { participantIds, ...data } = body
+  const event = await prisma.$transaction(async (tx) => {
+    if (participantIds) { await tx.calendarEventAttendee.deleteMany({ where: { eventId: String(req.params.id) } }); await tx.calendarEventAttendee.createMany({ data: participantIds.map((userId) => ({ eventId: String(req.params.id), userId })) }) }
+    return tx.calendarEvent.update({ where: { id: String(req.params.id) }, data, include: eventInclude })
+  })
+  res.json(serializeEvent(event))
+}))
 calendarRouter.delete('/events/:id', asyncRoute(async (req, res) => { await prisma.calendarEvent.delete({ where: { id: String(req.params.id) } }); res.status(204).send() }))

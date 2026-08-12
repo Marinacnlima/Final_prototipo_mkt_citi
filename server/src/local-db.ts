@@ -1,4 +1,6 @@
 import EmbeddedPostgres from 'embedded-postgres'
+import { existsSync } from 'node:fs'
+import path from 'node:path'
 
 const database = new EmbeddedPostgres({
   databaseDir: '.marketops-db',
@@ -19,7 +21,10 @@ process.once('SIGINT', stop)
 process.once('SIGTERM', stop)
 
 async function main() {
-  await database.initialise()
+  // initialise() roda initdb, que falha se o diretório já tiver um cluster (ex.: reinício após o processo cair) —
+  // PG_VERSION é o marcador que o próprio Postgres usa para indicar "já inicializado"
+  const alreadyInitialised = existsSync(path.join('.marketops-db', 'PG_VERSION'))
+  if (!alreadyInitialised) await database.initialise()
   await database.start()
   await database.createDatabase('marketops').catch((error: unknown) => {
     const message = error instanceof Error ? error.message : String(error)
