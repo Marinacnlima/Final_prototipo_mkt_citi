@@ -280,7 +280,7 @@ export default function Login({ users, onLogin, authenticate, forgotPassword, ve
       <div className="original-login__aurora" aria-hidden="true" />
       <img className="original-login__logo" src={citiLogo} alt="CITi" />
       <section className="original-login__hero">
-        <div className="original-login__eyebrow"><span />Liquid Intelligence</div>
+        <div className="original-login__eyebrow"><span />HubSpot</div>
         <h1>Estratégia em<br /><strong className="original-login__movement">Movimento.</strong></h1>
         <p>Dados, conteúdo e performance conectados em uma única<br className="hidden xl:block" /> experiência de marketing.</p>
         <div className="original-login__pillars" aria-label="Pilares da plataforma">

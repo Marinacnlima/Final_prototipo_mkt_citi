@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Menu } from 'lucide-react'
-import Sidebar from './Sidebar'
+import TopBar from './TopBar'
+import SettingsMenu from './SettingsMenu'
 import Monitoramento from './pages/Monitoramento'
 import Biblioteca from './pages/Biblioteca'
 import Metricas from './pages/Metricas'
 import Login, { ChangePasswordScreen } from './pages/Login'
 import type { Post, AppUser } from './data'
 import { api } from './api'
-import citiLogoWhite from './assets/citi-logo-white.png'
 import LiquidBackground from './components/LiquidBackground'
 
 export type Profile = 'gerente' | 'analista'
@@ -19,7 +18,6 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<AppUser | null>(null)
   const [changingPw, setChangingPw] = useState(false)
   const [changingPwVoluntary, setChangingPwVoluntary] = useState(false)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [activeModule, setActiveModule] = useState<Module>('monitoramento')
   const [channel, setChannel] = useState<Channel>('todos')
   const [posts, setPostsState] = useState<Post[]>([])
@@ -63,12 +61,6 @@ export default function App() {
     api.logout().catch(()=>undefined); api.setToken(null)
     setCurrentUser(null)
     setChangingPw(false)
-    setSidebarOpen(false)
-  }
-
-  function handleSetModule(m: Module) {
-    setActiveModule(m)
-    setSidebarOpen(false)
   }
 
   if (!currentUser) return <Login users={users} onLogin={handleLogin} authenticate={authenticate} forgotPassword={forgotPassword} verifyCode={verifyResetCode} resetPassword={resetPassword} />
@@ -78,51 +70,22 @@ export default function App() {
   const profile: Profile = currentUser.role
 
   return (
-    <div className="internal-app app-shell flex h-screen overflow-hidden bg-[#101010] relative">
+    <div className="internal-app app-shell h-screen overflow-hidden bg-[#101010] relative">
       <LiquidBackground interactive={false} className="internal-liquid-background" />
 
-      {/* Mobile backdrop */}
-      {sidebarOpen && (
-        <div className="fixed inset-0 z-30 bg-black/50 md:hidden" onClick={() => setSidebarOpen(false)} />
-      )}
-
-      {/* Sidebar */}
-      <Sidebar
+      <TopBar currentUser={currentUser} activeModule={activeModule} setModule={setActiveModule} />
+      <SettingsMenu
         currentUser={currentUser}
         users={users}
         setUsers={setUsers}
-        activeModule={activeModule}
-        setModule={handleSetModule}
-        open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
+        isManager={isManager}
         onLogout={handleLogout}
         onChangePassword={() => { setChangingPw(true); setChangingPwVoluntary(true) }}
       />
 
-      {/* Main content */}
-      <div className="flex-1 min-w-0 overflow-hidden flex flex-col">
-
-        {/* Mobile top bar */}
-        <div className="mobile-topbar flex-shrink-0 flex items-center gap-3 px-4 bg-[#17171A] md:hidden"
-          style={{ height: 52, borderBottom: '1.5px solid rgba(255,255,255,0.1)' }}>
-          <button onClick={() => setSidebarOpen(true)}
-            className="p-2 rounded-xl hover:bg-[rgba(255,255,255,0.08)] transition-colors flex-shrink-0"
-            aria-label="Abrir menu">
-            <Menu size={20} className="text-[#8A8A9A]" />
-          </button>
-          <div className="flex items-center gap-2">
-            <img className="mobile-brand-logo" src={citiLogoWhite} alt="CITi" />
-            <span className="text-[#6F6F7B] text-xs">Marketing Intelligence</span>
-          </div>
-          <div className="flex-1" />
-          <div className="flex items-center justify-center rounded-full text-white text-xs font-bold flex-shrink-0"
-            style={{ width: 28, height: 28, background: currentUser.color }}>
-            {currentUser.initials}
-          </div>
-        </div>
-
-        {/* Module content */}
-        <div className="flex-1 min-h-0 overflow-hidden">
+      {/* Module content */}
+      <div className="absolute inset-0 pt-20 sm:pt-24">
+        <div className="h-full overflow-hidden">
           {activeModule === 'monitoramento' && (
             <Monitoramento profile={profile} isManager={isManager} channel={channel} setChannel={setChannel} currentUserId={currentUser.id} />
           )}

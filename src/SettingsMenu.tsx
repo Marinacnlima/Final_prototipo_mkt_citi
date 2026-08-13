@@ -1,30 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
-  LayoutDashboard, BookOpen, BarChart2, ChevronRight,
-  LogOut, Users, Plus, X, Eye, EyeOff, KeyRound, ChevronDown, Trash2, CalendarDays, Link2Off,
+  Settings, Users, KeyRound, LogOut, Plus, X, Eye, EyeOff, ChevronDown, Trash2, CalendarDays, Link2Off,
 } from 'lucide-react'
-import type { Module } from './App'
 import type { AppUser } from './data'
-import citiLogoWhite from './assets/citi-logo-white.png'
 import { api } from './api'
-
-interface Props {
-  currentUser: AppUser
-  users: AppUser[]
-  setUsers: React.Dispatch<React.SetStateAction<AppUser[]>>
-  activeModule: Module
-  setModule: (m: Module) => void
-  open: boolean
-  onClose: () => void
-  onLogout: () => void
-  onChangePassword: () => void
-}
-
-const navItems: { id: Module; label: string; desc: string; Icon: React.ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }> }[] = [
-  { id: 'monitoramento', label: 'Monitoramento', desc: 'Kanban · Campanhas · Time', Icon: LayoutDashboard },
-  { id: 'biblioteca', label: 'Biblioteca', desc: 'Posts · Materiais · Prompts', Icon: BookOpen },
-  { id: 'metricas', label: 'Métricas', desc: 'Dashboard · KPIs', Icon: BarChart2 },
-]
 
 // ─── User Management Modal ─────────────────────────────────────────────────
 
@@ -259,10 +238,10 @@ function GoogleCalendarConnect() {
   if (!status) return null
 
   return (
-    <div className="px-3 pb-1">
+    <div>
       {status.connected ? (
         <button onClick={disconnect} disabled={busy} title={status.email ?? ''}
-          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left transition-all hover:bg-white/10 disabled:opacity-50">
+          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-left transition-all hover:bg-white/10 disabled:opacity-50">
           <Link2Off size={15} style={{ color: '#00C853' }} />
           <div className="min-w-0 flex-1">
             <div className="text-sm" style={{ color: '#8A8A9A' }}>Google Calendar conectado</div>
@@ -271,120 +250,81 @@ function GoogleCalendarConnect() {
         </button>
       ) : (
         <button onClick={connect} disabled={busy}
-          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left transition-all hover:bg-white/10 disabled:opacity-50">
+          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-left transition-all hover:bg-white/10 disabled:opacity-50">
           <CalendarDays size={15} style={{ color: '#555566' }} />
           <span className="text-sm" style={{ color: '#8A8A9A' }}>{busy ? 'Conectando…' : 'Conectar Google Calendar'}</span>
         </button>
       )}
-      {notice && <p className="text-xs px-3 pt-1" style={{ color: '#8A8A9A' }}>{notice}</p>}
+      {notice && <p className="text-xs px-4 pb-2" style={{ color: '#8A8A9A' }}>{notice}</p>}
     </div>
   )
 }
 
-// ─── Sidebar ───────────────────────────────────────────────────────────────
+// ─── Settings menu ──────────────────────────────────────────────────────────
 
-export default function Sidebar({ currentUser, users, setUsers, activeModule, setModule, open, onClose, onLogout, onChangePassword }: Props) {
+interface Props {
+  currentUser: AppUser
+  users: AppUser[]
+  setUsers: React.Dispatch<React.SetStateAction<AppUser[]>>
+  isManager: boolean
+  onLogout: () => void
+  onChangePassword: () => void
+}
+
+export default function SettingsMenu({ currentUser, users, setUsers, isManager, onLogout, onChangePassword }: Props) {
+  const [open, setOpen] = useState(false)
   const [userModalOpen, setUserModalOpen] = useState(false)
-  const isManager = currentUser.role === 'gerente'
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onClick)
+    return () => document.removeEventListener('mousedown', onClick)
+  }, [])
 
   return (
     <>
-      {/* Sidebar panel */}
-      <aside
-        className={[
-          'app-sidebar',
-          'fixed inset-y-0 left-0 z-40 flex flex-col flex-shrink-0',
-          'transition-transform duration-300 ease-in-out',
-          'md:relative md:translate-x-0',
-          open ? 'translate-x-0' : '-translate-x-full',
-        ].join(' ')}
-        style={{ width: 268, background: 'rgba(18,18,20,.96)', borderRight: '1px solid rgba(255,255,255,0.075)', backdropFilter: 'blur(22px)' }}
-      >
-        {/* Logo + close button */}
-        <div className="flex items-center justify-between px-5 pt-5 pb-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-          <div className="flex items-center gap-2.5">
-            <div>
-              <img className="sidebar-brand-logo" src={citiLogoWhite} alt="CITi" />
-              <div className="text-[10px] uppercase tracking-[.18em]" style={{ color: '#6F6F7B' }}>Liquid Intelligence</div>
-            </div>
-          </div>
-          <button onClick={onClose} className="md:hidden p-1.5 rounded-lg hover:bg-white/10 transition-colors">
-            <X size={16} className="text-[#555566]" />
+      <div ref={ref} className="fixed bottom-3 left-3 sm:bottom-4 sm:left-4 z-40" style={{ zIndex: 40 }}>
+        <div className="relative">
+          <button onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open} aria-label="Configurações"
+            className="flex items-center justify-center rounded-full transition-all hover:opacity-90"
+            style={{ width: 44, height: 44, background: 'rgba(18,18,20,.9)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(16px)' }}>
+            <Settings size={18} style={{ color: open ? '#7D1AD7' : '#8A8A9A' }} />
           </button>
-        </div>
-
-        {/* Current user */}
-        <div className="sidebar-profile-wrap px-4 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-          <div className="sidebar-profile flex items-center gap-2.5">
-            <div className="flex items-center justify-center rounded-full text-white font-bold text-xs flex-shrink-0"
-              style={{ width: 36, height: 36, background: currentUser.color }}>
-              {currentUser.initials}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium truncate" style={{ color: '#F0F0F5' }}>{currentUser.name}</div>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="text-xs px-2 py-0.5 rounded-full font-medium"
-                  style={isManager ? { background: 'rgba(125,26,215,0.25)', color: '#7D1AD7' } : { background: 'rgba(0,200,83,0.2)', color: '#00C853' }}>
-                  {isManager ? 'Gerente' : 'Analista'}
-                </span>
+          {open && (
+            <div role="menu" className="absolute bottom-full left-0 mb-2 w-64 rounded-2xl overflow-hidden shadow-2xl"
+              style={{ background: '#17171A', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                <div className="text-sm font-medium truncate" style={{ color: '#F0F0F5' }}>{currentUser.name}</div>
+                <div className="text-xs" style={{ color: '#555566' }}>{isManager ? 'Gerente' : 'Analista'}</div>
+              </div>
+              <div className="py-1.5">
+                {isManager && (
+                  <button onClick={() => { setUserModalOpen(true); setOpen(false) }}
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-left transition-all hover:bg-white/10">
+                    <Users size={15} style={{ color: '#555566' }} />
+                    <span className="text-sm" style={{ color: '#8A8A9A' }}>Gerenciar usuários</span>
+                  </button>
+                )}
+                <GoogleCalendarConnect />
+                <button onClick={() => { onChangePassword(); setOpen(false) }}
+                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-left transition-all hover:bg-white/10">
+                  <KeyRound size={15} style={{ color: '#555566' }} />
+                  <span className="text-sm" style={{ color: '#8A8A9A' }}>Alterar senha</span>
+                </button>
+                <button onClick={() => { setOpen(false); onLogout() }}
+                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-left transition-all hover:bg-[#FF5252]/15 group">
+                  <LogOut size={15} style={{ color: '#555566' }} className="group-hover:text-[#FF5252]" />
+                  <span className="text-sm group-hover:text-[#FF5252] transition-colors" style={{ color: '#8A8A9A' }}>Sair</span>
+                </button>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 px-3 py-3 overflow-y-auto">
-          <p className="text-xs font-medium uppercase tracking-widest mb-2 px-2" style={{ color: '#555566' }}>Módulos</p>
-          <div className="space-y-0.5">
-            {navItems.map(({ id, label, desc, Icon }) => {
-              const active = activeModule === id
-              return (
-                <button key={id} onClick={() => setModule(id)} aria-current={active ? 'page' : undefined}
-                  className={`sidebar-nav-item w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-all ${active ? 'is-active' : ''}`}
-                  style={active
-                    ? { background: 'linear-gradient(100deg, rgba(125,26,215,.18), rgba(80,122,230,.07))', border: '1px solid rgba(125,26,215,.22)', boxShadow: 'inset 3px 0 0 #7D1AD7, 0 10px 28px rgba(125,26,215,.08)' }
-                    : { background: 'transparent', border: '1px solid transparent' }}>
-                  <Icon size={17} className="flex-shrink-0" style={{ color: active ? '#B69AEF' : '#6F6F7B' }} />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium leading-tight" style={{ color: active ? '#F0F0F5' : '#8A8A9A' }}>
-                      {label}
-                    </div>
-                    <div className="text-xs truncate mt-0.5" style={{ color: active ? '#8C91B9' : '#555566' }}>{desc}</div>
-                  </div>
-                  {active && <ChevronRight size={12} style={{ color: '#8F70E4', flexShrink: 0 }} />}
-                </button>
-              )
-            })}
-          </div>
-        </nav>
-
-        {/* Footer actions */}
-        <div className="px-3 py-3 space-y-1" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
-          {isManager && (
-      <button type="button" onClick={() => setUserModalOpen(true)}
-              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left transition-all hover:bg-white/10">
-              <Users size={15} style={{ color: '#555566' }} />
-              <span className="text-sm" style={{ color: '#8A8A9A' }}>Gerenciar usuários</span>
-            </button>
           )}
-          <GoogleCalendarConnect />
-          <button onClick={onChangePassword}
-            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left transition-all hover:bg-white/10">
-            <KeyRound size={15} style={{ color: '#555566' }} />
-            <span className="text-sm" style={{ color: '#8A8A9A' }}>Alterar senha</span>
-          </button>
-          <button onClick={onLogout}
-            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left transition-all hover:bg-[#FF5252]/15 group">
-            <LogOut size={15} style={{ color: '#555566' }} className="group-hover:text-[#FF5252]" />
-            <span className="text-sm group-hover:text-[#FF5252] transition-colors" style={{ color: '#8A8A9A' }}>Sair</span>
-          </button>
-          <div className="pt-1 text-center">
-            <span className="text-xs" style={{ color: '#555566' }}>v1.0.0 · Beta interno</span>
-          </div>
         </div>
-      </aside>
+      </div>
 
-      {/* User management modal */}
       {userModalOpen && (
         <UserManagementModal users={users} setUsers={setUsers} currentUserId={currentUser.id} onClose={() => setUserModalOpen(false)} />
       )}
