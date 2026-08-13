@@ -286,7 +286,7 @@ export default function SettingsMenu({ currentUser, users, setUsers, isManager, 
 
   return (
     <>
-      <div ref={ref} className="fixed bottom-4 left-4 md:bottom-8 md:left-8 z-40" style={{ zIndex: 40 }}>
+      <div ref={ref} className="fixed top-4 right-4 md:top-8 md:right-8 z-40" style={{ zIndex: 40 }}>
         <div className="relative">
           <button onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open} aria-label="Configurações"
             className="flex items-center justify-center rounded-full text-white font-bold text-sm transition-all hover:opacity-90"
@@ -294,7 +294,7 @@ export default function SettingsMenu({ currentUser, users, setUsers, isManager, 
             {currentUser.initials}
           </button>
           {open && (
-            <div role="menu" className="absolute bottom-full left-0 mb-2 w-64 rounded-2xl overflow-hidden shadow-2xl"
+            <div role="menu" className="absolute top-full right-0 mt-2 w-64 rounded-2xl overflow-hidden shadow-2xl"
               style={{ background: '#17171A', border: '1px solid rgba(255,255,255,0.08)' }}>
               <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
                 <div className="text-sm font-medium truncate" style={{ color: '#F0F0F5' }}>{currentUser.name}</div>

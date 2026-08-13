@@ -27,7 +27,7 @@ export default function TopBar({ activeModule, setModule }: Props) {
   }, [])
 
   return (
-    <div ref={ref} className="fixed top-4 right-4 md:top-8 md:right-8 z-40 flex flex-row items-center gap-3 md:gap-4" style={{ zIndex: 40 }}>
+    <div ref={ref} className="fixed bottom-4 left-4 md:bottom-8 md:left-8 z-40 flex flex-row items-center gap-3 md:gap-4" style={{ zIndex: 40 }}>
       <div className="flex flex-col items-end">
         <img src={citiLogoWhite} alt="CITi" className="h-8 sm:h-10 w-auto" />
         <span className="text-[10px] sm:text-xs mt-0.5" style={{ color: '#FFFFFF', fontFamily: "'STIX Two Text', 'Inter', serif", fontStyle: 'italic', fontWeight: 600, letterSpacing: '-0.01em' }}>
@@ -42,7 +42,7 @@ export default function TopBar({ activeModule, setModule }: Props) {
           <Menu size={20} style={{ color: open ? '#7D1AD7' : '#8A8A9A' }} />
         </button>
         {open && (
-          <div role="menu" className="absolute right-0 top-full mt-2 w-56 rounded-2xl overflow-hidden shadow-2xl"
+          <div role="menu" className="absolute left-0 bottom-full mb-2 w-56 rounded-2xl overflow-hidden shadow-2xl"
             style={{ background: '#17171A', border: '1px solid rgba(255,255,255,0.08)' }}>
             {navItems.map(({ id, label, Icon }) => {
               const active = activeModule === id
