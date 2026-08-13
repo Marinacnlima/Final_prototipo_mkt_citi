@@ -286,7 +286,7 @@ export default function SettingsMenu({ currentUser, users, setUsers, isManager, 
 
   return (
     <>
-      <div ref={ref} className="fixed bottom-3 left-3 sm:bottom-4 sm:left-4 z-40" style={{ zIndex: 40 }}>
+      <div ref={ref} className="fixed bottom-4 left-4 md:bottom-8 md:left-8 z-40" style={{ zIndex: 40 }}>
         <div className="relative">
           <button onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open} aria-label="Configurações"
             className="flex items-center justify-center rounded-full text-white font-bold text-sm transition-all hover:opacity-90"

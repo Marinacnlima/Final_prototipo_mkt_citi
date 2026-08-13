@@ -27,8 +27,8 @@ export default function TopBar({ activeModule, setModule }: Props) {
   }, [])
 
   return (
-    <div ref={ref} className="fixed top-3 right-3 sm:top-4 sm:right-4 z-40 flex flex-col items-end gap-2" style={{ zIndex: 40 }}>
-      <div className="flex flex-col items-end">
+    <div ref={ref} className="fixed top-4 right-4 md:top-8 md:right-8 z-40 flex flex-col items-end gap-2" style={{ zIndex: 40 }}>
+      <div className="flex flex-col items-end mr-2 md:mr-3">
         <img src={citiLogoWhite} alt="CITi" className="h-8 sm:h-10 w-auto" />
         <span className="text-[10px] sm:text-xs mt-0.5" style={{ color: '#FFFFFF', fontFamily: "'STIX Two Text', 'Inter', serif", fontStyle: 'italic', fontWeight: 600, letterSpacing: '-0.01em' }}>
           HubSpot
