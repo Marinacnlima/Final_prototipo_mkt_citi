@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import {
-  Settings, Users, KeyRound, LogOut, Plus, X, Eye, EyeOff, ChevronDown, Trash2, CalendarDays, Link2Off,
+  Users, KeyRound, LogOut, Plus, X, Eye, EyeOff, ChevronDown, Trash2, CalendarDays, Link2Off,
 } from 'lucide-react'
 import type { AppUser } from './data'
 import { api } from './api'
@@ -289,9 +289,9 @@ export default function SettingsMenu({ currentUser, users, setUsers, isManager, 
       <div ref={ref} className="fixed bottom-3 left-3 sm:bottom-4 sm:left-4 z-40" style={{ zIndex: 40 }}>
         <div className="relative">
           <button onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open} aria-label="Configurações"
-            className="flex items-center justify-center rounded-full transition-all hover:opacity-90"
-            style={{ width: 50, height: 50, background: 'rgba(18,18,20,.9)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(16px)' }}>
-            <Settings size={22} style={{ color: open ? '#7D1AD7' : '#8A8A9A' }} />
+            className="flex items-center justify-center rounded-full text-white font-bold text-sm transition-all hover:opacity-90"
+            style={{ width: 44, height: 44, background: currentUser.color, boxShadow: open ? '0 0 0 3px rgba(125,26,215,0.28)' : 'none' }}>
+            {currentUser.initials}
           </button>
           {open && (
             <div role="menu" className="absolute bottom-full left-0 mb-2 w-64 rounded-2xl overflow-hidden shadow-2xl"

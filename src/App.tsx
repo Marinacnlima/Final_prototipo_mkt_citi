@@ -73,7 +73,7 @@ export default function App() {
     <div className="internal-app app-shell h-screen overflow-hidden bg-[#101010] relative">
       <LiquidBackground interactive={false} className="internal-liquid-background" />
 
-      <TopBar currentUser={currentUser} activeModule={activeModule} setModule={setActiveModule} />
+      <TopBar activeModule={activeModule} setModule={setActiveModule} />
       <SettingsMenu
         currentUser={currentUser}
         users={users}
