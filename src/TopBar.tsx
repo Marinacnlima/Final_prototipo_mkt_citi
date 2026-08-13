@@ -16,18 +16,6 @@ const navItems: { id: Module; label: string; Icon: React.ComponentType<{ size?: 
   { id: 'metricas', label: 'Métricas', Icon: BarChart2 },
 ]
 
-function HubSpotMark() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle cx="12" cy="12" r="3.2" fill="#00E5C8" />
-      <circle cx="12" cy="4" r="2" fill="#00E5C8" fillOpacity="0.85" />
-      <circle cx="19.2" cy="16" r="2" fill="#00E5C8" fillOpacity="0.85" />
-      <circle cx="4.8" cy="16" r="2" fill="#00E5C8" fillOpacity="0.85" />
-      <path d="M12 7V9.4M16.9 14.6L14.4 13.1M7.1 14.6L9.6 13.1" stroke="#00E5C8" strokeWidth="1.3" strokeLinecap="round" />
-    </svg>
-  )
-}
-
 export default function TopBar({ currentUser, activeModule, setModule }: Props) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -41,19 +29,16 @@ export default function TopBar({ currentUser, activeModule, setModule }: Props) 
   }, [])
 
   return (
-    <div ref={ref} className="fixed top-3 right-3 sm:top-4 sm:right-4 z-40 flex flex-col items-end gap-2" style={{ zIndex: 40 }}>
-      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full"
-        style={{ background: 'rgba(18,18,20,.88)', border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(16px)' }}>
-        <img src={citiLogoWhite} alt="CITi" className="h-3.5 sm:h-4 w-auto" />
-        <span className="w-px h-3.5" style={{ background: 'rgba(255,255,255,0.15)' }} />
-        <HubSpotMark />
-        <span className="text-xs font-semibold tracking-wide hidden sm:inline" style={{ color: '#F0F0F5' }}>HubSpot</span>
+    <div ref={ref} className="fixed top-3 right-4 sm:top-4 sm:right-5 z-40 flex flex-col items-end gap-2.5" style={{ zIndex: 40 }}>
+      <div className="flex flex-col items-end">
+        <img src={citiLogoWhite} alt="CITi" className="h-5 sm:h-6 w-auto" />
+        <span className="text-[10px] uppercase tracking-[.18em] mt-1" style={{ color: '#6F6F7B' }}>HubSpot</span>
       </div>
 
       <div className="relative">
         <button onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open} aria-label="Navegar entre módulos"
           className="flex items-center justify-center rounded-full text-white font-bold text-xs transition-all hover:opacity-90"
-          style={{ width: 36, height: 36, background: currentUser.color, boxShadow: open ? '0 0 0 3px rgba(125,26,215,0.28)' : 'none' }}>
+          style={{ width: 34, height: 34, background: currentUser.color, boxShadow: open ? '0 0 0 3px rgba(125,26,215,0.28)' : 'none' }}>
           {currentUser.initials}
         </button>
         {open && (

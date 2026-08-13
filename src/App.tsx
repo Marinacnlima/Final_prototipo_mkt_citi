@@ -84,7 +84,7 @@ export default function App() {
       />
 
       {/* Module content */}
-      <div className="absolute inset-0 pt-20 sm:pt-24">
+      <div className="absolute inset-0 pt-16 sm:pt-[4.75rem]">
         <div className="h-full overflow-hidden">
           {activeModule === 'monitoramento' && (
             <Monitoramento profile={profile} isManager={isManager} channel={channel} setChannel={setChannel} currentUserId={currentUser.id} />
