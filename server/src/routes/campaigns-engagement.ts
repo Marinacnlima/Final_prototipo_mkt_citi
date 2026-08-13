@@ -3,17 +3,11 @@ import { z } from 'zod'
 import { prisma } from '../prisma.js'
 import { ApiError, asyncRoute } from '../http.js'
 import { authenticate, managerOnly } from '../auth.js'
+import { campaignInclude, serializeCampaign } from '../serializers/campaign.js'
 
 const campaignBodyBase = z.object({ nome: z.string().trim().min(1), status: z.enum(['ATIVA','PLANEJADA','ENCERRADA']), objetivo: z.string().trim().min(1), publico: z.string().trim().min(1), dataInicio: z.coerce.date(), dataFim: z.coerce.date(), alcanceMeta: z.number().int().min(0), interacoesMeta: z.number().int().min(0), canais: z.array(z.enum(['INSTAGRAM','LINKEDIN','SITE','EMAIL'])).min(1) })
 // .partial() não é suportado em schemas com .refine() (Zod v4) — o PATCH usa campaignBodyBase.partial() e valida a ordem das datas manualmente após o parse
 const campaignBody = campaignBodyBase.refine((value) => value.dataFim >= value.dataInicio, { message: 'dataFim deve ser posterior à dataInicio' })
-const campaignInclude = { canais: true, metricasDiarias: { orderBy: { data: 'asc' as const } } } as const
-const serializeCampaign = (campaign: any) => {
-  const alcanceAtual = campaign.metricasDiarias.reduce((sum: number, metric: any) => sum + metric.alcance, 0)
-  const interacoesAtual = campaign.metricasDiarias.reduce((sum: number, metric: any) => sum + metric.interacoes, 0)
-  const end = Math.min(Date.now(), new Date(campaign.dataFim).getTime())
-  return { ...campaign, canais: campaign.canais.map((entry: any) => entry.canal), alcanceAtual, interacoesAtual, progressoAlcance: campaign.alcanceMeta ? Math.min(1, alcanceAtual / campaign.alcanceMeta) : 0, progressoInteracoes: campaign.interacoesMeta ? Math.min(1, interacoesAtual / campaign.interacoesMeta) : 0, diasNoAr: Math.max(0, Math.floor((end - new Date(campaign.dataInicio).getTime()) / 86400000)), totalRegistrosMetricas: campaign.metricasDiarias.length }
-}
 
 export const campaignsRouter = Router(); campaignsRouter.use(authenticate)
 campaignsRouter.get('/', asyncRoute(async (req, res) => {

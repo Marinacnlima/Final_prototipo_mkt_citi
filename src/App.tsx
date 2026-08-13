@@ -9,6 +9,7 @@ import type { Post, AppUser } from './data'
 import { api } from './api'
 import citiLogoWhite from './assets/citi-logo-white.png'
 import LiquidBackground from './components/LiquidBackground'
+import { mapApiPost, mapApiUser, toApiPost } from './features/app/mappers'
 
 export type Profile = 'gerente' | 'analista'
 export type Module = 'monitoramento' | 'biblioteca' | 'metricas'
@@ -24,21 +25,17 @@ export default function App() {
   const [channel, setChannel] = useState<Channel>('todos')
   const [posts, setPostsState] = useState<Post[]>([])
 
-  const mapUser = (user: any): AppUser => ({ id: user.id, name: user.nomeCompleto, initials: user.nomeCompleto.split(/\s+/).slice(0,2).map((part:string)=>part[0]).join('').toUpperCase(), color: user.perfil === 'GERENTE' ? '#7D1AD7' : '#507AE6', email: user.email, password: '', role: user.perfil === 'GERENTE' ? 'gerente' : 'analista', mustChangePassword: user.primeiroAcesso })
-  const mapPost = (post: any): Post => ({ id: post.id, title: post.titulo, channel: post.canal.toLowerCase(), campaign: post.campanhaNome ?? '', images: post.imagens.map((image:any)=>({url:image.url,tipo:image.tipo==='VIDEO'?'video':'imagem'})), linkUrl: post.linkUrl ?? undefined, ctr: post.ctr ?? undefined, profileVisits: post.visitasPerfil ?? undefined, caption: post.conteudo, format: ({REELS:'reel',CARROSSEL:'carousel',POST_ESTATICO:'static',STORIES:'story',PDF_DOCUMENTO:'document',TEXTO_IMAGEM:'static',VIDEO:'video',ARTIGO_NEWSLETTER:'article',ENQUETE:'poll'} as any)[post.formato] ?? 'static', insights: { likes: post.curtidas, reach: post.alcance, impressions: post.impressoes, engagement: post.engajamento, saves: post.saves, shares: post.compartilhamentos, comments: post.comentarios }, publishedAt: post.dataPublicacao?.slice(0,10), validUntil: post.dataLimite?.slice(0,10) ?? '' })
-
   async function loadPrivateData(user: AppUser) {
-    if (user.role === 'gerente') setUsers((await api.users.list()).map(mapUser))
-    setPostsState((await api.posts.list()).map(mapPost))
+    if (user.role === 'gerente') setUsers((await api.users.list()).map(mapApiUser))
+    setPostsState((await api.posts.list()).map(mapApiPost))
   }
 
-  const toApiPost=(post:Post)=>({canal:post.channel.toUpperCase(),titulo:post.title,conteudo:post.caption,formato:({reel:'REELS',carousel:'CARROSSEL',static:'POST_ESTATICO',story:'STORIES',document:'PDF_DOCUMENTO',video:'VIDEO',article:'ARTIGO_NEWSLETTER',poll:'ENQUETE'} as any)[post.format],dataPublicacao:post.publishedAt||new Date().toISOString(),dataLimite:post.validUntil||null,imagens:post.images.map((image)=>({url:image.url,tipo:image.tipo==='video'?'VIDEO':'IMAGEM'})),linkUrl:post.linkUrl||null,alcance:post.insights.reach,impressoes:post.insights.impressions,engajamento:post.insights.engagement,curtidas:post.insights.likes,comentarios:post.insights.comments,saves:post.insights.saves,compartilhamentos:post.insights.shares,...(post.channel==='linkedin'?{ctr:post.ctr??0}:{visitasPerfil:post.profileVisits??0})})
-  function setPosts(update:(previous:Post[])=>Post[]){setPostsState((previous)=>{const next=update(previous);const before=new Map(previous.map((post)=>[post.id,post]));const after=new Map(next.map((post)=>[post.id,post]));for(const post of previous)if(!after.has(post.id))api.posts.remove(post.id).catch(console.error);for(const post of next){const old=before.get(post.id);if(!old){api.posts.create(toApiPost(post)).then((created)=>setPostsState((current)=>current.map((item)=>item.id===post.id?mapPost(created):item))).catch(console.error)}else if(old!==post)api.posts.update(post.id,toApiPost(post)).then((updated)=>setPostsState((current)=>current.map((item)=>item.id===post.id?mapPost(updated):item))).catch(console.error)}return next})}
+  function setPosts(update:(previous:Post[])=>Post[]){setPostsState((previous)=>{const next=update(previous);const before=new Map(previous.map((post)=>[post.id,post]));const after=new Map(next.map((post)=>[post.id,post]));for(const post of previous)if(!after.has(post.id))api.posts.remove(post.id).catch(console.error);for(const post of next){const old=before.get(post.id);if(!old){api.posts.create(toApiPost(post)).then((created)=>setPostsState((current)=>current.map((item)=>item.id===post.id?mapApiPost(created):item))).catch(console.error)}else if(old!==post)api.posts.update(post.id,toApiPost(post)).then((updated)=>setPostsState((current)=>current.map((item)=>item.id===post.id?mapApiPost(updated):item))).catch(console.error)}return next})}
 
-  useEffect(() => { if (api.hasToken) api.me().then((raw) => { const user=mapUser(raw); setCurrentUser(user); if(user.mustChangePassword){setChangingPw(true)} else loadPrivateData(user) }).catch(()=>api.setToken(null)) }, [])
+  useEffect(() => { if (api.hasToken) api.me().then((raw) => { const user=mapApiUser(raw); setCurrentUser(user); if(user.mustChangePassword){setChangingPw(true)} else loadPrivateData(user) }).catch(()=>api.setToken(null)) }, [])
 
   async function authenticate(email: string, password: string) {
-    const result=await api.login(email,password); api.setToken(result.token); return mapUser(result.user)
+    const result=await api.login(email,password); api.setToken(result.token); return mapApiUser(result.user)
   }
 
   async function forgotPassword(email: string) { await api.forgotPassword(email) }

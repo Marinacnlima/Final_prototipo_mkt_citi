@@ -11,6 +11,7 @@ import type { Channel } from '../App'
 import type { ChannelType, Post, CustomMetric } from '../data'
 import { mqlData, getWeekLabel } from '../data'
 import { api } from '../api'
+import { mapApiMetric, toApiMetric } from '../features/metrics/mappers'
 
 // Seleciona todo o conteúdo ao focar um campo numérico — evita o bug de "0" seguido de dígitos concatenados (ex: "0190")
 const selectOnFocus = (e: React.FocusEvent<HTMLInputElement>) => e.target.select()
@@ -673,13 +674,6 @@ function MetricModal({ initial, onSave, onClose }: { initial?: CustomMetric; onS
   )
 }
 
-function mapMetric(row: any): CustomMetric {
-  return { id: row.id, name: row.nome, value: row.valor, unit: row.unidade, formula: row.formula, channel: row.canal ? (row.canal.toLowerCase() as ChannelType) : undefined, color: '#7D1AD7', updatedAt: row.atualizadoEm }
-}
-function toApiMetric(m: CustomMetric) {
-  return { nome: m.name, canal: m.channel === 'instagram' || m.channel === 'linkedin' ? m.channel.toUpperCase() : null, formula: m.formula, valor: m.value, unidade: m.unit }
-}
-
 function InsertMetrics({ metrics, setMetrics }: { metrics: CustomMetric[]; setMetrics: (fn: (prev: CustomMetric[]) => CustomMetric[]) => void }) {
   const [modal, setModal] = useState<{ metric?: CustomMetric } | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -690,10 +684,10 @@ function InsertMetrics({ metrics, setMetrics }: { metrics: CustomMetric[]; setMe
     const isNew = !metrics.some((x) => x.id === m.id)
     try {
       if (isNew) {
-        const created = mapMetric(await api.metrics.createCustom(toApiMetric(m)))
+        const created = mapApiMetric(await api.metrics.createCustom(toApiMetric(m)))
         setMetrics((prev) => [...prev, { ...created, color: METRIC_COLORS[prev.length % METRIC_COLORS.length] }])
       } else {
-        const updated = mapMetric(await api.metrics.updateCustom(m.id, toApiMetric(m)))
+        const updated = mapApiMetric(await api.metrics.updateCustom(m.id, toApiMetric(m)))
         setMetrics((prev) => prev.map((x) => x.id === m.id ? { ...updated, color: x.color } : x))
       }
     } catch (error) { console.error(error) }
@@ -714,7 +708,7 @@ function InsertMetrics({ metrics, setMetrics }: { metrics: CustomMetric[]; setMe
     const parsed = parseFloat(editVal)
     const value = Number.isNaN(parsed) ? metric.value : parsed
     try {
-      const updated = mapMetric(await api.metrics.updateCustom(id, toApiMetric({ ...metric, value })))
+      const updated = mapApiMetric(await api.metrics.updateCustom(id, toApiMetric({ ...metric, value })))
       setMetrics((prev) => prev.map((m) => m.id === id ? { ...updated, color: m.color } : m))
     } catch (error) { console.error(error) }
   }
@@ -965,7 +959,7 @@ export default function Metricas({ channel, setChannel, posts }: Props) {
 
   useEffect(() => {
     api.metrics.custom()
-      .then((rows) => setMetrics(rows.map((row, i) => ({ ...mapMetric(row), color: METRIC_COLORS[i % METRIC_COLORS.length] }))))
+      .then((rows) => setMetrics(rows.map((row, i) => ({ ...mapApiMetric(row), color: METRIC_COLORS[i % METRIC_COLORS.length] }))))
       .catch(console.error)
   }, [])
   const [globalMetrics, setGlobalMetrics] = useState<GlobalMetricsState>({

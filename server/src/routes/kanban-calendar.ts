@@ -4,14 +4,13 @@ import { prisma } from '../prisma.js'
 import { ApiError, asyncRoute } from '../http.js'
 import { authenticate } from '../auth.js'
 import { createGoogleEvent, updateGoogleEvent, deleteGoogleEvent } from '../calendar-google.js'
+import { eventInclude, googleEventInput, serializeEvent, serializeTask, taskInclude } from '../serializers/kanban-calendar.js'
 
 const assignment = z.object({ userId: z.string().uuid(), nota: z.number().min(0).max(5).nullable().optional() })
 const taskFields = z.object({ titulo: z.string().trim().min(1), redeSocial: z.enum(['INSTAGRAM','LINKEDIN','SITE','EMAIL']), dificuldade: z.enum(['FACIL','MEDIO','DIFICIL']), dataInicio: z.coerce.date().nullable().optional(), dataEntrega: z.coerce.date().nullable().optional(), colunaId: z.string().uuid(), responsaveis: z.array(assignment).default([]) })
 const validDates = (value: { dataInicio?: Date | null; dataEntrega?: Date | null }) => !value.dataInicio || !value.dataEntrega || value.dataEntrega >= value.dataInicio
 const taskBody = taskFields.refine(validDates, { message: 'O prazo deve ser igual ou posterior à data de início', path: ['dataEntrega'] })
 const taskPatch = taskFields.partial().refine(validDates, { message: 'O prazo deve ser igual ou posterior à data de início', path: ['dataEntrega'] })
-const taskInclude = { coluna: true, atribuicoes: { include: { user: true } } } as const
-const serializeTask = (task: any) => ({ ...task, responsaveis: task.atribuicoes.map((a: any) => ({ userId: a.userId, nome: a.user.nomeCompleto, nota: a.nota })) })
 
 export const kanbanRouter = Router(); kanbanRouter.use(authenticate)
 kanbanRouter.get('/assignees', asyncRoute(async (_req, res) => {
@@ -58,8 +57,6 @@ kanbanRouter.delete('/tasks/:id', asyncRoute(async (req, res) => { await prisma.
 
 export const calendarRouter = Router(); calendarRouter.use(authenticate)
 const eventBody = z.object({ titulo: z.string().trim().min(1), data: z.coerce.date(), horario: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/), horarioFim: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable().optional(), tipo: z.enum(['REUNIAO','DEADLINE','TASK']), canal: z.enum(['INSTAGRAM','LINKEDIN','SITE','EMAIL']).nullable().optional(), participantIds: z.array(z.string().uuid()).default([]) })
-const eventInclude = { participantes: { where: { user: { ativo: true } }, include: { user: true } } } as const
-const serializeEvent = (event: any) => ({ ...event, participantes: event.participantes.map((p: any) => ({ userId: p.userId, nome: p.user.nomeCompleto, email: p.user.email })) })
 async function assertParticipantsValid(participantIds: string[]) {
   const count = await prisma.user.count({ where: { id: { in: participantIds }, ativo: true } })
   if (count !== new Set(participantIds).size) throw new ApiError(422, 'INVALID_PARTICIPANT', 'Somente usuários ativos podem participar do evento')
@@ -69,13 +66,6 @@ calendarRouter.get('/participants', asyncRoute(async (_req, res) => {
   res.json(users)
 }))
 calendarRouter.get('/events', asyncRoute(async (req, res) => { const q = z.object({ inicio: z.coerce.date().optional(), fim: z.coerce.date().optional(), canal: z.enum(['INSTAGRAM','LINKEDIN','SITE','EMAIL']).optional() }).parse(req.query); const events = await prisma.calendarEvent.findMany({ where: { ...(q.canal?{canal:q.canal}:{}), ...(q.inicio||q.fim?{data:{gte:q.inicio,lte:q.fim}}:{}) }, orderBy: [{data:'asc'},{horario:'asc'}], include: eventInclude }); res.json(events.map(serializeEvent)) }))
-const googleInput = (event: any) => ({
-  titulo: event.titulo,
-  dataISO: event.data.toISOString().slice(0, 10),
-  horario: event.horario,
-  horarioFim: event.horarioFim,
-  attendeeEmails: event.participantes.map((p: any) => p.user.email),
-})
 async function refreshTokenFor(userId: string | null): Promise<string | null> {
   if (!userId) return null
   const account = await prisma.googleAccount.findUnique({ where: { userId } })
@@ -89,7 +79,7 @@ calendarRouter.post('/events', asyncRoute(async (req, res) => {
   let event = await prisma.calendarEvent.create({ data: { ...data, criadorId: req.user!.id, participantes: { create: participantIds.map((userId) => ({ userId })) } }, include: eventInclude })
   const refreshToken = await refreshTokenFor(req.user!.id)
   if (refreshToken) {
-    const googleEventId = await createGoogleEvent(refreshToken, googleInput(event))
+    const googleEventId = await createGoogleEvent(refreshToken, googleEventInput(event))
     if (googleEventId) event = await prisma.calendarEvent.update({ where: { id: event.id }, data: { googleEventId }, include: eventInclude })
   }
   res.status(201).json(serializeEvent(event))
@@ -114,9 +104,9 @@ calendarRouter.patch('/events/:id', asyncRoute(async (req, res) => {
   // (ex.: era da conta compartilhada usada antes da conexão por usuário) — trata como sincronização nova.
   if (refreshToken) {
     if (existing.googleEventId && !adoptingCreator) {
-      await updateGoogleEvent(refreshToken, existing.googleEventId, googleInput(event))
+      await updateGoogleEvent(refreshToken, existing.googleEventId, googleEventInput(event))
     } else {
-      const googleEventId = await createGoogleEvent(refreshToken, googleInput(event))
+      const googleEventId = await createGoogleEvent(refreshToken, googleEventInput(event))
       if (googleEventId) event = await prisma.calendarEvent.update({ where: { id: event.id }, data: { googleEventId }, include: eventInclude })
     }
   }

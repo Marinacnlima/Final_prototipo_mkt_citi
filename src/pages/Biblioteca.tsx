@@ -8,6 +8,7 @@ import type { Channel } from '../App'
 import type { ChannelType, Prompt, Material, Post, PostMedia } from '../data'
 import { promptsData } from '../data'
 import { api } from '../api'
+import { mapApiMaterial } from '../features/library/mappers'
 
 function formatBytes(bytes: number | null | undefined): string {
   if (!bytes) return ''
@@ -594,21 +595,6 @@ function MaterialModal({ initial, onSave, onClose }: { initial?: Material; onSav
   )
 }
 
-function mapMaterial(row: any): Material {
-  return {
-    id: row.id,
-    type: row.tipo.toLowerCase() as Material['type'],
-    title: row.titulo,
-    description: row.descricao,
-    cover: row.capaUrl || '',
-    downloads: row.downloads,
-    createdAt: row.createdAt?.slice(0, 10) ?? '',
-    arquivoUrl: row.arquivoUrl ?? undefined,
-    arquivoNome: row.nomeArquivo ?? undefined,
-    arquivoTamanho: row.tamanhoBytes ?? undefined,
-  }
-}
-
 function MaterialsView() {
   const [materials, setMaterials] = useState<Material[]>([])
   const [loading, setLoading] = useState(true)
@@ -617,7 +603,7 @@ function MaterialsView() {
   const [deleteId, setDeleteId] = useState<Material['id'] | null>(null)
 
   useEffect(() => {
-    api.materials.list().then((rows) => setMaterials(rows.map(mapMaterial))).catch(console.error).finally(() => setLoading(false))
+    api.materials.list().then((rows) => setMaterials(rows.map(mapApiMaterial))).catch(console.error).finally(() => setLoading(false))
   }, [])
 
   const filtered = typeFilter === 'todos' ? materials : materials.filter((m) => m.type === typeFilter)
@@ -630,10 +616,10 @@ function MaterialsView() {
     }
     try {
       if (isNew) {
-        const created = mapMaterial(await api.materials.create(payload))
+        const created = mapApiMaterial(await api.materials.create(payload))
         setMaterials((prev) => [created, ...prev])
       } else {
-        const updated = mapMaterial(await api.materials.update(mat.id, payload))
+        const updated = mapApiMaterial(await api.materials.update(mat.id, payload))
         setMaterials((prev) => prev.map((m) => m.id === mat.id ? updated : m))
       }
     } catch (error) { console.error(error) }

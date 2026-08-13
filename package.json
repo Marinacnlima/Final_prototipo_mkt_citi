@@ -10,12 +10,15 @@
     "start:api": "tsx server/src/index.ts",
     "build": "vite build",
     "build:api": "tsc -p server/tsconfig.json",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test tests/**/*.test.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed",
     "gmail:token": "tsx server/scripts/get-gmail-refresh-token.ts",
     "preview": "vite preview",
-    "format": "oxfmt"
+    "format": "oxfmt",
+    "format:check": "oxfmt --check"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",

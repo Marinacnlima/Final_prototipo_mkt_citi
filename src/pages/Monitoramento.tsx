@@ -11,6 +11,7 @@ import type { Profile, Channel } from '../App'
 import type { KanbanColumn, Task, TaskAssignee, ChannelType, Campaign, CalendarEvent, CampaignMetricEntry } from '../data'
 import { campaignsData, engagementData, type Difficulty } from '../data'
 import { api } from '../api'
+import { CHANNEL_TO_API, DIFFICULTY_TO_API, TIPO_TO_API, mapApiColumn, mapApiEvent, mapApiTask } from '../features/monitoring/mappers'
 
 interface TaskMember {
   id: string
@@ -20,46 +21,8 @@ interface TaskMember {
   color: string
 }
 
-const CHANNEL_TO_API: Record<ChannelType, string> = { instagram: 'INSTAGRAM', linkedin: 'LINKEDIN', site: 'SITE', email: 'EMAIL' }
-const DIFFICULTY_TO_API: Record<Difficulty, string> = { fácil: 'FACIL', médio: 'MEDIO', difícil: 'DIFICIL' }
-const DIFFICULTY_FROM_API: Record<string, Difficulty> = { FACIL: 'fácil', MEDIO: 'médio', DIFICIL: 'difícil' }
-
-function mapTask(task: any): Task {
-  return {
-    id: task.id,
-    title: task.titulo,
-    channel: task.redeSocial.toLowerCase() as ChannelType,
-    assignees: (task.responsaveis ?? []).map((assignment: any) => ({ memberId: assignment.userId, note: assignment.nota ?? null })),
-    priority: 'média',
-    difficulty: DIFFICULTY_FROM_API[task.dificuldade] ?? 'médio',
-    startDate: task.dataInicio?.slice(0, 10) ?? '',
-    dueDate: task.dataEntrega?.slice(0, 10) ?? '',
-  }
-}
-
-function mapColumn(column: any): KanbanColumn {
-  return { id: column.id, name: column.nome, tasks: (column.tasks ?? []).map(mapTask) }
-}
-
 function timeRange(ev: CalendarEvent): string {
   return ev.endTime ? `${ev.time} - ${ev.endTime}` : ev.time
-}
-
-const TIPO_TO_API: Record<CalendarEvent['type'], string> = { meeting: 'REUNIAO', deadline: 'DEADLINE', task: 'TASK' }
-const TIPO_FROM_API: Record<string, CalendarEvent['type']> = { REUNIAO: 'meeting', DEADLINE: 'deadline', TASK: 'task' }
-const CHANNEL_FROM_API: Record<string, ChannelType> = { INSTAGRAM: 'instagram', LINKEDIN: 'linkedin', SITE: 'site', EMAIL: 'email' }
-
-function mapEvent(ev: any): CalendarEvent {
-  return {
-    id: ev.id,
-    date: String(ev.data).slice(0, 10),
-    title: ev.titulo,
-    time: ev.horario,
-    endTime: ev.horarioFim ?? '',
-    type: TIPO_FROM_API[ev.tipo] ?? 'meeting',
-    channel: ev.canal ? CHANNEL_FROM_API[ev.canal] : null,
-    attendees: (ev.participantes ?? []).map((p: any) => ({ userId: p.userId, nome: p.nome })),
-  }
 }
 
 // ─── Shared ────────────────────────────────────────────────────────────────
@@ -385,7 +348,7 @@ function KanbanBoard({ channel, setChannel, isManager, members, setMembers, colu
       responsaveis: data.assignees.map((assignment) => ({ userId: String(assignment.memberId), nota: assignment.note })),
     }
     const saved = data.id ? await api.kanban.updateTask(data.id, payload) : await api.kanban.createTask(payload)
-    const mapped = mapTask(saved)
+    const mapped = mapApiTask(saved)
     setColumns((prev) => prev.map((col) => {
       if (col.id !== colId) return data.id ? { ...col, tasks: col.tasks.filter((task) => task.id !== data.id) } : col
       if (data.id) return { ...col, tasks: col.tasks.map((task) => task.id === data.id ? mapped : task) }
@@ -407,7 +370,7 @@ function KanbanBoard({ channel, setChannel, isManager, members, setMembers, colu
 
   async function addColumn() {
     const created = await api.kanban.createColumn({ nome: 'Nova Coluna' })
-    setColumns((prev) => [...prev, mapColumn({ ...created, tasks: [] })])
+    setColumns((prev) => [...prev, mapApiColumn({ ...created, tasks: [] })])
   }
 
   const filterTasks = (tasks: Task[]) => channel === 'todos' ? tasks : tasks.filter((t) => t.channel === channel)
@@ -588,7 +551,7 @@ function CalendarView({ currentUserId }: { currentUserId: string }) {
 
   function loadEvents() {
     return api.calendar.list().then((rawEvents) => {
-      setEvents(rawEvents.map(mapEvent))
+      setEvents(rawEvents.map(mapApiEvent))
     })
   }
 
@@ -639,7 +602,7 @@ function CalendarView({ currentUserId }: { currentUserId: string }) {
         participantIds: form.participantIds,
       }
       const saved = form.id ? await api.calendar.update(form.id, payload) : await api.calendar.create(payload)
-      setEvents((prev) => form.id ? prev.map((e) => e.id === form.id ? mapEvent(saved) : e) : [...prev, mapEvent(saved)])
+      setEvents((prev) => form.id ? prev.map((e) => e.id === form.id ? mapApiEvent(saved) : e) : [...prev, mapApiEvent(saved)])
       setAddModal(null)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Não foi possível salvar o evento.')
@@ -1552,7 +1515,7 @@ export default function Monitoramento({ profile, isManager, channel, setChannel,
 
   useEffect(() => {
     Promise.all([api.kanban.columns(), api.kanban.assignees()]).then(([rawColumns, rawMembers]) => {
-      setColumns(rawColumns.map(mapColumn))
+      setColumns(rawColumns.map(mapApiColumn))
       setMembers(rawMembers.map((member: any, index: number) => ({
         id: member.id,
         name: member.nomeCompleto,

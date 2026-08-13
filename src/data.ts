@@ -9,13 +9,6 @@ export interface AppUser {
   mustChangePassword: boolean
 }
 
-export const initialUsers: AppUser[] = [
-  { id: 1, name: 'Ana Lima', initials: 'AL', color: '#00E5C8', email: 'ana@marketops.com', password: 'admin123', role: 'gerente', mustChangePassword: false },
-  { id: 2, name: 'Carlos Melo', initials: 'CM', color: '#00C853', email: 'carlos@marketops.com', password: 'senha123', role: 'analista', mustChangePassword: false },
-  { id: 3, name: 'Beatriz Santos', initials: 'BS', color: '#FFB300', email: 'beatriz@marketops.com', password: 'senha123', role: 'analista', mustChangePassword: true },
-  { id: 4, name: 'Rafael Costa', initials: 'RC', color: '#E1306C', email: 'rafael@marketops.com', password: 'senha123', role: 'analista', mustChangePassword: false },
-]
-
 export type ChannelType = 'instagram' | 'linkedin' | 'site' | 'email'
 export type Priority = 'alta' | 'média' | 'baixa'
 export type Difficulty = 'fácil' | 'médio' | 'difícil'
@@ -64,14 +57,6 @@ export interface Campaign {
   status: CampaignStatus
   daysRunning: number
   dailyEntries: CampaignMetricEntry[]
-}
-
-export interface TeamMember {
-  id: number
-  name: string
-  role: string
-  initials: string
-  color: string
 }
 
 export interface EngagementData {
@@ -158,17 +143,6 @@ export interface CustomMetric {
   updatedAt?: string
 }
 
-export interface SEOState {
-  domainAuthority: number
-  organicTraffic: number
-  organicTrafficGrowth: number
-  keywords: number
-  backlinks: number
-  coreWebVitals: { lcp: number; fid: number; cls: number }
-  topKeywords: { keyword: string; position: number; volume: number; difficulty: number }[]
-  monthlyTraffic: { month: string; traffic: number }[]
-}
-
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 export function getWeekLabel(dateStr: string): string {
@@ -178,60 +152,6 @@ export function getWeekLabel(dateStr: string): string {
   if (day <= 21) return 'Sem 3'
   return 'Sem 4'
 }
-
-// ─── Team ───────────────────────────────────────────────────────────────────
-
-export const team: TeamMember[] = [
-  { id: 1, name: 'Ana Lima', role: 'Gerente de Marketing', initials: 'AL', color: '#00E5C8' },
-  { id: 2, name: 'Carlos Melo', role: 'Analista de Conteúdo', initials: 'CM', color: '#00C853' },
-  { id: 3, name: 'Beatriz Santos', role: 'Analista de Redes Sociais', initials: 'BS', color: '#FFB300' },
-  { id: 4, name: 'Rafael Costa', role: 'Designer', initials: 'RC', color: '#FF5252' },
-]
-
-// ─── Kanban ──────────────────────────────────────────────────────────────────
-
-export const initialKanban: KanbanColumn[] = [
-  {
-    id: 'todo',
-    name: 'A Fazer',
-    tasks: [
-      { id: 't1', title: 'Post carrossel — Cases de sucesso', channel: 'linkedin', assignees: [{ memberId: 2, note: 4.5 }], priority: 'alta', difficulty: 'médio', dueDate: '2026-08-05' },
-      { id: 't2', title: 'Newsletter agosto — Tendências Q3', channel: 'email', assignees: [{ memberId: 3, note: 4.0 }, { memberId: 2, note: 4.2 }], priority: 'média', difficulty: 'fácil', dueDate: '2026-08-10' },
-      { id: 't3', title: 'Artigo SEO — Marketing B2B 2026', channel: 'site', assignees: [{ memberId: 4, note: 4.8 }], priority: 'baixa', difficulty: 'difícil', dueDate: '2026-08-12' },
-    ],
-  },
-  {
-    id: 'doing',
-    name: 'Em Andamento',
-    tasks: [
-      { id: 't4', title: 'Reels — Lançamento Produto Q3', channel: 'instagram', assignees: [{ memberId: 3, note: 4.5 }, { memberId: 4, note: 3.8 }], priority: 'alta', difficulty: 'difícil', dueDate: '2026-08-02' },
-      { id: 't5', title: 'Post LinkedIn — Thought Leadership', channel: 'linkedin', assignees: [{ memberId: 2, note: 5.0 }], priority: 'média', difficulty: 'médio', dueDate: '2026-08-03' },
-    ],
-  },
-  {
-    id: 'review',
-    name: 'Em Revisão',
-    tasks: [
-      { id: 't6', title: 'Carrossel — 5 dicas de produtividade', channel: 'instagram', assignees: [{ memberId: 4, note: 4.6 }], priority: 'média', difficulty: 'médio', dueDate: '2026-08-01' },
-      { id: 't7', title: 'Email Black November — Oferta especial', channel: 'email', assignees: [{ memberId: 3, note: null }], priority: 'alta', difficulty: 'fácil', dueDate: '2026-07-31' },
-    ],
-  },
-  {
-    id: 'approved',
-    name: 'Aprovado',
-    tasks: [
-      { id: 't8', title: 'Story — Bastidores da equipe', channel: 'instagram', assignees: [{ memberId: 2, note: 4.0 }], priority: 'baixa', difficulty: 'fácil', dueDate: '2026-07-30' },
-    ],
-  },
-  {
-    id: 'published',
-    name: 'Publicado',
-    tasks: [
-      { id: 't9', title: 'Post Q2 Results — LinkedIn', channel: 'linkedin', assignees: [{ memberId: 2, note: 4.7 }], priority: 'alta', difficulty: 'médio', dueDate: '2026-07-25' },
-      { id: 't10', title: 'Campanha Julho — Instagram Grid', channel: 'instagram', assignees: [{ memberId: 3, note: 4.9 }, { memberId: 2, note: null }], priority: 'alta', difficulty: 'difícil', dueDate: '2026-07-20' },
-    ],
-  },
-]
 
 // ─── Campaigns ───────────────────────────────────────────────────────────────
 
@@ -460,31 +380,6 @@ export const defaultMetrics: CustomMetric[] = [
   { id: 'm4', name: 'MQLs Gerados', value: 28, unit: 'leads', formula: 'Contagem manual de leads com score ≥ 65 no período', color: '#00E5C8' },
   { id: 'm5', name: 'Tráfego Orgânico', value: 8240, unit: 'sessões', formula: 'Soma de sessões via busca orgânica (Google Analytics)', channel: 'site', color: '#00C853' },
 ]
-
-// ─── SEO Default State ────────────────────────────────────────────────────────
-
-export const defaultSEO: SEOState = {
-  domainAuthority: 42,
-  organicTraffic: 8240,
-  organicTrafficGrowth: 18.4,
-  keywords: 234,
-  backlinks: 342,
-  coreWebVitals: { lcp: 2.1, fid: 18, cls: 0.08 },
-  topKeywords: [
-    { keyword: 'gestão de marketing', position: 4, volume: 1900, difficulty: 62 },
-    { keyword: 'marketing b2b estratégia', position: 7, volume: 880, difficulty: 45 },
-    { keyword: 'plataforma marketing digital', position: 12, volume: 590, difficulty: 58 },
-    { keyword: 'kanban marketing', position: 2, volume: 320, difficulty: 28 },
-    { keyword: 'métricas instagram empresa', position: 9, volume: 1200, difficulty: 51 },
-  ],
-  monthlyTraffic: [
-    { month: 'Mar', traffic: 5200 },
-    { month: 'Abr', traffic: 5800 },
-    { month: 'Mai', traffic: 6400 },
-    { month: 'Jun', traffic: 7100 },
-    { month: 'Jul', traffic: 8240 },
-  ],
-}
 
 // ─── MQL Default ─────────────────────────────────────────────────────────────
 
