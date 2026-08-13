@@ -290,8 +290,8 @@ export default function SettingsMenu({ currentUser, users, setUsers, isManager, 
         <div className="relative">
           <button onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open} aria-label="Configurações"
             className="flex items-center justify-center rounded-full transition-all hover:opacity-90"
-            style={{ width: 44, height: 44, background: 'rgba(18,18,20,.9)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(16px)' }}>
-            <Settings size={18} style={{ color: open ? '#7D1AD7' : '#8A8A9A' }} />
+            style={{ width: 50, height: 50, background: 'rgba(18,18,20,.9)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(16px)' }}>
+            <Settings size={22} style={{ color: open ? '#7D1AD7' : '#8A8A9A' }} />
           </button>
           {open && (
             <div role="menu" className="absolute bottom-full left-0 mb-2 w-64 rounded-2xl overflow-hidden shadow-2xl"

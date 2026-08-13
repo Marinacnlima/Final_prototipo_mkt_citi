@@ -29,28 +29,28 @@ export default function TopBar({ currentUser, activeModule, setModule }: Props) 
   }, [])
 
   return (
-    <div ref={ref} className="fixed top-3 right-4 sm:top-4 sm:right-5 z-40 flex flex-col items-end gap-2.5" style={{ zIndex: 40 }}>
-      <div className="flex flex-col items-end">
-        <img src={citiLogoWhite} alt="CITi" className="h-5 sm:h-6 w-auto" />
-        <span className="text-[10px] uppercase tracking-[.18em] mt-1" style={{ color: '#6F6F7B' }}>HubSpot</span>
-      </div>
+    <div ref={ref} className="fixed top-4 right-4 sm:top-6 sm:right-6 z-40 flex items-center gap-3 sm:gap-4" style={{ zIndex: 40 }}>
+      <img src={citiLogoWhite} alt="CITi" className="h-8 sm:h-10 w-auto" />
+      <span className="text-xl sm:text-3xl" style={{ color: '#00E5C8', fontFamily: "'STIX Two Text', 'Inter', serif", fontStyle: 'italic', fontWeight: 700, letterSpacing: '-0.02em' }}>
+        HubSpot
+      </span>
 
-      <div className="relative">
+      <div className="relative ml-1 sm:ml-2">
         <button onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open} aria-label="Navegar entre módulos"
-          className="flex items-center justify-center rounded-full text-white font-bold text-xs transition-all hover:opacity-90"
-          style={{ width: 34, height: 34, background: currentUser.color, boxShadow: open ? '0 0 0 3px rgba(125,26,215,0.28)' : 'none' }}>
+          className="flex items-center justify-center rounded-full text-white font-bold text-sm transition-all hover:opacity-90"
+          style={{ width: 44, height: 44, background: currentUser.color, boxShadow: open ? '0 0 0 3px rgba(125,26,215,0.28)' : 'none' }}>
           {currentUser.initials}
         </button>
         {open && (
-          <div role="menu" className="absolute right-0 top-full mt-2 w-52 rounded-2xl overflow-hidden shadow-2xl"
+          <div role="menu" className="absolute right-0 top-full mt-2 w-56 rounded-2xl overflow-hidden shadow-2xl"
             style={{ background: '#17171A', border: '1px solid rgba(255,255,255,0.08)' }}>
             {navItems.map(({ id, label, Icon }) => {
               const active = activeModule === id
               return (
                 <button key={id} role="menuitem" onClick={() => { setModule(id); setOpen(false) }}
-                  className="w-full flex items-center gap-2.5 px-4 py-3 text-left transition-all hover:bg-white/10"
+                  className="w-full flex items-center gap-2.5 px-4 py-3.5 text-left transition-all hover:bg-white/10"
                   style={active ? { background: 'rgba(125,26,215,0.12)' } : undefined}>
-                  <Icon size={16} style={{ color: active ? '#B69AEF' : '#6F6F7B' }} />
+                  <Icon size={18} style={{ color: active ? '#B69AEF' : '#6F6F7B' }} />
                   <span className="text-sm font-medium" style={{ color: active ? '#F0F0F5' : '#8A8A9A' }}>{label}</span>
                 </button>
               )
