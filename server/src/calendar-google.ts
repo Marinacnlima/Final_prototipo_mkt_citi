@@ -15,12 +15,14 @@ interface GoogleEventInput {
   horario: string // HH:MM
   horarioFim?: string | null
   attendeeEmails: string[]
+  location?: string
 }
 
 function toRequestBody(input: GoogleEventInput) {
   const endTime = input.horarioFim ?? addMinutes(input.horario, 30)
   return {
     summary: input.titulo,
+    location: input.location,
     start: { dateTime: `${input.dataISO}T${input.horario}:00`, timeZone: TIME_ZONE },
     end: { dateTime: `${input.dataISO}T${endTime}:00`, timeZone: TIME_ZONE },
     attendees: input.attendeeEmails.map((email) => ({ email })),

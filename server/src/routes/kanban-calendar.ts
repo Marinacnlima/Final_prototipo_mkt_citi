@@ -57,7 +57,8 @@ kanbanRouter.patch('/tasks/:id/move', asyncRoute(async (req, res) => { const bod
 kanbanRouter.delete('/tasks/:id', asyncRoute(async (req, res) => { await prisma.task.delete({ where: { id: String(req.params.id) } }); res.status(204).send() }))
 
 export const calendarRouter = Router(); calendarRouter.use(authenticate)
-const eventBody = z.object({ titulo: z.string().trim().min(1), data: z.coerce.date(), horario: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/), horarioFim: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable().optional(), tipo: z.enum(['REUNIAO','DEADLINE','TASK']), canal: z.enum(['INSTAGRAM','LINKEDIN','SITE','EMAIL']).nullable().optional(), participantIds: z.array(z.string().uuid()).default([]) })
+const eventBody = z.object({ titulo: z.string().trim().min(1), data: z.coerce.date(), horario: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/), horarioFim: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable().optional(), tipo: z.enum(['REUNIAO','DEADLINE','TASK']), canal: z.enum(['INSTAGRAM','LINKEDIN','SITE','EMAIL']).nullable().optional(), formatoLocal: z.enum(['MEET','PRESENCIAL']).nullable().optional(), sala: z.string().trim().min(1).nullable().optional(), participantIds: z.array(z.string().uuid()).default([]) })
+const normalizeSala = <T extends { formatoLocal?: 'MEET' | 'PRESENCIAL' | null; sala?: string | null }>(body: T): T => ({ ...body, sala: body.formatoLocal === 'PRESENCIAL' ? (body.sala ?? null) : null })
 const eventInclude = { participantes: { where: { user: { ativo: true } }, include: { user: true } } } as const
 const serializeEvent = (event: any) => ({ ...event, participantes: event.participantes.map((p: any) => ({ userId: p.userId, nome: p.user.nomeCompleto, email: p.user.email })) })
 async function assertParticipantsValid(participantIds: string[]) {
@@ -75,6 +76,7 @@ const googleInput = (event: any) => ({
   horario: event.horario,
   horarioFim: event.horarioFim,
   attendeeEmails: event.participantes.map((p: any) => p.user.email),
+  location: event.formatoLocal === 'PRESENCIAL' ? event.sala ?? undefined : event.formatoLocal === 'MEET' ? 'Google Meet' : undefined,
 })
 async function refreshTokenFor(userId: string | null): Promise<string | null> {
   if (!userId) return null
@@ -82,7 +84,7 @@ async function refreshTokenFor(userId: string | null): Promise<string | null> {
   return account?.refreshToken ?? null
 }
 calendarRouter.post('/events', asyncRoute(async (req, res) => {
-  const body = eventBody.parse(req.body)
+  const body = normalizeSala(eventBody.parse(req.body))
   const participantIds = Array.from(new Set([...body.participantIds, req.user!.id]))
   await assertParticipantsValid(participantIds)
   const { participantIds: _ignored, ...data } = body
@@ -95,7 +97,7 @@ calendarRouter.post('/events', asyncRoute(async (req, res) => {
   res.status(201).json(serializeEvent(event))
 }))
 calendarRouter.patch('/events/:id', asyncRoute(async (req, res) => {
-  const body = eventBody.partial().parse(req.body)
+  const body = req.body.formatoLocal !== undefined ? normalizeSala(eventBody.partial().parse(req.body)) : eventBody.partial().parse(req.body)
   const participantsProvided = req.body.participantIds !== undefined
   const existing = await prisma.calendarEvent.findUniqueOrThrow({ where: { id: String(req.params.id) } })
   if (participantsProvided) {

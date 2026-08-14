@@ -92,6 +92,8 @@ export interface CalendarEvent {
   endTime: string
   type: 'meeting' | 'deadline' | 'task'
   channel: ChannelType | null
+  local: 'meet' | 'presencial' | ''
+  sala: string
   attendees: { userId: string; nome: string }[]
 }
 

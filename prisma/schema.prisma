@@ -36,6 +36,11 @@ enum TipoEvento {
   TASK
 }
 
+enum FormatoLocalEvento {
+  MEET
+  PRESENCIAL
+}
+
 enum StatusCampanha {
   ATIVA
   PLANEJADA
@@ -179,6 +184,8 @@ model CalendarEvent {
   horarioFim  String?
   tipo        TipoEvento              @default(REUNIAO)
   canal       CanalSocial?
+  formatoLocal FormatoLocalEvento?
+  sala        String?
   googleEventId String?
   criadorId   String?
   criador     User?                   @relation(fields: [criadorId], references: [id])

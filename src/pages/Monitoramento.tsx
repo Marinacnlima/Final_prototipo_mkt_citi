@@ -59,6 +59,8 @@ function mapEvent(ev: any): CalendarEvent {
     endTime: ev.horarioFim ?? '',
     type: TIPO_FROM_API[ev.tipo] ?? 'meeting',
     channel: ev.canal ? CHANNEL_FROM_API[ev.canal] : null,
+    local: ev.formatoLocal === 'MEET' ? 'meet' : ev.formatoLocal === 'PRESENCIAL' ? 'presencial' : '',
+    sala: ev.sala ?? '',
     attendees: (ev.participantes ?? []).map((p: any) => ({ userId: p.userId, nome: p.nome })),
   }
 }
@@ -560,7 +562,7 @@ const typeStyle = {
 
 interface EventForm {
   id?: string; date: string; title: string; time: string; endTime: string
-  type: 'meeting' | 'deadline' | 'task'; channel: ChannelType | ''; participantIds: string[]
+  type: 'meeting' | 'deadline' | 'task'; local: 'meet' | 'presencial' | ''; sala: string; participantIds: string[]
 }
 
 interface EventParticipant { id: string; name: string; role: string; initials: string; color: string }
@@ -573,7 +575,7 @@ function CalendarView({ currentUserId }: { currentUserId: string }) {
   const [navDate, setNavDate] = useState(new Date())
   const [dayDetail, setDayDetail] = useState<string | null>(null)
   const [addModal, setAddModal] = useState<string | null>(null)
-  const [form, setForm] = useState<EventForm>({ date: '', title: '', time: '09:00', endTime: '09:30', type: 'meeting', channel: '', participantIds: [] })
+  const [form, setForm] = useState<EventForm>({ date: '', title: '', time: '09:00', endTime: '09:30', type: 'meeting', local: '', sala: '', participantIds: [] })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -613,14 +615,14 @@ function CalendarView({ currentUserId }: { currentUserId: string }) {
   }
 
   function openAdd(date: string) {
-    setForm({ date, title: '', time: '09:00', endTime: '09:30', type: 'meeting', channel: '', participantIds: [currentUserId] })
+    setForm({ date, title: '', time: '09:00', endTime: '09:30', type: 'meeting', local: '', sala: '', participantIds: [currentUserId] })
     setError('')
     setAddModal(date)
     loadParticipants().catch(() => setError('Não foi possível carregar a lista de participantes.'))
   }
 
   function openEdit(ev: CalendarEvent) {
-    setForm({ id: ev.id, date: ev.date, title: ev.title, time: ev.time, endTime: ev.endTime, type: ev.type, channel: ev.channel ?? '', participantIds: ev.attendees.map((a) => a.userId) })
+    setForm({ id: ev.id, date: ev.date, title: ev.title, time: ev.time, endTime: ev.endTime, type: ev.type, local: ev.local, sala: ev.sala, participantIds: ev.attendees.map((a) => a.userId) })
     setError('')
     setAddModal(ev.date)
     loadParticipants().catch(() => setError('Não foi possível carregar a lista de participantes.'))
@@ -636,7 +638,9 @@ function CalendarView({ currentUserId }: { currentUserId: string }) {
     try {
       const payload = {
         titulo: form.title, data: form.date, horario: form.time, horarioFim: form.endTime || null,
-        tipo: TIPO_TO_API[form.type], canal: form.channel ? CHANNEL_TO_API[form.channel] : null,
+        tipo: TIPO_TO_API[form.type],
+        formatoLocal: form.local ? (form.local === 'meet' ? 'MEET' : 'PRESENCIAL') : null,
+        sala: form.local === 'presencial' ? (form.sala || null) : null,
         participantIds: form.participantIds,
       }
       const saved = form.id ? await api.calendar.update(form.id, payload) : await api.calendar.create(payload)
@@ -688,7 +692,11 @@ function CalendarView({ currentUserId }: { currentUserId: string }) {
                       <span className="text-xs font-semibold" style={{ color: s.color }}>{timeRange(ev)}</span>
                     </div>
                     <p className="text-sm font-medium text-[#F0F0F5] leading-snug">{ev.title}</p>
-                    {ev.channel && <div className="mt-1"><ChannelBadge ch={ev.channel} small /></div>}
+                    {ev.local && (
+                      <p className="text-xs mt-0.5" style={{ color: '#8A8A9A' }}>
+                        {ev.local === 'meet' ? 'Google Meet' : `Presencial${ev.sala ? ` — ${ev.sala}` : ''}`}
+                      </p>
+                    )}
                     {ev.attendees.length > 0 && (
                       <div className="flex items-center gap-1 mt-1.5 flex-wrap">
                         {ev.attendees.map((a) => (
@@ -970,21 +978,21 @@ function CalendarView({ currentUserId }: { currentUserId: string }) {
                 })}
               </div>
             </FormField>
-            <FormField label="Canal (opcional)">
+            <FormField label="Local">
               <div className="flex gap-2 flex-wrap">
-                <button onClick={() => setForm((f) => ({ ...f, channel: '' }))}
-                  className="text-xs px-3 py-1 rounded-full font-medium transition-all"
-                  style={form.channel === '' ? { background: '#7D1AD7', color: '#fff' } : { background: 'rgba(255,255,255,0.06)', color: '#8A8A9A' }}>
-                  Nenhum
-                </button>
-                {(['instagram', 'linkedin', 'site', 'email'] as ChannelType[]).map((ch) => (
-                  <button key={ch} onClick={() => setForm((f) => ({ ...f, channel: ch }))}
+                {([['', 'Nenhum'], ['meet', 'Meet'], ['presencial', 'Presencial']] as const).map(([value, label]) => (
+                  <button key={value || 'nenhum'} onClick={() => setForm((f) => ({ ...f, local: value, sala: value === 'presencial' ? f.sala : '' }))}
                     className="text-xs px-3 py-1 rounded-full font-medium transition-all"
-                    style={form.channel === ch ? { background: CH[ch].dot, color: '#fff' } : { background: CH[ch].bg, color: CH[ch].color }}>
-                    {CH[ch].label}
+                    style={form.local === value ? { background: '#7D1AD7', color: '#fff' } : { background: 'rgba(255,255,255,0.06)', color: '#8A8A9A' }}>
+                    {label}
                   </button>
                 ))}
               </div>
+              {form.local === 'presencial' && (
+                <div className="mt-2">
+                  <Inp value={form.sala} onChange={(v) => setForm((f) => ({ ...f, sala: v }))} placeholder="Ex: Sala de reunião 3" />
+                </div>
+              )}
             </FormField>
             <FormField label="Participantes">
               <div className="space-y-2">
