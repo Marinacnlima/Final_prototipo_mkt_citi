@@ -11,6 +11,7 @@ import type { Channel } from '../App'
 import type { ChannelType, Post, CustomMetric } from '../data'
 import { mqlData, getWeekLabel } from '../data'
 import { api } from '../api'
+import BrandMark from '../BrandMark'
 
 // Seleciona todo o conteúdo ao focar um campo numérico — evita o bug de "0" seguido de dígitos concatenados (ex: "0190")
 const selectOnFocus = (e: React.FocusEvent<HTMLInputElement>) => e.target.select()
@@ -976,10 +977,13 @@ export default function Metricas({ channel, setChannel, posts }: Props) {
   return (
     <div className="flex flex-col h-full">
       <header className="page-header bg-[#17171A] flex-shrink-0" style={{ borderBottom: '1.5px solid rgba(255,255,255,0.1)' }}>
-        <div className="px-4 md:px-6 pt-4 md:pt-5 pb-0">
-          <span className="page-eyebrow">Inteligência de performance</span>
-          <h1 className="text-lg md:text-xl font-semibold text-[#F0F0F5] leading-tight">Métricas</h1>
-          <p className="text-xs md:text-sm text-[#8A8A9A] mt-0.5">Dashboard consolidado · Julho 2026</p>
+        <div className="px-4 md:px-6 pt-4 md:pt-5 pb-0 flex items-start gap-4">
+          <BrandMark />
+          <div>
+            <span className="page-eyebrow">Inteligência de performance</span>
+            <h1 className="text-lg md:text-xl font-semibold text-[#F0F0F5] leading-tight">Métricas</h1>
+            <p className="text-xs md:text-sm text-[#8A8A9A] mt-0.5">Dashboard consolidado · Julho 2026</p>
+          </div>
         </div>
         <div className="px-4 md:px-6 pt-2 md:pt-3 pb-0 overflow-x-auto">
           <TabNav active={tab} setTab={setTab} />

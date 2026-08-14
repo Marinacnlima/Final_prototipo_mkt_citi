@@ -11,6 +11,7 @@ import type { Profile, Channel } from '../App'
 import type { KanbanColumn, Task, TaskAssignee, ChannelType, Campaign, CalendarEvent, CampaignMetricEntry } from '../data'
 import { campaignsData, engagementData, type Difficulty } from '../data'
 import { api } from '../api'
+import BrandMark from '../BrandMark'
 
 interface TaskMember {
   id: string
@@ -1575,11 +1576,14 @@ export default function Monitoramento({ profile, isManager, channel, setChannel,
   return (
     <div className="flex flex-col h-full">
       <header className="page-header bg-[#17171A] flex-shrink-0" style={{ borderBottom: '1.5px solid rgba(255,255,255,0.1)' }}>
-        <div className="px-4 md:px-6 pt-4 md:pt-5 pb-0 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
-          <div>
-            <span className="page-eyebrow">Operação de marketing</span>
-            <h1 className="text-lg md:text-xl font-semibold text-[#F0F0F5] leading-tight">Monitoramento</h1>
-            <p className="text-xs md:text-sm text-[#8A8A9A] mt-0.5 hidden sm:block">Gerencie tasks, calendário e campanhas do time</p>
+        <div className="px-4 md:px-6 pt-4 md:pt-5 pb-0 flex items-start gap-4">
+          <BrandMark />
+          <div className="flex-1 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
+            <div>
+              <span className="page-eyebrow">Operação de marketing</span>
+              <h1 className="text-lg md:text-xl font-semibold text-[#F0F0F5] leading-tight">Monitoramento</h1>
+              <p className="text-xs md:text-sm text-[#8A8A9A] mt-0.5 hidden sm:block">Gerencie tasks, calendário e campanhas do time</p>
+            </div>
           </div>
         </div>
         <div className="px-4 md:px-6 pt-2 md:pt-3 pb-0 overflow-x-auto">
