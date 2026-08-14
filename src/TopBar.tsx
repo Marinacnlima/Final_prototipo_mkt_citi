@@ -30,8 +30,8 @@ export default function TopBar({ activeModule, setModule }: Props) {
     <>
       {/* Marca — canto superior esquerdo, alinhada com o conteúdo da página */}
       <div className="fixed top-2 left-7 md:top-3 md:left-11 z-40 flex flex-col items-start" style={{ zIndex: 40 }}>
-        <img src={citiLogoWhite} alt="CITi" className="h-12 sm:h-14 w-auto" />
-        <span className="text-sm sm:text-lg mt-0.5" style={{ color: '#FFFFFF', fontFamily: "'STIX Two Text', 'Inter', serif", fontStyle: 'italic', fontWeight: 700, letterSpacing: '-0.01em' }}>
+        <img src={citiLogoWhite} alt="CITi" className="h-10 sm:h-11 w-auto" />
+        <span className="text-xs sm:text-sm mt-0.5" style={{ color: '#FFFFFF', fontFamily: "'STIX Two Text', 'Inter', serif", fontStyle: 'italic', fontWeight: 700, letterSpacing: '-0.01em' }}>
           HubSpot
         </span>
       </div>
