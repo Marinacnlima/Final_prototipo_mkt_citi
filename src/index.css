@@ -483,9 +483,9 @@ main, [class*='overflow-auto'] { scroll-behavior: smooth; }
 .internal-app .page-header { min-height: 160px; }
 .internal-app .page-header > div:first-child { padding: 26px 32px 0 190px !important; }
 .internal-app .page-header > div:last-child { padding: 17px 32px 0 !important; }
-.internal-app .page-header h1 { font-size: clamp(1.65rem, 2.1vw, 2.15rem) !important; line-height: 1.05; }
-.internal-app .page-header h1 + p { margin-top: 8px; color: #999 !important; }
-.internal-app .page-eyebrow { margin-bottom: 10px; color: #9fb2ee; }
+.internal-app .page-header h1 { font-size: clamp(1.4rem, 1.8vw, 1.85rem) !important; line-height: 1.05; }
+.internal-app .page-header h1 + p { margin-top: 4px; color: #999 !important; }
+.internal-app .page-eyebrow { margin-bottom: 5px; font-size: .5625rem; color: #9fb2ee; }
 .internal-app .page-header [class*='rounded-lg'][class*='transition-all'] { border-radius: 12px !important; padding: 9px 15px; }
 .internal-app .page-header [class*='rounded-lg'][style*='rgba(125,26,215'] {
   background: linear-gradient(110deg, rgba(125,26,215,.18), rgba(80,122,230,.1)) !important;
@@ -535,7 +535,7 @@ main, [class*='overflow-auto'] { scroll-behavior: smooth; }
   .internal-app .page-header { min-height: auto; }
   .internal-app .page-header > div:first-child { padding: 17px 16px 0 130px !important; }
   .internal-app .page-header > div:last-child { padding: 10px 16px 0 !important; }
-  .internal-app .page-header h1 { font-size: 1.35rem !important; }
+  .internal-app .page-header h1 { font-size: 1.2rem !important; }
   .internal-app .module-stage::before { display: none; }
   .internal-app .module-stage { margin: 7px; border-radius: 18px; }
   .internal-liquid-background { opacity: .82; filter: saturate(.86) brightness(.78); }
