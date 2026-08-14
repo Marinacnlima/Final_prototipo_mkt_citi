@@ -29,7 +29,7 @@ export default function TopBar({ activeModule, setModule }: Props) {
   return (
     <>
       {/* Marca — canto superior esquerdo, alinhada com o conteúdo da página */}
-      <div className="fixed top-4 left-4 md:top-8 md:left-8 z-40 flex flex-col items-start" style={{ zIndex: 40 }}>
+      <div className="fixed top-7 left-7 md:top-11 md:left-11 z-40 flex flex-col items-start" style={{ zIndex: 40 }}>
         <img src={citiLogoWhite} alt="CITi" className="h-8 sm:h-10 w-auto" />
         <span className="text-[10px] sm:text-xs mt-0.5" style={{ color: '#FFFFFF', fontFamily: "'STIX Two Text', 'Inter', serif", fontStyle: 'italic', fontWeight: 600, letterSpacing: '-0.01em' }}>
           HubSpot
