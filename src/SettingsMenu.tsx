@@ -294,7 +294,7 @@ export default function SettingsMenu({ currentUser, users, setUsers, isManager, 
             {currentUser.initials}
           </button>
           {open && (
-            <div role="menu" className="absolute right-full top-0 mr-2 w-64 rounded-2xl overflow-hidden shadow-2xl"
+            <div role="menu" className="absolute right-0 top-full mt-2 w-64 rounded-2xl overflow-hidden shadow-2xl"
               style={{ background: '#17171A', border: '1px solid rgba(255,255,255,0.08)' }}>
               <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
                 <div className="text-sm font-medium truncate" style={{ color: '#F0F0F5' }}>{currentUser.name}</div>
