@@ -349,7 +349,7 @@ function PostSortFilter({ channel, sortBy, setSortBy }: { channel: PostChannelOp
   )
 }
 
-function PostsView({ channel, posts, setPosts }: { channel: Channel; posts: Post[]; setPosts: (fn: (prev: Post[]) => Post[]) => void }) {
+function PostsView({ channel, setChannel, posts, setPosts }: { channel: Channel; setChannel: (c: Channel) => void; posts: Post[]; setPosts: (fn: (prev: Post[]) => Post[]) => void }) {
   const [slides, setSlides] = useState<Record<string, number>>({})
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const [modal, setModal] = useState<{ post?: Post } | null>(null)
@@ -385,10 +385,13 @@ function PostsView({ channel, posts, setPosts }: { channel: Channel; posts: Post
           <p className="text-sm text-[#8A8A9A]">{sorted.length} post{sorted.length !== 1 ? 's' : ''}</p>
           <PostSortFilter channel={postChannel} sortBy={sortBy} setSortBy={setSortBy} />
         </div>
-        <button onClick={() => setModal({})} className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl text-white hover:opacity-90 btn-glow"
-          style={{ background: 'linear-gradient(135deg, #7D1AD7, #50E678)' }}>
-          <Plus size={15} /> Adicionar post
-        </button>
+        <div className="flex items-center gap-2">
+          <PostChannelDropdown value={postChannel} onChange={setChannel} />
+          <button onClick={() => setModal({})} className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl text-white hover:opacity-90 btn-glow"
+            style={{ background: 'linear-gradient(135deg, #7D1AD7, #50E678)' }}>
+            <Plus size={15} /> Adicionar post
+          </button>
+        </div>
       </div>
 
       <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
@@ -995,7 +998,6 @@ interface Props {
 
 export default function Biblioteca({ channel, setChannel, posts, setPosts }: Props) {
   const [tab, setTab] = useState<Tab>('posts')
-  const postChannel: PostChannelOption = channel === 'instagram' || channel === 'linkedin' ? channel : 'todos'
 
   return (
     <div className="flex flex-col h-full">
@@ -1008,7 +1010,6 @@ export default function Biblioteca({ channel, setChannel, posts, setPosts }: Pro
               <h1 className="text-lg md:text-xl font-semibold text-[#F0F0F5] leading-tight">Biblioteca</h1>
               <p className="text-xs md:text-sm text-[#8A8A9A] mt-0.5 hidden sm:block">Posts publicados, materiais ricos e biblioteca de prompts</p>
             </div>
-            {tab === 'posts' && <PostChannelDropdown value={postChannel} onChange={setChannel} />}
           </div>
         </div>
         <div className="px-4 md:px-6 pt-2 md:pt-3 pb-0 overflow-x-auto">
@@ -1016,7 +1017,7 @@ export default function Biblioteca({ channel, setChannel, posts, setPosts }: Pro
         </div>
       </header>
       <div className="module-stage flex-1 overflow-hidden">
-        {tab === 'posts' && <PostsView channel={channel} posts={posts} setPosts={setPosts} />}
+        {tab === 'posts' && <PostsView channel={channel} setChannel={setChannel} posts={posts} setPosts={setPosts} />}
         {tab === 'materiais' && <MaterialsView />}
         {tab === 'prompts' && <PromptsView />}
       </div>
