@@ -363,8 +363,33 @@ function DashboardFigma({ posts, metrics, channel, setChannel, globalMetrics, se
     desatualizadas: { count: number; itens: { nome: string; idadeDias: number }[] }
   } | null>(null)
   useEffect(() => {
-    api.metrics.dashboard(activeChannel.toUpperCase()).then(setDashboardMeta).catch(() => setDashboardMeta(null))
-  }, [activeChannel])
+    let active = true
+    const hours = [6, 8, 10, 12, 14, 16, 18, 20, 22]
+    const load = async () => {
+      if (editMode) return
+      try {
+        const dashboard = await api.metrics.dashboard(activeChannel.toUpperCase())
+        if (!active) return
+        setDashboardMeta(dashboard)
+        if (dashboard.alcanceSeguidores) setGlobalMetrics((current) => ({ ...current, [activeChannel]: { ...current[activeChannel], followerReachShare: dashboard.alcanceSeguidores.seguidores } }))
+        if (activeChannel === 'instagram') {
+          if (dashboard.formatos?.length) setInstagramFormats(dashboard.formatos.map((row: any) => ({ format: DASHBOARD_FORMAT_LABELS[row.formato] ?? row.formato, reach: row.alcanceMedio, engagement: row.taxaEngajamento, saves: row.saves ?? 0, shares: row.compartilhamentos ?? 0 })))
+          if (dashboard.funilStories?.length) setStoryViews(dashboard.funilStories.map((row: any) => row.espectadores))
+          if (dashboard.heatmap?.length) {
+            const cells = new Map(dashboard.heatmap.map((cell: any) => [`${cell.diaSemana}:${cell.faixaHora}`, cell.intensidade]))
+            setActivityHeatmap(Array.from({ length: 7 }, (_, day) => hours.map((hour) => Number(cells.get(`${day}:${hour}`) ?? 0))))
+          }
+        } else if (dashboard.formatos?.length) {
+          setLinkedinFormats(dashboard.formatos.map((row: any) => ({ format: DASHBOARD_FORMAT_LABELS[row.formato] ?? row.formato, impressions: row.impressoes ?? row.alcanceMedio ?? 0, ctr: row.ctr ?? 0, reactions: row.taxaReacao ?? row.taxaEngajamento ?? 0, reposts: row.reposts ?? 0, comments: row.comentarios ?? 0 })))
+        }
+      } catch { if (active) setDashboardMeta(null) }
+    }
+    void load()
+    const interval = window.setInterval(load, 15000)
+    const onFocus = () => { void load() }
+    window.addEventListener('focus', onFocus)
+    return () => { active = false; window.clearInterval(interval); window.removeEventListener('focus', onFocus) }
+  }, [activeChannel, editMode])
 
   // Cobre as 3 fontes de métrica do dashboard: KPIs executivos, matriz de formatos (backend) e métricas personalizadas (atualizadoEm do usuário)
   const staleKpiNomes = new Set((dashboardMeta?.kpis ?? []).filter((k) => k.idadeDias > STALE_THRESHOLD_DAYS).map((k) => k.nome))
@@ -429,7 +454,12 @@ function DashboardFigma({ posts, metrics, channel, setChannel, globalMetrics, se
       ? instagramFormats.map((row) => ({ formato: DASHBOARD_FORMAT_ENUM[row.format], alcanceMedio: Math.round(row.reach), taxaEngajamento: row.engagement, saves: row.saves, compartilhamentos: row.shares }))
       : linkedinFormats.map((row) => ({ formato: DASHBOARD_FORMAT_ENUM[row.format], taxaEngajamento: row.reactions, impressoes: row.impressions, ctr: row.ctr, taxaReacao: row.reactions, reposts: row.reposts, comentarios: row.comments }))
     try {
-      await api.metrics.saveDashboard(activeChannel.toUpperCase(), { kpis: kpisPayload, formatos: formatosPayload })
+      const sharedPayload = activeChannel === 'instagram' ? {
+        alcanceSeguidores: { seguidores: global.followerReachShare, naoSeguidores: 100 - global.followerReachShare },
+        funilStories: storyViews.map((espectadores, index) => ({ ordem: index + 1, espectadores, percentual: Math.round(espectadores / Math.max(1, storyViews[0]) * 100) })),
+        heatmap: activityHeatmap.flatMap((row, diaSemana) => row.map((intensidade, column) => ({ diaSemana, faixaHora: [6, 8, 10, 12, 14, 16, 18, 20, 22][column], intensidade }))),
+      } : {}
+      await api.metrics.saveDashboard(activeChannel.toUpperCase(), { kpis: kpisPayload, formatos: formatosPayload, ...sharedPayload })
       setDashboardMeta(await api.metrics.dashboard(activeChannel.toUpperCase()))
     } catch (error) { console.error(error) }
   }

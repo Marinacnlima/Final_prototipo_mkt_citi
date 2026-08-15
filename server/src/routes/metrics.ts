@@ -2,7 +2,10 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { prisma } from '../prisma.js'
 import { asyncRoute } from '../http.js'
-import { authenticate, managerOnly } from '../auth.js'
+import { authenticate } from '../auth.js'
+
+// Métricas são estado compartilhado: qualquer conta autenticada pode consultar e atualizar.
+const managerOnly = authenticate
 
 export const metricsRouter=Router();metricsRouter.use(authenticate)
 const customBody=z.object({nome:z.string().trim().min(1),canal:z.enum(['INSTAGRAM','LINKEDIN']).nullable().optional(),formula:z.string(),valor:z.number(),unidade:z.enum(['PERCENT','LEADS','SESSOES','NUMERO'])})
