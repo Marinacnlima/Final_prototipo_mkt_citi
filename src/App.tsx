@@ -64,7 +64,7 @@ export default function App() {
   }
 
   if (!currentUser) return <Login users={users} onLogin={handleLogin} authenticate={authenticate} forgotPassword={forgotPassword} verifyCode={verifyResetCode} resetPassword={resetPassword} />
-  if (changingPw) return <ChangePasswordScreen user={currentUser} onSave={handleChangePassword} onBack={changingPwVoluntary ? () => setChangingPw(false) : undefined} />
+  if (changingPw) return <ChangePasswordScreen user={currentUser} onSave={handleChangePassword} onBack={changingPwVoluntary ? () => setChangingPw(false) : handleLogout} />
 
   const isManager = currentUser.role === 'gerente'
   const profile: Profile = currentUser.role
