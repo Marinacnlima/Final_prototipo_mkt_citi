@@ -1454,8 +1454,14 @@ function EngagementView({ columns }: { columns: KanbanColumn[] }) {
     if (raw === '' || raw === '-') return
     if (!Number.isNaN(parseFloat(raw))) updateScore(memberId, field, raw)
   }
-  function onScoreBlur(memberId: number | string, field: string) {
-    setScoreDrafts((prev) => { const next = { ...prev }; delete next[scoreDraftKey(memberId, field)]; return next })
+  function onScoreBlur(memberId: number | string, field: 'punctuality' | 'presence') {
+    const key = scoreDraftKey(memberId, field)
+    const raw = scoreDrafts[key]
+    // Clicar no botão "Salvar" tira o foco do campo (blur) antes do clique em si ser processado — se o
+    // rascunho ficar vazio/inválido aqui sem ser resolvido, o botão Salvar nunca chega a ver que o campo
+    // estava vazio e reenvia o valor antigo. Por isso resolve para 0 aqui, não só no clique de salvar.
+    if (raw !== undefined && (raw === '' || raw === '-' || Number.isNaN(parseFloat(raw)))) updateScore(memberId, field, '0')
+    setScoreDrafts((prev) => { const next = { ...prev }; delete next[key]; return next })
   }
 
   function updateNote(memberId: number | string, cat: NoteCategory, value: string) {
