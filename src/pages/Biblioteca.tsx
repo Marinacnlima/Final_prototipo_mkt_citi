@@ -1,8 +1,8 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import {
   BookOpen, FileText, MessageSquare, Download, Star, Copy, Check,
-  ChevronLeft, ChevronRight, Hash, Eye, Plus, Edit2, Trash2, X, Search, Link as LinkIcon,
+  ChevronLeft, ChevronRight, ChevronDown, Hash, Eye, Plus, Edit2, Trash2, X, Search, Link as LinkIcon,
 } from 'lucide-react'
 import type { Channel } from '../App'
 import type { ChannelType, Prompt, Material, Post, PostMedia } from '../data'
@@ -308,21 +308,47 @@ function PostModal({ initial, onSave, onClose }: {
 type PostChannelOption = 'instagram' | 'linkedin' | 'todos'
 
 function PostChannelDropdown({ value, onChange }: { value: PostChannelOption; onChange: (c: PostChannelOption) => void }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
   const opts: { id: PostChannelOption; label: string }[] = [
     { id: 'todos', label: 'Todos' }, { id: 'instagram', label: 'Instagram' }, { id: 'linkedin', label: 'LinkedIn' },
   ]
+  const current = opts.find((o) => o.id === value)!
+  const currentColor = value !== 'todos' ? CH[value as ChannelType].dot : '#7D1AD7'
+
+  useEffect(() => {
+    if (!open) return
+    function onClick(e: MouseEvent) { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
+    document.addEventListener('mousedown', onClick)
+    return () => document.removeEventListener('mousedown', onClick)
+  }, [open])
+
   return (
-    <div className="inline-flex items-center gap-1 p-1 rounded-full" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-      {opts.map((o) => {
-        const active = value === o.id
-        const c = o.id !== 'todos' ? CH[o.id as ChannelType] : null
-        return (
-          <button key={o.id} onClick={() => onChange(o.id)} className="text-xs font-semibold px-3.5 py-1.5 rounded-full transition-all"
-            style={active ? { background: c ? c.dot : '#7D1AD7', color: '#fff', boxShadow: `0 0 12px ${c ? c.dot : '#7D1AD7'}55` } : { background: 'transparent', color: '#8A8A9A' }}>
-            {o.label}
-          </button>
-        )
-      })}
+    <div ref={ref} className="relative">
+      <button onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open}
+        className="flex items-center gap-2 text-sm font-semibold pl-3.5 pr-3 py-2 rounded-xl transition-all"
+        style={{ background: '#1A1A25', border: `1.5px solid ${open ? currentColor : 'rgba(255,255,255,0.14)'}`, color: '#F0F0F5' }}>
+        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: currentColor }} />
+        {current.label}
+        <ChevronDown size={14} className="transition-transform" style={{ color: '#8A8A9A', transform: open ? 'rotate(180deg)' : undefined }} />
+      </button>
+      {open && (
+        <div role="menu" className="absolute left-0 top-full mt-1.5 w-40 rounded-xl overflow-hidden shadow-2xl z-10"
+          style={{ background: '#1A1A25', border: '1px solid rgba(255,255,255,0.1)' }}>
+          {opts.map((o) => {
+            const active = value === o.id
+            const c = o.id !== 'todos' ? CH[o.id as ChannelType].dot : '#7D1AD7'
+            return (
+              <button key={o.id} role="menuitem" onClick={() => { onChange(o.id); setOpen(false) }}
+                className="w-full flex items-center gap-2 px-3.5 py-2.5 text-sm text-left transition-all hover:bg-white/10"
+                style={active ? { background: 'rgba(255,255,255,0.06)', color: '#F0F0F5', fontWeight: 600 } : { color: '#8A8A9A' }}>
+                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: c }} />
+                {o.label}
+              </button>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
