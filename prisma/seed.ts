@@ -65,6 +65,79 @@ async function main() {
     })
   }
 
+  // Campanhas de exemplo. dailyEntries armazena o incremento de cada dia (não o acumulado) porque
+  // alcanceAtual/interacoesAtual são calculados no backend como soma de todas as métricas diárias.
+  const campaignsSeed = [
+    {
+      nome: 'Lançamento Produto Q3', status: 'ATIVA' as const,
+      objetivo: 'Gerar awareness e leads para o novo produto da empresa',
+      publico: 'Marketing managers e C-level de empresas B2B com 50+ funcionários',
+      dataInicio: new Date('2026-07-01'), dataFim: new Date('2026-08-31'),
+      alcanceMeta: 50000, interacoesMeta: 3000,
+      canais: ['INSTAGRAM', 'LINKEDIN'] as const,
+      dailyEntries: [
+        { data: new Date('2026-07-05'), alcance: 4200, interacoes: 180 },
+        { data: new Date('2026-07-12'), alcance: 5600, interacoes: 240 },
+        { data: new Date('2026-07-19'), alcance: 8600, interacoes: 470 },
+        { data: new Date('2026-07-26'), alcance: 9200, interacoes: 450 },
+        { data: new Date('2026-07-31'), alcance: 6600, interacoes: 480 },
+      ],
+    },
+    {
+      nome: 'Black November', status: 'PLANEJADA' as const,
+      objetivo: 'Converter leads qualificados com oferta especial de final de ano',
+      publico: 'Leads na base com score > 60, segmento PME',
+      dataInicio: new Date('2026-11-01'), dataFim: new Date('2026-11-30'),
+      alcanceMeta: 100000, interacoesMeta: 8000,
+      canais: ['INSTAGRAM', 'EMAIL'] as const,
+      dailyEntries: [],
+    },
+    {
+      nome: 'Cases de Sucesso', status: 'ATIVA' as const,
+      objetivo: 'Construir autoridade de marca e gerar MQLs qualificados',
+      publico: 'Decision makers em tech e serviços financeiros',
+      dataInicio: new Date('2026-06-15'), dataFim: new Date('2026-08-15'),
+      alcanceMeta: 20000, interacoesMeta: 1000,
+      canais: ['LINKEDIN', 'SITE'] as const,
+      dailyEntries: [
+        { data: new Date('2026-06-20'), alcance: 2100, interacoes: 95 },
+        { data: new Date('2026-06-27'), alcance: 3700, interacoes: 145 },
+        { data: new Date('2026-07-04'), alcance: 3400, interacoes: 170 },
+        { data: new Date('2026-07-11'), alcance: 3700, interacoes: 180 },
+        { data: new Date('2026-07-18'), alcance: 2800, interacoes: 150 },
+        { data: new Date('2026-07-25'), alcance: 2700, interacoes: 180 },
+      ],
+    },
+  ]
+  for (const { canais, dailyEntries, ...data } of campaignsSeed) {
+    const existing = await prisma.campaign.findFirst({ where: { nome: data.nome } })
+    if (existing) continue
+    await prisma.campaign.create({
+      data: {
+        ...data,
+        canais: { create: canais.map((canal) => ({ canal })) },
+        metricasDiarias: { create: dailyEntries },
+      },
+    })
+  }
+
+  // Prompts de exemplo
+  const promptsSeed = [
+    { titulo: 'Caption engajante com CTA', categoria: 'INSTAGRAM' as const, conteudo: 'Crie uma legenda para Instagram sobre [TEMA] no formato:\n1. Gancho impactante (1ª linha)\n2. Desenvolvimento em 3-4 pontos com emojis\n3. CTA claro e específico\n4. 3-5 hashtags\nTom: [PROFISSIONAL/DESCONTRAÍDO]', tags: ['caption', 'cta', 'engajamento'], favorito: true, usos: 47 },
+    { titulo: 'Post de Thought Leadership', categoria: 'LINKEDIN' as const, conteudo: 'Escreva um post de LinkedIn sobre [TEMA] para [CARGO]:\n- Afirmação contraintuitiva ou dado surpresa\n- 3 parágrafos curtos (max 3 linhas)\n- Pergunta que gere comentários\n- Tom: autoridade sem arrogância · 150-200 palavras', tags: ['thought leadership', 'autoridade'], favorito: true, usos: 31 },
+    { titulo: 'Subject lines de alto CTR', categoria: 'EMAIL' as const, conteudo: 'Gere 5 assuntos de email para [OBJETIVO]:\n- Curiosidade/mistério\n- Benefício direto + número\n- Urgência/escassez\n- Pergunta pessoal\n- Controverso\nPúblico: [PERSONA] · Meta: +20% vs taxa atual.', tags: ['email', 'subject line', 'conversão'], favorito: false, usos: 28 },
+    { titulo: 'Estrutura de carrossel educativo', categoria: 'CARROSSEL' as const, conteudo: 'Crie um carrossel com 8 slides sobre [TEMA]:\nSlide 1: Capa — título + promessa\nSlide 2: O problema\nSlides 3-7: Uma dica por slide\nSlide 8: CTA + marca', tags: ['carrossel', 'educativo'], favorito: true, usos: 52 },
+    { titulo: 'Meta description para SEO', categoria: 'SITE' as const, conteudo: 'Escreva 3 meta descriptions para [PÁGINA] sobre [TEMA]:\n- Inclua keyword: [KEYWORD]\n- Máximo 155 caracteres\n- Verbo de ação\n- Destaque o diferencial', tags: ['seo', 'meta description'], favorito: false, usos: 19 },
+    { titulo: 'Anúncio de vaga atrativo', categoria: 'LINKEDIN' as const, conteudo: 'Post de LinkedIn anunciando vaga de [CARGO]:\n- Abra com o impacto do cargo\n- Missão em uma frase\n- 3-5 responsabilidades como desafios\n- 1 benefício inusitado\n- CTA: marcar alguém ideal', tags: ['recrutamento', 'employer branding'], favorito: false, usos: 12 },
+    { titulo: 'Script de Reels 30 segundos', categoria: 'INSTAGRAM' as const, conteudo: 'Script de Reels 30s sobre [TEMA]:\n0-3s: Hook + frase impacto\n3-10s: Setup do problema\n10-25s: Solução em 3 passos\n25-30s: CTA + texto na tela', tags: ['reels', 'script', 'video'], favorito: true, usos: 38 },
+    { titulo: 'Email de nutrição de lead', categoria: 'EMAIL' as const, conteudo: 'Email de nutrição para leads que baixaram [MATERIAL] há [X] dias:\n- Assunto: referência ao material\n- 1 insight adicional prático\n- CTA: próximo passo na jornada\n- Máximo 200 palavras', tags: ['nurturing', 'automação'], favorito: false, usos: 22 },
+  ]
+  for (const { tags, ...data } of promptsSeed) {
+    const existing = await prisma.prompt.findFirst({ where: { titulo: data.titulo } })
+    if (existing) continue
+    await prisma.prompt.create({ data: { ...data, tags: { create: tags.map((tag) => ({ tag })) } } })
+  }
+
   // Métrica personalizada de exemplo, propositalmente desatualizada — demonstra que o aviso também cobre métricas do usuário
   const staleCustomMetricNome = 'Taxa de Conversão de Leads'
   const existingCustomMetric = await prisma.customMetric.findFirst({ where: { nome: staleCustomMetricNome } })

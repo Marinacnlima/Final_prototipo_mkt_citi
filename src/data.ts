@@ -44,13 +44,14 @@ export interface KanbanColumn {
 }
 
 export interface CampaignMetricEntry {
+  id?: string
   date: string
   reach: number
   interactions: number
 }
 
 export interface Campaign {
-  id: number
+  id: string
   name: string
   channels: ChannelType[]
   objective: string
@@ -140,7 +141,7 @@ export interface Material {
 }
 
 export interface Prompt {
-  id: number
+  id: string
   category: string
   title: string
   content: string
@@ -231,72 +232,6 @@ export const initialKanban: KanbanColumn[] = [
     tasks: [
       { id: 't9', title: 'Post Q2 Results — LinkedIn', channel: 'linkedin', assignees: [{ memberId: 2, note: 4.7 }], priority: 'alta', difficulty: 'médio', dueDate: '2026-07-25' },
       { id: 't10', title: 'Campanha Julho — Instagram Grid', channel: 'instagram', assignees: [{ memberId: 3, note: 4.9 }, { memberId: 2, note: null }], priority: 'alta', difficulty: 'difícil', dueDate: '2026-07-20' },
-    ],
-  },
-]
-
-// ─── Campaigns ───────────────────────────────────────────────────────────────
-
-export const campaignsData: Campaign[] = [
-  {
-    id: 1,
-    name: 'Lançamento Produto Q3',
-    channels: ['instagram', 'linkedin'],
-    objective: 'Gerar awareness e leads para o novo produto da empresa',
-    audience: 'Marketing managers e C-level de empresas B2B com 50+ funcionários',
-    startDate: '2026-07-01',
-    endDate: '2026-08-31',
-    reach: 34200,
-    targetReach: 50000,
-    interactions: 1820,
-    targetInteractions: 3000,
-    status: 'ativa',
-    daysRunning: 30,
-    dailyEntries: [
-      { date: '2026-07-05', reach: 4200, interactions: 180 },
-      { date: '2026-07-12', reach: 9800, interactions: 420 },
-      { date: '2026-07-19', reach: 18400, interactions: 890 },
-      { date: '2026-07-26', reach: 27600, interactions: 1340 },
-      { date: '2026-07-31', reach: 34200, interactions: 1820 },
-    ],
-  },
-  {
-    id: 2,
-    name: 'Black November',
-    channels: ['instagram', 'email'],
-    objective: 'Converter leads qualificados com oferta especial de final de ano',
-    audience: 'Leads na base com score > 60, segmento PME',
-    startDate: '2026-11-01',
-    endDate: '2026-11-30',
-    reach: 0,
-    targetReach: 100000,
-    interactions: 0,
-    targetInteractions: 8000,
-    status: 'planejada',
-    daysRunning: 0,
-    dailyEntries: [],
-  },
-  {
-    id: 3,
-    name: 'Cases de Sucesso',
-    channels: ['linkedin', 'site'],
-    objective: 'Construir autoridade de marca e gerar MQLs qualificados',
-    audience: 'Decision makers em tech e serviços financeiros',
-    startDate: '2026-06-15',
-    endDate: '2026-08-15',
-    reach: 18400,
-    targetReach: 20000,
-    interactions: 920,
-    targetInteractions: 1000,
-    status: 'ativa',
-    daysRunning: 46,
-    dailyEntries: [
-      { date: '2026-06-20', reach: 2100, interactions: 95 },
-      { date: '2026-06-27', reach: 5800, interactions: 240 },
-      { date: '2026-07-04', reach: 9200, interactions: 410 },
-      { date: '2026-07-11', reach: 12900, interactions: 590 },
-      { date: '2026-07-18', reach: 15700, interactions: 740 },
-      { date: '2026-07-25', reach: 18400, interactions: 920 },
     ],
   },
 ]
@@ -409,49 +344,6 @@ export const materialsData: Material[] = [
 ]
 
 // ─── Prompts ─────────────────────────────────────────────────────────────────
-
-export const promptsData: Prompt[] = [
-  {
-    id: 1, category: 'Instagram', title: 'Caption engajante com CTA',
-    content: 'Crie uma legenda para Instagram sobre [TEMA] no formato:\n1. Gancho impactante (1ª linha)\n2. Desenvolvimento em 3-4 pontos com emojis\n3. CTA claro e específico\n4. 3-5 hashtags\nTom: [PROFISSIONAL/DESCONTRAÍDO]',
-    tags: ['caption', 'cta', 'engajamento'], favorited: true, usageCount: 47,
-  },
-  {
-    id: 2, category: 'LinkedIn', title: 'Post de Thought Leadership',
-    content: 'Escreva um post de LinkedIn sobre [TEMA] para [CARGO]:\n- Afirmação contraintuitiva ou dado surpresa\n- 3 parágrafos curtos (max 3 linhas)\n- Pergunta que gere comentários\n- Tom: autoridade sem arrogância · 150-200 palavras',
-    tags: ['thought leadership', 'autoridade'], favorited: true, usageCount: 31,
-  },
-  {
-    id: 3, category: 'Email', title: 'Subject lines de alto CTR',
-    content: 'Gere 5 assuntos de email para [OBJETIVO]:\n- Curiosidade/mistério\n- Benefício direto + número\n- Urgência/escassez\n- Pergunta pessoal\n- Controverso\nPúblico: [PERSONA] · Meta: +20% vs taxa atual.',
-    tags: ['email', 'subject line', 'conversão'], favorited: false, usageCount: 28,
-  },
-  {
-    id: 4, category: 'Carrossel', title: 'Estrutura de carrossel educativo',
-    content: 'Crie um carrossel com 8 slides sobre [TEMA]:\nSlide 1: Capa — título + promessa\nSlide 2: O problema\nSlides 3-7: Uma dica por slide\nSlide 8: CTA + marca',
-    tags: ['carrossel', 'educativo'], favorited: true, usageCount: 52,
-  },
-  {
-    id: 5, category: 'Site', title: 'Meta description para SEO',
-    content: 'Escreva 3 meta descriptions para [PÁGINA] sobre [TEMA]:\n- Inclua keyword: [KEYWORD]\n- Máximo 155 caracteres\n- Verbo de ação\n- Destaque o diferencial',
-    tags: ['seo', 'meta description'], favorited: false, usageCount: 19,
-  },
-  {
-    id: 6, category: 'LinkedIn', title: 'Anúncio de vaga atrativo',
-    content: 'Post de LinkedIn anunciando vaga de [CARGO]:\n- Abra com o impacto do cargo\n- Missão em uma frase\n- 3-5 responsabilidades como desafios\n- 1 benefício inusitado\n- CTA: marcar alguém ideal',
-    tags: ['recrutamento', 'employer branding'], favorited: false, usageCount: 12,
-  },
-  {
-    id: 7, category: 'Instagram', title: 'Script de Reels 30 segundos',
-    content: 'Script de Reels 30s sobre [TEMA]:\n0-3s: Hook + frase impacto\n3-10s: Setup do problema\n10-25s: Solução em 3 passos\n25-30s: CTA + texto na tela',
-    tags: ['reels', 'script', 'video'], favorited: true, usageCount: 38,
-  },
-  {
-    id: 8, category: 'Email', title: 'Email de nutrição de lead',
-    content: 'Email de nutrição para leads que baixaram [MATERIAL] há [X] dias:\n- Assunto: referência ao material\n- 1 insight adicional prático\n- CTA: próximo passo na jornada\n- Máximo 200 palavras',
-    tags: ['nurturing', 'automação'], favorited: false, usageCount: 22,
-  },
-]
 
 // ─── Default Custom Metrics ───────────────────────────────────────────────────
 

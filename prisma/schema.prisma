@@ -417,6 +417,22 @@ model DashboardDistribution {
   updatedAt     DateTime   @updatedAt
 }
 
+model ChannelGlobalMetrics {
+  id                     String     @id @default(uuid())
+  plataforma             Plataforma @unique
+  followersTotal         Int        @default(0)
+  followersGrowth        Int        @default(0)
+  channelClicks          Int        @default(0)
+  profileVisits          Int        @default(0)
+  roi                    Float      @default(0)
+  conversions            Int        @default(0)
+  reachOverride          Int        @default(0)
+  impressionsOverride    Int        @default(0)
+  engagementRateOverride Float      @default(0)
+  audienceData           Json?
+  updatedAt              DateTime   @updatedAt
+}
+
 model MqlDefinition {
   id             String          @id @default(uuid())
   scoreMinimo    Int             @default(65)
