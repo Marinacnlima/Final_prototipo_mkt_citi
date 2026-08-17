@@ -1,13 +1,16 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import TopBar from './TopBar'
 import SettingsMenu from './SettingsMenu'
-import Monitoramento from './pages/Monitoramento'
-import Biblioteca from './pages/Biblioteca'
-import Metricas from './pages/Metricas'
 import Login, { ChangePasswordScreen } from './pages/Login'
 import type { Post, AppUser } from './data'
 import { api } from './api'
 import LiquidBackground from './components/LiquidBackground'
+
+// Carregados sob demanda (cada um só quando o módulo correspondente é aberto pela primeira vez) para não
+// jogar Recharts e o código dos 3 módulos inteiros no bundle inicial.
+const Monitoramento = lazy(() => import('./pages/Monitoramento'))
+const Biblioteca = lazy(() => import('./pages/Biblioteca'))
+const Metricas = lazy(() => import('./pages/Metricas'))
 
 export type Profile = 'gerente' | 'analista'
 export type Module = 'monitoramento' | 'biblioteca' | 'metricas'
@@ -31,7 +34,22 @@ export default function App() {
   }
 
   const toApiPost=(post:Post)=>({canal:post.channel.toUpperCase(),titulo:post.title,conteudo:post.caption,formato:({reel:'REELS',carousel:'CARROSSEL',static:'POST_ESTATICO',story:'STORIES',document:'PDF_DOCUMENTO',video:'VIDEO',article:'ARTIGO_NEWSLETTER',poll:'ENQUETE'} as any)[post.format],dataPublicacao:post.publishedAt||new Date().toISOString(),dataLimite:post.validUntil||null,imagens:post.images.map((image)=>({url:image.url,tipo:image.tipo==='video'?'VIDEO':'IMAGEM'})),linkUrl:post.linkUrl||null,alcance:post.insights.reach,impressoes:post.insights.impressions,engajamento:post.insights.engagement,curtidas:post.insights.likes,comentarios:post.insights.comments,saves:post.insights.saves,compartilhamentos:post.insights.shares,...(post.channel==='linkedin'?{ctr:post.ctr??0}:{visitasPerfil:post.profileVisits??0})})
-  function setPosts(update:(previous:Post[])=>Post[]){setPostsState((previous)=>{const next=update(previous);const before=new Map(previous.map((post)=>[post.id,post]));const after=new Map(next.map((post)=>[post.id,post]));for(const post of previous)if(!after.has(post.id))api.posts.remove(post.id).catch(console.error);for(const post of next){const old=before.get(post.id);if(!old){api.posts.create(toApiPost(post)).then((created)=>setPostsState((current)=>current.map((item)=>item.id===post.id?mapPost(created):item))).catch(console.error)}else if(old!==post)api.posts.update(post.id,toApiPost(post)).then((updated)=>setPostsState((current)=>current.map((item)=>item.id===post.id?mapPost(updated):item))).catch(console.error)}return next})}
+  function setPosts(update:(previous:Post[])=>Post[]){
+    // As chamadas de API ficam fora do atualizador funcional do setState — em React.StrictMode (ativo em
+    // main.tsx), esse atualizador pode ser invocado duas vezes em desenvolvimento, o que duplicaria as
+    // requisições create/update/delete se elas estivessem dentro dele.
+    const previous=posts
+    const next=update(previous)
+    setPostsState(next)
+    const before=new Map(previous.map((post)=>[post.id,post]))
+    const after=new Map(next.map((post)=>[post.id,post]))
+    for(const post of previous)if(!after.has(post.id))api.posts.remove(post.id).catch(console.error)
+    for(const post of next){
+      const old=before.get(post.id)
+      if(!old){api.posts.create(toApiPost(post)).then((created)=>setPostsState((current)=>current.map((item)=>item.id===post.id?mapPost(created):item))).catch(console.error)}
+      else if(old!==post)api.posts.update(post.id,toApiPost(post)).then((updated)=>setPostsState((current)=>current.map((item)=>item.id===post.id?mapPost(updated):item))).catch(console.error)
+    }
+  }
 
   useEffect(() => { if (api.hasToken) api.me().then((raw) => { const user=mapUser(raw); setCurrentUser(user); if(user.mustChangePassword){setChangingPw(true)} else loadPrivateData(user) }).catch(()=>api.setToken(null)) }, [])
 
@@ -86,15 +104,17 @@ export default function App() {
       {/* Module content */}
       <div className="absolute inset-0">
         <div className="h-full overflow-hidden">
-          {activeModule === 'monitoramento' && (
-            <Monitoramento profile={profile} isManager={isManager} channel={channel} setChannel={setChannel} currentUserId={currentUser.id} />
-          )}
-          {activeModule === 'biblioteca' && (
-            <Biblioteca channel={channel} setChannel={setChannel} posts={posts} setPosts={setPosts} isManager={isManager} />
-          )}
-          {activeModule === 'metricas' && (
-            <Metricas channel={channel} setChannel={setChannel} posts={posts} />
-          )}
+          <Suspense fallback={<div className="h-full flex items-center justify-center text-sm text-[#8A8A9A]">Carregando…</div>}>
+            {activeModule === 'monitoramento' && (
+              <Monitoramento profile={profile} isManager={isManager} channel={channel} setChannel={setChannel} currentUserId={currentUser.id} />
+            )}
+            {activeModule === 'biblioteca' && (
+              <Biblioteca channel={channel} setChannel={setChannel} posts={posts} setPosts={setPosts} isManager={isManager} />
+            )}
+            {activeModule === 'metricas' && (
+              <Metricas channel={channel} setChannel={setChannel} posts={posts} />
+            )}
+          </Suspense>
         </div>
       </div>
     </div>

@@ -321,6 +321,8 @@ function GlobalMetricsModal({ channel, values, onSave, onClose }: {
   </Modal>
 }
 
+const AUDIENCE_TAB_TO_API: Record<string, string> = { 'Cargo / Função': 'CARGO', Senioridade: 'SENIORIDADE', Setor: 'SETOR', Localização: 'LOCALIZACAO' }
+const AUDIENCE_TAB_FROM_API: Record<string, string> = { CARGO: 'Cargo / Função', SENIORIDADE: 'Senioridade', SETOR: 'Setor', LOCALIZACAO: 'Localização' }
 const STALE_THRESHOLD_DAYS = 20
 const DASHBOARD_FORMAT_LABELS: Record<string, string> = {
   REELS: 'Reels', CARROSSEL: 'Carrossel', POST_ESTATICO: 'Post Estático', STORIES: 'Stories',
@@ -394,8 +396,18 @@ function DashboardFigma({ posts, metrics, channel, setChannel, globalMetrics, se
             const cells = new Map(dashboard.heatmap.map((cell: any) => [`${cell.diaSemana}:${cell.faixaHora}`, cell.intensidade]))
             setActivityHeatmap(Array.from({ length: 7 }, (_, day) => hours.map((hour) => Number(cells.get(`${day}:${hour}`) ?? 0))))
           }
-        } else if (dashboard.formatos?.length) {
-          setLinkedinFormats(dashboard.formatos.map((row: any) => ({ format: DASHBOARD_FORMAT_LABELS[row.formato] ?? row.formato, impressions: row.impressoes ?? row.alcanceMedio ?? 0, ctr: row.ctr ?? 0, reactions: row.taxaReacao ?? row.taxaEngajamento ?? 0, reposts: row.reposts ?? 0, comments: row.comentarios ?? 0 })))
+        } else {
+          if (dashboard.formatos?.length) setLinkedinFormats(dashboard.formatos.map((row: any) => ({ format: DASHBOARD_FORMAT_LABELS[row.formato] ?? row.formato, impressions: row.impressoes ?? row.alcanceMedio ?? 0, ctr: row.ctr ?? 0, reactions: row.taxaReacao ?? row.taxaEngajamento ?? 0, reposts: row.reposts ?? 0, comments: row.comentarios ?? 0 })))
+          const audience = await api.metrics.linkedinAudience()
+          if (!active) return
+          setAudienceData((current) => {
+            const next = { ...current }
+            for (const [apiTab, segments] of Object.entries<{ label: string; value: number }[]>(audience)) {
+              const label = AUDIENCE_TAB_FROM_API[apiTab]
+              if (label && segments?.length) next[label] = segments
+            }
+            return next
+          })
         }
       } catch { if (active) setDashboardMeta(null) }
     }
@@ -488,6 +500,10 @@ function DashboardFigma({ posts, metrics, channel, setChannel, globalMetrics, se
       await api.metrics.saveDashboard(activeChannel.toUpperCase(), { kpis: kpisPayload, formatos: formatosPayload, ...sharedPayload })
       setDashboardMeta(await api.metrics.dashboard(activeChannel.toUpperCase()))
       await persistGlobal(activeChannel, global)
+      if (activeChannel === 'linkedin') {
+        const apiTab = AUDIENCE_TAB_TO_API[audienceTab]
+        if (apiTab) await api.metrics.saveLinkedinAudience(apiTab, audienceData[audienceTab])
+      }
     } catch (error) { console.error(error) }
   }
 
@@ -506,7 +522,7 @@ function DashboardFigma({ posts, metrics, channel, setChannel, globalMetrics, se
     const timer = window.setTimeout(() => { autosaveDirty.current = false; void autosaveFn.current() }, 700)
     return () => window.clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editMode, activityHeatmap, storyViews, instagramFormats, linkedinFormats, organicShare, globalMetrics])
+  }, [editMode, activityHeatmap, storyViews, instagramFormats, linkedinFormats, organicShare, globalMetrics, audienceData])
   useEffect(() => {
     return () => {
       if (autosaveDirty.current) { autosaveDirty.current = false; void autosaveFn.current() }
@@ -1080,7 +1096,7 @@ export default function Metricas({ channel, setChannel, posts }: Props) {
           <div>
             <span className="page-eyebrow">Inteligência de performance</span>
             <h1 className="text-lg md:text-xl font-semibold text-[#F0F0F5] leading-tight">Métricas</h1>
-            <p className="text-xs md:text-sm text-[#8A8A9A] mt-0.5">Dashboard consolidado · Julho 2026</p>
+            <p className="text-xs md:text-sm text-[#8A8A9A] mt-0.5">Dashboard consolidado · {new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).replace(/^\w/, (c) => c.toUpperCase())}</p>
           </div>
         </div>
         <div className="px-4 md:px-6 pt-2 md:pt-3 pb-0 overflow-x-auto">

@@ -65,6 +65,58 @@ async function main() {
     })
   }
 
+  // Distribuição de alcance (Instagram: seguidores vs. não seguidores; LinkedIn: orgânico vs. patrocinado)
+  const distributions = [
+    { plataforma: 'INSTAGRAM' as const, principalPct: 62, secundarioPct: 38 },
+    { plataforma: 'LINKEDIN' as const, principalPct: 68, secundarioPct: 32 },
+  ]
+  for (const row of distributions) {
+    await prisma.dashboardDistribution.upsert({ where: { plataforma: row.plataforma }, update: {}, create: row })
+  }
+
+  // Funil de retenção de Stories (Instagram)
+  const storyViews = [3410, 2890, 2410, 1980, 1640, 1320]
+  for (const [index, espectadores] of storyViews.entries()) {
+    await prisma.storyFunnelStep.upsert({
+      where: { plataforma_ordem: { plataforma: 'INSTAGRAM', ordem: index + 1 } },
+      update: {},
+      create: { plataforma: 'INSTAGRAM', ordem: index + 1, espectadores, percentual: Math.round(espectadores / storyViews[0] * 100) },
+    })
+  }
+
+  // Heatmap de atividade (Instagram)
+  const heatmapRows = [
+    [10, 18, 40, 62, 48, 55, 80, 72, 30], [12, 22, 55, 70, 60, 58, 88, 90, 42], [8, 16, 48, 64, 52, 60, 82, 78, 35],
+    [14, 20, 50, 68, 55, 62, 86, 85, 40], [10, 18, 42, 60, 50, 52, 72, 68, 28], [6, 10, 22, 40, 38, 50, 65, 60, 45], [4, 8, 18, 32, 30, 44, 58, 54, 38],
+  ]
+  const heatmapHours = [6, 8, 10, 12, 14, 16, 18, 20, 22]
+  for (const [diaSemana, row] of heatmapRows.entries()) {
+    for (const [column, intensidade] of row.entries()) {
+      await prisma.activityHeatmapCell.upsert({
+        where: { plataforma_diaSemana_faixaHora: { plataforma: 'INSTAGRAM', diaSemana, faixaHora: heatmapHours[column] } },
+        update: {},
+        create: { plataforma: 'INSTAGRAM', diaSemana, faixaHora: heatmapHours[column], intensidade },
+      })
+    }
+  }
+
+  // Demografia de audiência (LinkedIn)
+  const audienceSeed = {
+    CARGO: [{ label: 'Marketing & Comunicação', value: 28 }, { label: 'Engenharia & Tecnologia', value: 22 }, { label: 'Vendas & Negócios', value: 18 }, { label: 'Liderança (C-Level, VP)', value: 12 }, { label: 'RH & Gestão de Pessoas', value: 8 }, { label: 'Financeiro', value: 7 }, { label: 'Outros', value: 5 }],
+    SENIORIDADE: [{ label: 'Pleno', value: 31 }, { label: 'Sênior', value: 27 }, { label: 'Gerência', value: 19 }, { label: 'Diretoria', value: 12 }, { label: 'C-Level', value: 7 }, { label: 'Júnior', value: 4 }],
+    SETOR: [{ label: 'Tecnologia', value: 32 }, { label: 'Serviços profissionais', value: 23 }, { label: 'Educação', value: 16 }, { label: 'Varejo', value: 12 }, { label: 'Indústria', value: 10 }, { label: 'Outros', value: 7 }],
+    LOCALIZACAO: [{ label: 'São Paulo', value: 38 }, { label: 'Recife', value: 19 }, { label: 'Rio de Janeiro', value: 16 }, { label: 'Belo Horizonte', value: 11 }, { label: 'Curitiba', value: 9 }, { label: 'Outros', value: 7 }],
+  } as const
+  for (const [tab, segments] of Object.entries(audienceSeed)) {
+    for (const [ordem, segment] of segments.entries()) {
+      await prisma.audienceSegment.upsert({
+        where: { tab_label: { tab: tab as 'CARGO' | 'SENIORIDADE' | 'SETOR' | 'LOCALIZACAO', label: segment.label } },
+        update: {},
+        create: { tab: tab as 'CARGO' | 'SENIORIDADE' | 'SETOR' | 'LOCALIZACAO', label: segment.label, value: segment.value, ordem },
+      })
+    }
+  }
+
   // Campanhas de exemplo. dailyEntries armazena o incremento de cada dia (não o acumulado) porque
   // alcanceAtual/interacoesAtual são calculados no backend como soma de todas as métricas diárias.
   const campaignsSeed = [

@@ -6,7 +6,9 @@ export const config = z.object({
   JWT_SECRET: z.string().min(32),
   JWT_EXPIRES_IN: z.string().default('8h'),
   PORT: z.coerce.number().int().positive().default(3001),
-  CORS_ORIGIN: z.string().default('http://localhost:8443'),
+  // Aceita as duas portas de dev por padrão: 8443 é o fallback do próprio Vite quando PORT não é definido
+  // (vite.config.ts), 5174 é a porta usada no fluxo de desenvolvimento documentado deste projeto.
+  CORS_ORIGIN: z.string().default('http://localhost:8443,http://localhost:5174'),
   GMAIL_CLIENT_ID: z.string().optional(),
   GMAIL_CLIENT_SECRET: z.string().optional(),
   GMAIL_REFRESH_TOKEN: z.string().optional(),

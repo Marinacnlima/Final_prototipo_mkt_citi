@@ -432,6 +432,24 @@ model ChannelGlobalMetrics {
   updatedAt              DateTime   @updatedAt
 }
 
+enum AudienceTab {
+  CARGO
+  SENIORIDADE
+  SETOR
+  LOCALIZACAO
+}
+
+model AudienceSegment {
+  id    String      @id @default(uuid())
+  tab   AudienceTab
+  label String
+  value Int         @default(0)
+  ordem Int         @default(0)
+
+  @@unique([tab, label])
+  @@index([tab, ordem])
+}
+
 model MqlDefinition {
   id             String          @id @default(uuid())
   scoreMinimo    Int             @default(65)
