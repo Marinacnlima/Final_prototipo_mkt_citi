@@ -42,6 +42,7 @@ function NumericInput({ value, onChange, className, style, ...rest }: {
         if (!Number.isNaN(parsed)) onChange(parsed)
       }}
       onBlur={(e) => { if (draft === '' || Number.isNaN(Number(draft))) setDraft(String(value)); rest.onBlur?.(e) }}
+      onWheel={(e) => { e.currentTarget.blur(); rest.onWheel?.(e) }}
     />
   )
 }
