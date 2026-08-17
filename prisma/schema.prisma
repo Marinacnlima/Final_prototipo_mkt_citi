@@ -429,6 +429,7 @@ model ChannelGlobalMetrics {
   reachOverride          Int        @default(0)
   impressionsOverride    Int        @default(0)
   engagementRateOverride Float      @default(0)
+  audienceData           Json?
   updatedAt              DateTime   @updatedAt
 }
 

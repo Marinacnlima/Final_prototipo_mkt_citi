@@ -1076,10 +1076,11 @@ function CampaignsView({ channel, setChannel }: { channel: Channel; setChannel: 
   const [showForm, setShowForm] = useState(false)
   const [expandedMetrics, setExpandedMetrics] = useState<Record<string, boolean>>({})
   const [metricForms, setMetricForms] = useState<Record<string, { date: string; reach: string; interactions: string }>>({})
+  const [campaignError, setCampaignError] = useState('')
   const [form, setForm] = useState({ name: '', objective: '', audience: '', startDate: '', endDate: '', targetReach: '', targetInteractions: '', channels: [] as ChannelType[] })
 
   function reload() {
-    api.campaigns.list().then((rows) => setCampaigns(rows.map(mapCampaign))).catch(console.error)
+    api.campaigns.list().then((rows) => { setCampaigns(rows.map(mapCampaign)); setCampaignError('') }).catch((cause) => { console.error(cause); setCampaignError('Não foi possível carregar as campanhas.') })
   }
   useEffect(() => { reload() }, [])
 
@@ -1091,39 +1092,51 @@ function CampaignsView({ channel, setChannel }: { channel: Channel; setChannel: 
 
   async function submitCampaign() {
     if (!form.name.trim()) return
-    const created = await api.campaigns.create({
-      nome: form.name,
-      status: 'PLANEJADA',
-      objetivo: form.objective.trim() || form.name,
-      publico: form.audience.trim() || 'Não definido',
-      dataInicio: form.startDate || new Date().toISOString().slice(0, 10),
-      dataFim: form.endDate || new Date().toISOString().slice(0, 10),
-      alcanceMeta: parseInt(form.targetReach) || 10000,
-      interacoesMeta: parseInt(form.targetInteractions) || 500,
-      canais: (form.channels.length ? form.channels : (['instagram'] as ChannelType[])).map((ch) => CHANNEL_TO_API[ch]),
-    }).catch((cause) => { console.error(cause); return null })
-    if (!created) return
-    setCampaigns((prev) => [...prev, mapCampaign(created)])
-    setShowForm(false)
-    setForm({ name: '', objective: '', audience: '', startDate: '', endDate: '', targetReach: '', targetInteractions: '', channels: [] })
+    try {
+      const created = await api.campaigns.create({
+        nome: form.name,
+        status: 'PLANEJADA',
+        objetivo: form.objective.trim() || form.name,
+        publico: form.audience.trim() || 'Não definido',
+        dataInicio: form.startDate || new Date().toISOString().slice(0, 10),
+        dataFim: form.endDate || new Date().toISOString().slice(0, 10),
+        alcanceMeta: parseInt(form.targetReach) || 10000,
+        interacoesMeta: parseInt(form.targetInteractions) || 500,
+        canais: (form.channels.length ? form.channels : (['instagram'] as ChannelType[])).map((ch) => CHANNEL_TO_API[ch]),
+      })
+      setCampaigns((prev) => [...prev, mapCampaign(created)])
+      setCampaignError('')
+      setShowForm(false)
+      setForm({ name: '', objective: '', audience: '', startDate: '', endDate: '', targetReach: '', targetInteractions: '', channels: [] })
+    } catch (cause) {
+      console.error(cause)
+      setCampaignError('Não foi possível criar a campanha. Revise os dados e tente novamente.')
+    }
   }
 
   async function deleteCampaign(id: string) {
     setCampaigns((prev) => prev.filter((c) => c.id !== id))
-    await api.campaigns.remove(id).catch((cause) => { console.error(cause); reload() })
+    try { await api.campaigns.remove(id); setCampaignError('') }
+    catch (cause) { console.error(cause); setCampaignError('Não foi possível excluir a campanha.'); reload() }
   }
 
   async function addMetricEntry(campId: string) {
     const mf = metricForms[campId]
     if (!mf?.date) return
-    await api.campaigns.addMetric(campId, { data: mf.date, alcance: parseInt(mf.reach) || 0, interacoes: parseInt(mf.interactions) || 0 }).catch(console.error)
-    setMetricForms((prev) => ({ ...prev, [campId]: { date: '', reach: '', interactions: '' } }))
-    reload()
+    try {
+      await api.campaigns.addMetric(campId, { data: mf.date, alcance: parseInt(mf.reach) || 0, interacoes: parseInt(mf.interactions) || 0 })
+      setMetricForms((prev) => ({ ...prev, [campId]: { date: '', reach: '', interactions: '' } }))
+      setCampaignError('')
+      reload()
+    } catch (cause) {
+      console.error(cause)
+      setCampaignError('Não foi possível registrar a métrica. Os valores preenchidos foram preservados.')
+    }
   }
 
   async function deleteMetricEntry(campId: string, metricId: string) {
-    await api.campaigns.removeMetric(campId, metricId).catch(console.error)
-    reload()
+    try { await api.campaigns.removeMetric(campId, metricId); setCampaignError(''); reload() }
+    catch (cause) { console.error(cause); setCampaignError('Não foi possível excluir a métrica.') }
   }
 
   return (
@@ -1142,6 +1155,8 @@ function CampaignsView({ channel, setChannel }: { channel: Channel; setChannel: 
             <Plus size={16} /> Nova Campanha
           </button>
         </div>
+
+        {campaignError && <div role="alert" className="mb-4 rounded-xl border border-[rgba(255,82,82,.35)] bg-[rgba(255,82,82,.1)] px-4 py-3 text-sm text-[#FF8A8A]">{campaignError}</div>}
 
         {showForm && (
           <div className="bg-[#17171A] rounded-2xl p-6 mb-5" style={{ border: '1.5px solid rgba(255,255,255,0.1)', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
