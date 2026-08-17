@@ -1311,6 +1311,70 @@ type NoteCategory = 'feedbacks' | 'alertas' | 'outros'
 interface MemberNotes { feedbacks: string; alertas: string; outros: string }
 type EngagementRow = (typeof engagementData)[number] & { role: string; initials: string; color: string }
 
+function StarDisplay({ val, color }: { val: number; color: string }) {
+  const full = Math.floor(val)
+  const frac = val - full
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((s) => (
+        <svg key={s} width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M6 1l1.2 3.6H11L8.2 6.9l1 3.1L6 8.4 2.8 10l1-3.1L1 4.6h3.8z"
+            fill={s <= full ? color : s === full + 1 && frac >= 0.5 ? color : 'rgba(255,255,255,0.1)'}
+            opacity={s === full + 1 && frac > 0 && frac < 0.5 ? 0.4 : 1} />
+        </svg>
+      ))}
+    </div>
+  )
+}
+
+// Componente de nível de módulo (não aninhado em EngagementView): se fosse recriado a cada render,
+// o React trocaria a identidade do componente a cada tecla digitada e o <input> perderia o foco no meio
+// da digitação.
+function StarScore({ editMode, isQuality, val, autoVal, color, draftValue, onChange, onBlur }: {
+  editMode: boolean
+  isQuality: boolean
+  val: number
+  autoVal: number | null
+  color: string
+  draftValue: string
+  onChange: (raw: string) => void
+  onBlur: () => void
+}) {
+  if (editMode && isQuality) {
+    return (
+      <div className="flex flex-col gap-0.5">
+        <div className="flex items-center gap-1.5"><StarDisplay val={val} color={color} /><span className="text-xs text-[#8A8A9A]">{val.toFixed(1)}</span></div>
+        <span className="text-xs text-[#00C853]">calculada pelas notas das tasks</span>
+      </div>
+    )
+  }
+
+  if (editMode) {
+    return (
+      <div className="flex items-center gap-1.5">
+        <input type="number" min={0} max={5} step={0.1} value={draftValue}
+          onChange={(e) => onChange(e.target.value)}
+          onBlur={onBlur}
+          onFocus={(e) => e.target.select()}
+          className="w-16 text-xs px-2 py-1 rounded border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#7D1AD7] text-center" />
+        <span className="text-xs text-[#555566]">/ 5</span>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      <div className="flex items-center gap-1.5">
+        <StarDisplay val={val} color={color} />
+        <span className="text-xs" style={{ color: '#8A8A9A' }}>{val.toFixed(1)}</span>
+      </div>
+      {isQuality && autoVal !== null && (
+        <div className="text-xs"><span className="text-[#00C853]">auto</span></div>
+      )}
+    </div>
+  )
+}
+
 function EngagementView({ columns }: { columns: KanbanColumn[] }) {
   const period = new Date().toISOString().slice(0, 7)
   const [data, setData] = useState<EngagementRow[]>([])
@@ -1336,7 +1400,22 @@ function EngagementView({ columns }: { columns: KanbanColumn[] }) {
 
   async function toggleEditMode() {
     if (editMode) {
-      await Promise.all(data.map((row) => api.engagement.update(row.memberId, period, { compromisso: row.punctuality, presenca: row.presence, observacoes: JSON.stringify(notes[String(row.memberId)] ?? {}) })))
+      // Um campo deixado vazio (rascunho pendente sem valor válido) conta como 0 ao salvar, em vez de
+      // reverter para o valor anterior — o rascunho nunca chegou a ser comprometido em `data`.
+      const draftAsZero = (memberId: number | string, field: 'punctuality' | 'presence', committed: number) => {
+        const key = scoreDraftKey(memberId, field)
+        if (!(key in scoreDrafts)) return committed
+        const raw = scoreDrafts[key]
+        return raw === '' || raw === '-' || Number.isNaN(parseFloat(raw)) ? 0 : committed
+      }
+      const resolved = data.map((row) => ({
+        ...row,
+        punctuality: draftAsZero(row.memberId, 'punctuality', row.punctuality),
+        presence: draftAsZero(row.memberId, 'presence', row.presence),
+      }))
+      setData(resolved)
+      setScoreDrafts({})
+      await Promise.all(resolved.map((row) => api.engagement.update(row.memberId, period, { compromisso: row.punctuality, presenca: row.presence, observacoes: JSON.stringify(notes[String(row.memberId)] ?? {}) })))
       await loadEngagement()
     }
     setEditMode((value) => !value)
@@ -1382,70 +1461,6 @@ function EngagementView({ columns }: { columns: KanbanColumn[] }) {
   function updateNote(memberId: number | string, cat: NoteCategory, value: string) {
     const key = String(memberId)
     setNotes((prev) => ({ ...prev, [key]: { ...(prev[key] ?? { feedbacks: '', alertas: '', outros: '' }), [cat]: value } }))
-  }
-
-  function StarDisplay({ val, color }: { val: number; color: string }) {
-    const full = Math.floor(val)
-    const frac = val - full
-    return (
-      <div className="flex items-center gap-0.5">
-        {[1, 2, 3, 4, 5].map((s) => (
-          <svg key={s} width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path d="M6 1l1.2 3.6H11L8.2 6.9l1 3.1L6 8.4 2.8 10l1-3.1L1 4.6h3.8z"
-              fill={s <= full ? color : s === full + 1 && frac >= 0.5 ? color : 'rgba(255,255,255,0.1)'}
-              opacity={s === full + 1 && frac > 0 && frac < 0.5 ? 0.4 : 1} />
-          </svg>
-        ))}
-      </div>
-    )
-  }
-
-  function StarScore({ memberId, field, color }: { memberId: number | string; field: 'punctuality' | 'quality' | 'presence'; color: string }) {
-    const row = data.find((r) => r.memberId === memberId)!
-    const isQuality = field === 'quality'
-    const val = isQuality ? effectiveQuality(memberId) : row[field]
-    const autoVal = isQuality ? calcQuality(memberId) : null
-    const isOverridden = false
-
-    if (editMode && isQuality) {
-      return (
-        <div className="flex flex-col gap-0.5">
-          <div className="flex items-center gap-1.5"><StarDisplay val={val} color={color} /><span className="text-xs text-[#8A8A9A]">{val.toFixed(1)}</span></div>
-          <span className="text-xs text-[#00C853]">calculada pelas notas das tasks</span>
-        </div>
-      )
-    }
-
-    if (editMode) {
-      return (
-        <div className="flex items-center gap-1.5">
-          <input type="number" min={0} max={5} step={0.1} value={scoreDraftValue(memberId, field, val)}
-            onChange={(e) => onScoreChange(memberId, field, e.target.value)}
-            onBlur={() => onScoreBlur(memberId, field)}
-            onFocus={(e) => e.target.select()}
-            className="w-16 text-xs px-2 py-1 rounded border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#7D1AD7] text-center" />
-          <span className="text-xs text-[#555566]">/ 5</span>
-        </div>
-      )
-    }
-
-    return (
-      <div className="flex flex-col gap-0.5">
-        <div className="flex items-center gap-1.5">
-          <StarDisplay val={val} color={color} />
-          <span className="text-xs" style={{ color: '#8A8A9A' }}>{val.toFixed(1)}</span>
-        </div>
-        {isQuality && (
-          <div className="text-xs">
-            {isOverridden ? (
-              <span className="text-[#FFB300]">manual</span>
-            ) : autoVal !== null ? (
-              <span className="text-[#00C853]">auto</span>
-            ) : null}
-          </div>
-        )}
-      </div>
-    )
   }
 
   const avgCommitment = (data.length ? data.reduce((a, r) => a + r.punctuality, 0) / data.length : 0).toFixed(1)
@@ -1515,15 +1530,22 @@ function EngagementView({ columns }: { columns: KanbanColumn[] }) {
                     <div className="flex items-center gap-6 flex-1">
                       <div className="min-w-0">
                         <div className="text-xs text-[#555566] mb-1">Compromisso</div>
-                        <StarScore memberId={row.memberId} field="punctuality" color="#7D1AD7" />
+                        <StarScore editMode={editMode} isQuality={false} val={row.punctuality} autoVal={null} color="#7D1AD7"
+                          draftValue={scoreDraftValue(row.memberId, 'punctuality', row.punctuality)}
+                          onChange={(raw) => onScoreChange(row.memberId, 'punctuality', raw)}
+                          onBlur={() => onScoreBlur(row.memberId, 'punctuality')} />
                       </div>
                       <div className="min-w-0">
                         <div className="text-xs text-[#555566] mb-1">Qualidade</div>
-                        <StarScore memberId={row.memberId} field="quality" color="#00C853" />
+                        <StarScore editMode={editMode} isQuality={true} val={effectiveQuality(row.memberId)} autoVal={calcQuality(row.memberId)} color="#00C853"
+                          draftValue="" onChange={() => undefined} onBlur={() => undefined} />
                       </div>
                       <div className="min-w-0">
                         <div className="text-xs text-[#555566] mb-1">Presença</div>
-                        <StarScore memberId={row.memberId} field="presence" color="#FFB300" />
+                        <StarScore editMode={editMode} isQuality={false} val={row.presence} autoVal={null} color="#FFB300"
+                          draftValue={scoreDraftValue(row.memberId, 'presence', row.presence)}
+                          onChange={(raw) => onScoreChange(row.memberId, 'presence', raw)}
+                          onBlur={() => onScoreBlur(row.memberId, 'presence')} />
                       </div>
                     </div>
 

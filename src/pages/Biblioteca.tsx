@@ -924,7 +924,7 @@ function PromptsView() {
     setPrompts((prev) => {
       const idx = prev.findIndex((x) => x.id === saved.id)
       if (idx >= 0) return prev.map((x, i) => i === idx ? saved : x)
-      return [...prev, saved]
+      return [saved, ...prev]
     })
   }
 
