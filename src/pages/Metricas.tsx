@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import {
   BarChart2, TrendingUp, Users, Globe,
   Plus, X, Edit2, Check, Info, ArrowUp, ArrowDown, Trash2, Eye, AlertTriangle,
@@ -385,7 +385,8 @@ function DashboardFigma({ posts, metrics, channel, setChannel, globalMetrics, se
         const [dashboard, globalRow] = await Promise.all([api.metrics.dashboard(activeChannel.toUpperCase()), api.metrics.global(activeChannel.toUpperCase())])
         if (!active) return
         setDashboardMeta(dashboard)
-        setGlobalMetrics((current) => ({ ...current, [activeChannel]: { ...current[activeChannel], ...globalRow, ...(dashboard.alcanceSeguidores ? { followerReachShare: dashboard.alcanceSeguidores.seguidores } : {}) } }))
+        setGlobalMetrics((current) => ({ ...current, [activeChannel]: { ...current[activeChannel], ...globalRow, ...(dashboard.alcanceSeguidores && activeChannel === 'instagram' ? { followerReachShare: dashboard.alcanceSeguidores.seguidores } : {}) } }))
+        if (dashboard.alcanceSeguidores && activeChannel === 'linkedin') setOrganicShare(dashboard.alcanceSeguidores.seguidores)
         if (activeChannel === 'instagram') {
           if (dashboard.formatos?.length) setInstagramFormats(dashboard.formatos.map((row: any) => ({ format: DASHBOARD_FORMAT_LABELS[row.formato] ?? row.formato, reach: row.alcanceMedio, engagement: row.taxaEngajamento, saves: row.saves ?? 0, shares: row.compartilhamentos ?? 0 })))
           if (dashboard.funilStories?.length) setStoryViews(dashboard.funilStories.map((row: any) => row.espectadores))
@@ -481,12 +482,38 @@ function DashboardFigma({ posts, metrics, channel, setChannel, globalMetrics, se
         alcanceSeguidores: { seguidores: global.followerReachShare, naoSeguidores: 100 - global.followerReachShare },
         funilStories: storyViews.map((espectadores, index) => ({ ordem: index + 1, espectadores, percentual: Math.round(espectadores / Math.max(1, storyViews[0]) * 100) })),
         heatmap: activityHeatmap.flatMap((row, diaSemana) => row.map((intensidade, column) => ({ diaSemana, faixaHora: [6, 8, 10, 12, 14, 16, 18, 20, 22][column], intensidade }))),
-      } : {}
+      } : {
+        alcanceSeguidores: { seguidores: organicShare, naoSeguidores: 100 - organicShare },
+      }
       await api.metrics.saveDashboard(activeChannel.toUpperCase(), { kpis: kpisPayload, formatos: formatosPayload, ...sharedPayload })
       setDashboardMeta(await api.metrics.dashboard(activeChannel.toUpperCase()))
       await persistGlobal(activeChannel, global)
     } catch (error) { console.error(error) }
   }
+
+  // Autosave: além de persistir ao clicar em "Concluir edição", salva sozinho (com um pequeno debounce)
+  // a cada alteração feita em modo de edição, e faz flush imediato ao trocar de canal ou sair da tela —
+  // assim nada se perde se o usuário trocar de conta/aba sem clicar explicitamente em "Concluir edição".
+  // autosaveFn só é atualizado enquanto o usuário edita (efeito abaixo), nunca por um render de troca de
+  // canal isolado — assim o flush do efeito de troca de canal sempre usa o contexto do canal que estava
+  // sendo editado, não o novo.
+  const autosaveDirty = useRef(false)
+  const autosaveFn = useRef(finishEditing)
+  useEffect(() => {
+    if (!editMode) return
+    autosaveFn.current = finishEditing
+    autosaveDirty.current = true
+    const timer = window.setTimeout(() => { autosaveDirty.current = false; void autosaveFn.current() }, 700)
+    return () => window.clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editMode, activityHeatmap, storyViews, instagramFormats, linkedinFormats, organicShare, globalMetrics])
+  useEffect(() => {
+    return () => {
+      if (autosaveDirty.current) { autosaveDirty.current = false; void autosaveFn.current() }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeChannel])
+
   const formatLabel: Record<Post['format'], string> = { reel: 'Reels', carousel: 'Carrossel', static: 'Post estático', story: 'Stories', document: 'PDF / Documento', video: 'Vídeo', article: 'Artigo', poll: 'Enquete' }
   const formatRows = Object.entries(filteredPosts.reduce<Record<string, Post[]>>((acc, post) => {
     ;(acc[post.format] ||= []).push(post)
