@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import {
   BookOpen, FileText, MessageSquare, Download, Star, Copy, Check,
-  ChevronLeft, ChevronRight, ChevronDown, Hash, Eye, Plus, Edit2, Trash2, X, Search, Link as LinkIcon,
+  ChevronLeft, ChevronRight, Hash, Eye, Plus, Edit2, Trash2, X, Search, Link as LinkIcon,
 } from 'lucide-react'
 import type { Channel } from '../App'
 import type { ChannelType, Prompt, Material, Post, PostMedia } from '../data'
@@ -311,15 +311,18 @@ function PostChannelDropdown({ value, onChange }: { value: PostChannelOption; on
   const opts: { id: PostChannelOption; label: string }[] = [
     { id: 'todos', label: 'Todos' }, { id: 'instagram', label: 'Instagram' }, { id: 'linkedin', label: 'LinkedIn' },
   ]
-  const active = value !== 'todos' ? CH[value] : null
   return (
-    <div className="relative inline-flex items-center">
-      <select value={value} onChange={(e) => onChange(e.target.value as PostChannelOption)}
-        className="appearance-none text-xs font-medium pl-3 pr-7 py-1.5 rounded-full cursor-pointer focus:outline-none"
-        style={{ background: active ? active.dot : '#7D1AD7', color: '#fff', border: 'none' }}>
-        {opts.map((o) => <option key={o.id} value={o.id} style={{ background: '#17171A', color: '#F0F0F5' }}>{o.label}</option>)}
-      </select>
-      <ChevronDown size={13} className="pointer-events-none absolute right-2 text-white" />
+    <div className="inline-flex items-center gap-1 p-1 rounded-full" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+      {opts.map((o) => {
+        const active = value === o.id
+        const c = o.id !== 'todos' ? CH[o.id as ChannelType] : null
+        return (
+          <button key={o.id} onClick={() => onChange(o.id)} className="text-xs font-semibold px-3.5 py-1.5 rounded-full transition-all"
+            style={active ? { background: c ? c.dot : '#7D1AD7', color: '#fff', boxShadow: `0 0 12px ${c ? c.dot : '#7D1AD7'}55` } : { background: 'transparent', color: '#8A8A9A' }}>
+            {o.label}
+          </button>
+        )
+      })}
     </div>
   )
 }
