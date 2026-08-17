@@ -484,6 +484,7 @@ function DashboardFigma({ posts, metrics, channel, setChannel, globalMetrics, se
       } : {}
       await api.metrics.saveDashboard(activeChannel.toUpperCase(), { kpis: kpisPayload, formatos: formatosPayload, ...sharedPayload })
       setDashboardMeta(await api.metrics.dashboard(activeChannel.toUpperCase()))
+      await persistGlobal(activeChannel, global)
     } catch (error) { console.error(error) }
   }
   const formatLabel: Record<Post['format'], string> = { reel: 'Reels', carousel: 'Carrossel', static: 'Post estático', story: 'Stories', document: 'PDF / Documento', video: 'Vídeo', article: 'Artigo', poll: 'Enquete' }
