@@ -6,7 +6,6 @@ import {
 } from 'lucide-react'
 import type { Channel } from '../App'
 import type { ChannelType, Prompt, Material, Post, PostMedia } from '../data'
-import { promptsData } from '../data'
 import { api } from '../api'
 import BrandMark from '../BrandMark'
 
@@ -790,40 +789,60 @@ function getCatStyle(cat: string) {
   return catStyle[cat] ?? { bg: 'rgba(255,255,255,0.06)', color: '#8A8A9A' }
 }
 
+const PROMPT_CAT_TO_API: Record<string, string> = { Instagram: 'INSTAGRAM', LinkedIn: 'LINKEDIN', Email: 'EMAIL', Carrossel: 'CARROSSEL', Site: 'SITE' }
+const PROMPT_CAT_FROM_API: Record<string, string> = { INSTAGRAM: 'Instagram', LINKEDIN: 'LinkedIn', EMAIL: 'Email', CARROSSEL: 'Carrossel', SITE: 'Site' }
+
+function mapPrompt(row: any): Prompt {
+  return { id: row.id, category: PROMPT_CAT_FROM_API[row.categoria] ?? row.categoria, title: row.titulo, content: row.conteudo, tags: row.tags ?? [], favorited: row.favorito, usageCount: row.usos }
+}
+
 interface PromptFormData {
   category: string; title: string; content: string; tags: string
 }
 
-function PromptModal({ initial, onSave, onClose }: { initial?: Prompt; onSave: (p: Prompt) => void; onClose: () => void }) {
+interface PromptDraft {
+  id?: string; category: string; title: string; content: string; tags: string[]
+}
+
+function PromptModal({ initial, onSave, onClose }: { initial?: Prompt; onSave: (p: PromptDraft) => Promise<void>; onClose: () => void }) {
   const [form, setForm] = useState<PromptFormData>({
     category: initial?.category ?? 'Instagram',
     title: initial?.title ?? '',
     content: initial?.content ?? '',
     tags: initial?.tags.join(', ') ?? '',
   })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
 
   const cats = ['Instagram', 'LinkedIn', 'Email', 'Carrossel', 'Site']
 
-  function save() {
+  async function save() {
     if (!form.title.trim()) return
-    onSave({
-      id: initial?.id ?? Date.now(),
-      category: form.category, title: form.title, content: form.content,
-      tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
-      favorited: initial?.favorited ?? false,
-      usageCount: initial?.usageCount ?? 0,
-    })
-    onClose()
+    setSaving(true); setError('')
+    try {
+      await onSave({
+        id: initial?.id,
+        category: form.category, title: form.title, content: form.content,
+        tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
+      })
+      onClose()
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Não foi possível salvar o prompt.')
+      setSaving(false)
+    }
   }
 
   return (
     <Modal title={initial ? 'Editar prompt' : 'Novo prompt'} onClose={onClose} wide footer={
-      <div className="px-6 py-4 flex gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-        <button onClick={save} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90 btn-glow"
-          style={{ background: 'linear-gradient(135deg, #7D1AD7, #50E678)' }}>
-          {initial ? 'Salvar alterações' : 'Criar prompt'}
-        </button>
-        <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-medium text-[#8A8A9A] hover:bg-[rgba(255,255,255,0.08)]">Cancelar</button>
+      <div className="px-6 py-4 flex flex-col gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        {error && <p className="text-xs text-[#FF5252] rounded-lg px-3 py-2" style={{ background: 'rgba(255,82,82,0.15)' }}>{error}</p>}
+        <div className="flex gap-3">
+          <button onClick={save} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-medium text-white hover:opacity-90 btn-glow disabled:opacity-50"
+            style={{ background: 'linear-gradient(135deg, #7D1AD7, #50E678)' }}>
+            {saving ? 'Salvando…' : initial ? 'Salvar alterações' : 'Criar prompt'}
+          </button>
+          <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-medium text-[#8A8A9A] hover:bg-[rgba(255,255,255,0.08)]">Cancelar</button>
+        </div>
       </div>
     }>
       <div className="px-6 py-4 space-y-4">
@@ -858,14 +877,18 @@ function PromptModal({ initial, onSave, onClose }: { initial?: Prompt; onSave: (
 }
 
 function PromptsView() {
-  const [prompts, setPrompts] = useState<Prompt[]>(promptsData)
+  const [prompts, setPrompts] = useState<Prompt[]>([])
   const [catFilter, setCatFilter] = useState('Todos')
   const [search, setSearch] = useState('')
   const [onlyFav, setOnlyFav] = useState(false)
-  const [expanded, setExpanded] = useState<Record<number, boolean>>({})
-  const [copied, setCopied] = useState<number | null>(null)
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({})
+  const [copied, setCopied] = useState<string | null>(null)
   const [modal, setModal] = useState<{ prompt?: Prompt } | null>(null)
-  const [deleteId, setDeleteId] = useState<number | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+
+  useEffect(() => {
+    api.prompts.list().then((rows) => setPrompts(rows.map(mapPrompt))).catch(console.error)
+  }, [])
 
   const categories = useMemo(() => ['Todos', ...Array.from(new Set(prompts.map((p) => p.category)))], [prompts])
 
@@ -876,26 +899,41 @@ function PromptsView() {
     return true
   }), [prompts, catFilter, onlyFav, search])
 
-  function toggleFav(id: number) {
+  async function toggleFav(id: string) {
+    const current = prompts.find((p) => p.id === id)
+    if (!current) return
     setPrompts((prev) => prev.map((p) => p.id === id ? { ...p, favorited: !p.favorited } : p))
+    try {
+      const res = await api.prompts.favorite(id, !current.favorited)
+      setPrompts((prev) => prev.map((p) => p.id === id ? { ...p, favorited: res.favorito } : p))
+    } catch (cause) { console.error(cause); setPrompts((prev) => prev.map((p) => p.id === id ? { ...p, favorited: current.favorited } : p)) }
   }
 
-  function copyPrompt(id: number, content: string) {
+  async function copyPrompt(id: string, content: string) {
     navigator.clipboard.writeText(content).catch(() => {})
     setCopied(id); setTimeout(() => setCopied(null), 2000)
+    try {
+      const res = await api.prompts.copy(id)
+      setPrompts((prev) => prev.map((p) => p.id === id ? { ...p, usageCount: res.usos } : p))
+    } catch (cause) { console.error(cause) }
   }
 
-  function savePrompt(p: Prompt) {
+  async function savePrompt(p: PromptDraft) {
+    const payload = { titulo: p.title, categoria: PROMPT_CAT_TO_API[p.category] ?? 'INSTAGRAM', conteudo: p.content, tags: p.tags }
+    const saved = mapPrompt(p.id ? await api.prompts.update(p.id, payload) : await api.prompts.create(payload))
     setPrompts((prev) => {
-      const idx = prev.findIndex((x) => x.id === p.id)
-      if (idx >= 0) return prev.map((x, i) => i === idx ? p : x)
-      return [...prev, p]
+      const idx = prev.findIndex((x) => x.id === saved.id)
+      if (idx >= 0) return prev.map((x, i) => i === idx ? saved : x)
+      return [...prev, saved]
     })
   }
 
-  function deletePrompt(id: number) {
-    setPrompts((prev) => prev.filter((p) => p.id !== id))
+  async function deletePrompt(id: string) {
     setDeleteId(null)
+    try {
+      await api.prompts.remove(id)
+      setPrompts((prev) => prev.filter((p) => p.id !== id))
+    } catch (cause) { console.error(cause) }
   }
 
   return (

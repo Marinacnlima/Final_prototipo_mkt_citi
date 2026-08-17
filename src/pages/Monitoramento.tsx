@@ -8,8 +8,8 @@ import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine,
 } from 'recharts'
 import type { Profile, Channel } from '../App'
-import type { KanbanColumn, Task, TaskAssignee, ChannelType, Campaign, CalendarEvent, CampaignMetricEntry } from '../data'
-import { campaignsData, engagementData, type Difficulty } from '../data'
+import type { KanbanColumn, Task, TaskAssignee, ChannelType, Campaign, CampaignStatus, CalendarEvent, CampaignMetricEntry } from '../data'
+import { engagementData, type Difficulty } from '../data'
 import { api } from '../api'
 import BrandMark from '../BrandMark'
 
@@ -40,6 +40,25 @@ function mapTask(task: any): Task {
 
 function mapColumn(column: any): KanbanColumn {
   return { id: column.id, name: column.nome, tasks: (column.tasks ?? []).map(mapTask) }
+}
+
+function mapCampaign(row: any): Campaign {
+  return {
+    id: row.id,
+    name: row.nome,
+    channels: (row.canais ?? []).map((c: string) => CHANNEL_FROM_API[c]),
+    objective: row.objetivo,
+    audience: row.publico,
+    startDate: String(row.dataInicio).slice(0, 10),
+    endDate: String(row.dataFim).slice(0, 10),
+    reach: row.alcanceAtual,
+    targetReach: row.alcanceMeta,
+    interactions: row.interacoesAtual,
+    targetInteractions: row.interacoesMeta,
+    status: row.status.toLowerCase() as CampaignStatus,
+    daysRunning: row.diasNoAr,
+    dailyEntries: (row.metricasDiarias ?? []).map((m: any) => ({ id: m.id, date: String(m.data).slice(0, 10), reach: m.alcance, interactions: m.interacoes })),
+  }
 }
 
 function timeRange(ev: CalendarEvent): string {
@@ -1053,11 +1072,16 @@ const statusStyle = {
 }
 
 function CampaignsView({ channel, setChannel }: { channel: Channel; setChannel: (c: Channel) => void }) {
-  const [campaigns, setCampaigns] = useState<Campaign[]>(campaignsData)
+  const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [showForm, setShowForm] = useState(false)
-  const [expandedMetrics, setExpandedMetrics] = useState<Record<number, boolean>>({})
-  const [metricForms, setMetricForms] = useState<Record<number, { date: string; reach: string; interactions: string }>>({})
+  const [expandedMetrics, setExpandedMetrics] = useState<Record<string, boolean>>({})
+  const [metricForms, setMetricForms] = useState<Record<string, { date: string; reach: string; interactions: string }>>({})
   const [form, setForm] = useState({ name: '', objective: '', audience: '', startDate: '', endDate: '', targetReach: '', targetInteractions: '', channels: [] as ChannelType[] })
+
+  function reload() {
+    api.campaigns.list().then((rows) => setCampaigns(rows.map(mapCampaign))).catch(console.error)
+  }
+  useEffect(() => { reload() }, [])
 
   const filtered = channel === 'todos' ? campaigns : campaigns.filter((c) => c.channels.includes(channel as ChannelType))
 
@@ -1065,44 +1089,41 @@ function CampaignsView({ channel, setChannel }: { channel: Channel; setChannel: 
     setForm((f) => ({ ...f, channels: f.channels.includes(ch) ? f.channels.filter((c) => c !== ch) : [...f.channels, ch] }))
   }
 
-  function submitCampaign() {
+  async function submitCampaign() {
     if (!form.name.trim()) return
-    const nc: Campaign = {
-      id: Date.now(), name: form.name, channels: form.channels.length ? form.channels : ['instagram'],
-      objective: form.objective, audience: form.audience, startDate: form.startDate, endDate: form.endDate,
-      reach: 0, targetReach: parseInt(form.targetReach) || 10000,
-      interactions: 0, targetInteractions: parseInt(form.targetInteractions) || 500,
-      status: 'planejada', daysRunning: 0, dailyEntries: [],
-    }
-    setCampaigns((prev) => [...prev, nc])
+    const created = await api.campaigns.create({
+      nome: form.name,
+      status: 'PLANEJADA',
+      objetivo: form.objective.trim() || form.name,
+      publico: form.audience.trim() || 'Não definido',
+      dataInicio: form.startDate || new Date().toISOString().slice(0, 10),
+      dataFim: form.endDate || new Date().toISOString().slice(0, 10),
+      alcanceMeta: parseInt(form.targetReach) || 10000,
+      interacoesMeta: parseInt(form.targetInteractions) || 500,
+      canais: (form.channels.length ? form.channels : (['instagram'] as ChannelType[])).map((ch) => CHANNEL_TO_API[ch]),
+    }).catch((cause) => { console.error(cause); return null })
+    if (!created) return
+    setCampaigns((prev) => [...prev, mapCampaign(created)])
     setShowForm(false)
     setForm({ name: '', objective: '', audience: '', startDate: '', endDate: '', targetReach: '', targetInteractions: '', channels: [] })
   }
 
-  function deleteCampaign(id: number) {
+  async function deleteCampaign(id: string) {
     setCampaigns((prev) => prev.filter((c) => c.id !== id))
+    await api.campaigns.remove(id).catch((cause) => { console.error(cause); reload() })
   }
 
-  function addMetricEntry(campId: number) {
+  async function addMetricEntry(campId: string) {
     const mf = metricForms[campId]
     if (!mf?.date) return
-    const entry: CampaignMetricEntry = { date: mf.date, reach: parseInt(mf.reach) || 0, interactions: parseInt(mf.interactions) || 0 }
-    setCampaigns((prev) => prev.map((c) => {
-      if (c.id !== campId) return c
-      const entries = [...c.dailyEntries, entry].sort((a, b) => a.date.localeCompare(b.date))
-      const lastEntry = entries[entries.length - 1]
-      return { ...c, dailyEntries: entries, reach: lastEntry.reach, interactions: lastEntry.interactions }
-    }))
+    await api.campaigns.addMetric(campId, { data: mf.date, alcance: parseInt(mf.reach) || 0, interacoes: parseInt(mf.interactions) || 0 }).catch(console.error)
     setMetricForms((prev) => ({ ...prev, [campId]: { date: '', reach: '', interactions: '' } }))
+    reload()
   }
 
-  function deleteMetricEntry(campId: number, date: string) {
-    setCampaigns((prev) => prev.map((c) => {
-      if (c.id !== campId) return c
-      const entries = c.dailyEntries.filter((e) => e.date !== date)
-      const lastEntry = entries[entries.length - 1]
-      return { ...c, dailyEntries: entries, reach: lastEntry?.reach ?? 0, interactions: lastEntry?.interactions ?? 0 }
-    }))
+  async function deleteMetricEntry(campId: string, metricId: string) {
+    await api.campaigns.removeMetric(campId, metricId).catch(console.error)
+    reload()
   }
 
   return (
@@ -1262,7 +1283,7 @@ function CampaignsView({ channel, setChannel }: { channel: Channel; setChannel: 
                               <span style={{ color: '#8A8A9A' }}>{entry.date}</span>
                               <span style={{ color: '#7D1AD7' }}>Alcance: {entry.reach.toLocaleString('pt-BR')}</span>
                               <span style={{ color: '#00C853' }}>Interações: {entry.interactions.toLocaleString('pt-BR')}</span>
-                              <button onClick={() => deleteMetricEntry(camp.id, entry.date)} className="opacity-0 group-hover:opacity-100 text-[#FF5252] hover:text-[#FF5252]">
+                              <button onClick={() => entry.id && deleteMetricEntry(camp.id, entry.id)} className="opacity-0 group-hover:opacity-100 text-[#FF5252] hover:text-[#FF5252]">
                                 <Trash2 size={12} />
                               </button>
                             </div>
@@ -1340,6 +1361,24 @@ function EngagementView({ columns }: { columns: KanbanColumn[] }) {
     setData((prev) => prev.map((r) => r.memberId !== memberId ? r : { ...r, [field]: num }))
   }
 
+  // Rascunho de texto separado do valor numérico comprometido: permite apagar o campo inteiro (ficar
+  // vazio) sem que parseFloat('') vire 0 e "prenda" o campo mostrando 0 enquanto o usuário ainda digita.
+  const [scoreDrafts, setScoreDrafts] = useState<Record<string, string>>({})
+  function scoreDraftKey(memberId: number | string, field: string) { return `${memberId}:${field}` }
+  function scoreDraftValue(memberId: number | string, field: string, committed: number) {
+    const key = scoreDraftKey(memberId, field)
+    return key in scoreDrafts ? scoreDrafts[key] : String(committed)
+  }
+  function onScoreChange(memberId: number | string, field: 'punctuality' | 'quality' | 'presence', raw: string) {
+    const key = scoreDraftKey(memberId, field)
+    setScoreDrafts((prev) => ({ ...prev, [key]: raw }))
+    if (raw === '' || raw === '-') return
+    if (!Number.isNaN(parseFloat(raw))) updateScore(memberId, field, raw)
+  }
+  function onScoreBlur(memberId: number | string, field: string) {
+    setScoreDrafts((prev) => { const next = { ...prev }; delete next[scoreDraftKey(memberId, field)]; return next })
+  }
+
   function updateNote(memberId: number | string, cat: NoteCategory, value: string) {
     const key = String(memberId)
     setNotes((prev) => ({ ...prev, [key]: { ...(prev[key] ?? { feedbacks: '', alertas: '', outros: '' }), [cat]: value } }))
@@ -1380,8 +1419,10 @@ function EngagementView({ columns }: { columns: KanbanColumn[] }) {
     if (editMode) {
       return (
         <div className="flex items-center gap-1.5">
-          <input type="number" min={0} max={5} step={0.1} value={val}
-            onChange={(e) => updateScore(memberId, field, e.target.value)}
+          <input type="number" min={0} max={5} step={0.1} value={scoreDraftValue(memberId, field, val)}
+            onChange={(e) => onScoreChange(memberId, field, e.target.value)}
+            onBlur={() => onScoreBlur(memberId, field)}
+            onFocus={(e) => e.target.select()}
             className="w-16 text-xs px-2 py-1 rounded border border-[rgba(255,255,255,0.1)] focus:outline-none focus:border-[#7D1AD7] text-center" />
           <span className="text-xs text-[#555566]">/ 5</span>
         </div>
