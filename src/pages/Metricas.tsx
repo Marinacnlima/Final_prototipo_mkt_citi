@@ -281,10 +281,12 @@ type GlobalMetricsState = Record<'instagram' | 'linkedin', GlobalChannelMetrics>
 function GlobalMetricsModal({ channel, values, onSave, onClose }: {
   channel: 'instagram' | 'linkedin'
   values: GlobalChannelMetrics
-  onSave: (values: GlobalChannelMetrics) => void
+  onSave: (values: GlobalChannelMetrics) => Promise<void>
   onClose: () => void
 }) {
   const [draft, setDraft] = useState(values)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
   const fields: { key: keyof GlobalChannelMetrics; label: string; suffix?: string }[] = [
     { key: 'followersTotal', label: 'Seguidores totais' },
     { key: 'followersGrowth', label: 'Novos seguidores no período' },
@@ -293,17 +295,28 @@ function GlobalMetricsModal({ channel, values, onSave, onClose }: {
     { key: 'roi', label: 'ROI', suffix: '%' },
     { key: 'conversions', label: 'Conversões' },
   ]
+  async function save() {
+    setSaving(true); setError('')
+    try {
+      await onSave(draft)
+      onClose()
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Não foi possível salvar os dados.')
+      setSaving(false)
+    }
+  }
   return <Modal title={`Editar dados globais · ${channel === 'instagram' ? 'Instagram' : 'LinkedIn'}`} onClose={onClose} wide>
     <div className="px-6 py-5">
-      <p className="text-xs text-[#8A8A9A] mb-5">Dados gerais do canal que não pertencem a um post individual.</p>
+      <p className="text-xs text-[#8A8A9A] mb-5">Dados gerais do canal que não pertencem a um post individual. Salvos para todas as contas.</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{fields.map((field) => <label key={field.key} className="text-xs font-medium text-[#8A8A9A]">{field.label}
         <div className="relative mt-1"><NumericInput min={0} step={field.key === 'roi' ? '.1' : '1'} value={draft[field.key]}
           onChange={(n) => setDraft((current) => ({ ...current, [field.key]: n }))}
           className="w-full text-sm px-3 py-2.5 rounded-xl border border-[rgba(255,255,255,.1)] focus:outline-none focus:border-[#507AE6]" />
           {field.suffix && <span className="absolute right-3 top-2.5 text-xs text-[#777]">{field.suffix}</span>}</div>
       </label>)}</div>
+      {error && <p className="text-xs text-[#FF5252] rounded-lg px-3 py-2 mt-4" style={{ background: 'rgba(255,82,82,0.15)' }}>{error}</p>}
     </div>
-    <div className="px-6 py-4 flex gap-3 border-t border-[rgba(255,255,255,.06)]"><button onClick={() => { onSave(draft); onClose() }} className="px-5 py-2 rounded-xl text-sm font-medium text-white" style={{ background: 'linear-gradient(135deg, #7D1AD7, #507AE6, #50E678)' }}>Salvar dados</button><button onClick={onClose} className="px-4 py-2 rounded-xl text-sm text-[#8A8A9A]">Cancelar</button></div>
+    <div className="px-6 py-4 flex gap-3 border-t border-[rgba(255,255,255,.06)]"><button onClick={save} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #7D1AD7, #507AE6, #50E678)' }}>{saving ? 'Salvando…' : 'Salvar dados'}</button><button onClick={onClose} className="px-4 py-2 rounded-xl text-sm text-[#8A8A9A]">Cancelar</button></div>
   </Modal>
 }
 
@@ -368,10 +381,10 @@ function DashboardFigma({ posts, metrics, channel, setChannel, globalMetrics, se
     const load = async () => {
       if (editMode) return
       try {
-        const dashboard = await api.metrics.dashboard(activeChannel.toUpperCase())
+        const [dashboard, globalRow] = await Promise.all([api.metrics.dashboard(activeChannel.toUpperCase()), api.metrics.global(activeChannel.toUpperCase())])
         if (!active) return
         setDashboardMeta(dashboard)
-        if (dashboard.alcanceSeguidores) setGlobalMetrics((current) => ({ ...current, [activeChannel]: { ...current[activeChannel], followerReachShare: dashboard.alcanceSeguidores.seguidores } }))
+        setGlobalMetrics((current) => ({ ...current, [activeChannel]: { ...current[activeChannel], ...globalRow, ...(dashboard.alcanceSeguidores ? { followerReachShare: dashboard.alcanceSeguidores.seguidores } : {}) } }))
         if (activeChannel === 'instagram') {
           if (dashboard.formatos?.length) setInstagramFormats(dashboard.formatos.map((row: any) => ({ format: DASHBOARD_FORMAT_LABELS[row.formato] ?? row.formato, reach: row.alcanceMedio, engagement: row.taxaEngajamento, saves: row.saves ?? 0, shares: row.compartilhamentos ?? 0 })))
           if (dashboard.funilStories?.length) setStoryViews(dashboard.funilStories.map((row: any) => row.espectadores))
@@ -434,8 +447,17 @@ function DashboardFigma({ posts, metrics, channel, setChannel, globalMetrics, se
   const channelCtr = global.profileVisits ? global.channelClicks / global.profileVisits * 100 : 0
   const compact = (value: number) => Intl.NumberFormat('pt-BR', { notation: 'compact', maximumFractionDigits: 1 }).format(value)
 
+  async function persistGlobal(channelKey: 'instagram' | 'linkedin', values: GlobalChannelMetrics) {
+    const saved = await api.metrics.saveGlobal(channelKey.toUpperCase(), {
+      followersTotal: values.followersTotal, followersGrowth: values.followersGrowth, channelClicks: values.channelClicks,
+      profileVisits: values.profileVisits, roi: values.roi, conversions: values.conversions, reachOverride: values.reachOverride,
+      impressionsOverride: values.impressionsOverride, engagementRateOverride: values.engagementRateOverride,
+    })
+    setGlobalMetrics((current) => ({ ...current, [channelKey]: { ...current[channelKey], ...saved } }))
+  }
+
   // Persiste os KPIs e a matriz de formatos ao sair do modo de edição, para que "atualizadoEm" reflita a edição de verdade
-  // e a métrica saia da lista de desatualizadas — os cards e a tabela hoje só vivem em estado local (globalMetrics/instagramFormats/linkedinFormats)
+  // e a métrica saia da lista de desatualizadas — a matriz de formatos (instagramFormats/linkedinFormats) ainda vive em estado local
   async function finishEditing() {
     const kpisPayload = activeChannel === 'instagram'
       ? [
@@ -520,7 +542,7 @@ function DashboardFigma({ posts, metrics, channel, setChannel, globalMetrics, se
       {manualIg.length>0&&<div className="grid gap-3" style={{gridTemplateColumns:`repeat(${manualIg.length}, minmax(0, 1fr))`}}>{manualIg.map((metric)=><div key={metric.id} className="bg-[#17171A] rounded-xl p-4 border" style={{borderColor:isStaleMetric(metric)?'#FF5252':metric.color+'55'}}><p className="text-xs text-[#999]">{metric.name}</p><p className="text-xl font-semibold mt-2" style={{color:metric.color}}>{metric.value.toLocaleString('pt-BR')} <span className="text-xs text-[#777]">{UNIT_LABELS[metric.unit] ?? metric.unit}</span></p></div>)}</div>}
 
       <div><div className="flex items-center gap-2 mb-3"><TrendingUp size={14} className="text-[#6C63FF]"/><h3 className="text-sm font-semibold text-[#F0F0F5]">Heatmap de Atividade</h3><span className="text-[10px] px-2 py-1 rounded-md text-[#8C82FF] bg-[rgba(108,99,255,.12)]">Dias & Horários</span></div><section className="bg-[#17171A] rounded-2xl p-5 border border-[rgba(255,255,255,.1)] overflow-x-auto"><h3 className="text-sm font-semibold text-[#F0F0F5]">Intensidade de Engajamento</h3><p className="text-xs text-[#777] mt-1 mb-4">{editMode?'Clique em qualquer célula para editar o valor (0–100)':'Intensidade por dia da semana e faixa horária'}</p><div className="min-w-[620px]"><div className="grid grid-cols-[28px_repeat(9,1fr)] gap-1 mb-1"><span/>{hours.map(hour=><span key={hour} className="text-[10px] text-[#777] text-center">{hour}</span>)}</div>{activityHeatmap.map((row,r)=><div key={days[r]} className="grid grid-cols-[28px_repeat(9,1fr)] gap-1 mb-1"><span className="text-[10px] text-[#777] self-center">{days[r]}</span>{row.map((value,c)=>editMode?<NumericInput key={c} aria-label={`${days[r]} ${hours[c]}`} min={0} max={100} value={value} onChange={(n)=>setActivityHeatmap((current)=>current.map((line,lineIndex)=>lineIndex===r?line.map((item,columnIndex)=>columnIndex===c?Math.max(0,Math.min(100,n)):item):line))} className="h-7 min-w-0 rounded text-center text-[9px] font-semibold text-white border border-[rgba(255,255,255,.12)] heatmap-cell" style={{ ['--heatmap-cell-color' as string]: `rgba(228,54,120,${.12+value/115})` } as React.CSSProperties}/>:<div key={c} className="h-7 rounded flex items-center justify-center text-[9px] font-semibold text-white" style={{background:`rgba(228,54,120,${.12+value/115})`}}>{value}</div>)}</div>)}</div></section></div>
-    </div>{editingGlobal && <GlobalMetricsModal channel="instagram" values={global} onClose={()=>setEditingGlobal(false)} onSave={(values)=>setGlobalMetrics((current)=>({...current,instagram:values}))}/>}</div>
+    </div>{editingGlobal && <GlobalMetricsModal channel="instagram" values={global} onClose={()=>setEditingGlobal(false)} onSave={(values)=>persistGlobal('instagram',values)}/>}</div>
   }
 
   if (activeChannel === 'linkedin') {
@@ -552,7 +574,7 @@ function DashboardFigma({ posts, metrics, channel, setChannel, globalMetrics, se
       {visibleMetrics.length>0&&<div className="grid gap-3" style={{gridTemplateColumns:`repeat(${visibleMetrics.length}, minmax(0, 1fr))`}}>{visibleMetrics.map((metric)=><div key={metric.id} className="bg-[#17171A] rounded-xl p-4 border" style={{borderColor:isStaleMetric(metric)?'#FF5252':metric.color+'55'}}><p className="text-xs text-[#999]">{metric.name}</p><p className="text-xl font-semibold mt-2" style={{color:metric.color}}>{metric.value.toLocaleString('pt-BR')} <span className="text-xs text-[#777]">{UNIT_LABELS[metric.unit] ?? metric.unit}</span></p></div>)}</div>}
 
       <div><div className="flex items-center gap-2 mb-3"><Users size={14} className="text-[#507AE6]"/><h3 className="text-sm font-semibold text-[#F0F0F5]">Audiência Profissional — Demographics</h3><span className="text-[10px] px-2 py-1 rounded-md text-[#8C82FF] bg-[rgba(108,99,255,.12)]">LinkedIn B2B</span></div><section className="bg-[#17171A] rounded-2xl p-5 border border-[rgba(255,255,255,.1)]"><h3 className="text-sm font-semibold text-[#F0F0F5]">Perfil da Audiência</h3><p className="text-xs text-[#777] mt-1">Segmentação por cargo, senioridade, setor e localização</p><div className="flex flex-wrap gap-1.5 my-4">{(['Cargo / Função','Senioridade','Setor','Localização'] as const).map((tab)=><button key={tab} onClick={()=>setAudienceTab(tab)} className="px-3 py-2 rounded-lg text-xs" style={audienceTab===tab?{background:'#0A66C2',color:'#fff'}:{background:'rgba(255,255,255,.05)',color:'#999'}}>{tab}</button>)}</div><div className="space-y-3">{linkedAudience.map((item,index)=><div key={item.label} className="grid grid-cols-[170px_1fr_54px] items-center gap-3"><span className="text-xs text-[#999]">{item.label}</span><div className="h-2 rounded-full bg-[rgba(255,255,255,.06)]"><div className="h-full rounded-full bg-[#318ACB]" style={{width:`${item.value/Math.max(...linkedAudience.map((entry)=>entry.value))*100}%`}}/></div>{editMode?<NumericInput min={0} max={100} value={item.value} onChange={(n)=>setAudienceData((current)=>({...current,[audienceTab]:current[audienceTab].map((entry,i)=>i===index?{...entry,value:n}:entry)}))} className="w-14 px-2 py-1 rounded-md text-xs border border-[rgba(255,255,255,.12)] bg-[rgba(255,255,255,.04)]"/>:<strong className="text-xs text-right">{item.value}%</strong>}</div>)}</div></section></div>
-    </div>{editingGlobal&&<GlobalMetricsModal channel="linkedin" values={global} onClose={()=>setEditingGlobal(false)} onSave={(values)=>setGlobalMetrics((current)=>({...current,linkedin:values}))}/>}</div>
+    </div>{editingGlobal&&<GlobalMetricsModal channel="linkedin" values={global} onClose={()=>setEditingGlobal(false)} onSave={(values)=>persistGlobal('linkedin',values)}/>}</div>
   }
 
   return (
@@ -614,7 +636,7 @@ function DashboardFigma({ posts, metrics, channel, setChannel, globalMetrics, se
 
         {visibleMetrics.length > 0 && <div><h3 className="text-sm font-semibold text-[#F0F0F5] mb-3">Métricas adicionadas manualmente</h3><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">{visibleMetrics.map((metric) => <div key={metric.id} className="bg-[#17171A] rounded-xl p-4 border border-[rgba(255,255,255,.1)]"><p className="text-xs text-[#999]">{metric.name}</p><p className="text-xl font-semibold mt-2" style={{ color: metric.color }}>{metric.value.toLocaleString('pt-BR')} <span className="text-xs text-[#777]">{metric.unit}</span></p><p className="text-[11px] text-[#666] mt-1">{metric.formula || 'Entrada manual'}</p></div>)}</div></div>}
       </div>
-      {editingGlobal && <GlobalMetricsModal channel={activeChannel} values={global} onClose={() => setEditingGlobal(false)} onSave={(values) => setGlobalMetrics((current) => ({ ...current, [activeChannel]: values }))} />}
+      {editingGlobal && <GlobalMetricsModal channel={activeChannel} values={global} onClose={() => setEditingGlobal(false)} onSave={(values) => persistGlobal(activeChannel, values)} />}
     </div>
   )
 }
@@ -847,6 +869,7 @@ type MQLState = typeof mqlData
 
 function MQLView({ mql, setMql }: { mql: MQLState; setMql: (fn: (prev: MQLState) => MQLState) => void }) {
   const [editMode, setEditMode] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [newTitle, setNewTitle] = useState('')
   const [newBehavior, setNewBehavior] = useState('')
   const [newIndustry, setNewIndustry] = useState('')
@@ -860,6 +883,19 @@ function MQLView({ mql, setMql }: { mql: MQLState; setMql: (fn: (prev: MQLState)
     setMql((m) => ({ ...m, [key]: [...(m[key] as string[]), val.trim()] }))
   }
 
+  async function toggleEdit() {
+    if (!editMode) { setEditMode(true); return }
+    setSaving(true)
+    try {
+      const saved = await api.metrics.saveMql({
+        scoreMinimo: mql.score, taxaMqlSql: mql.mqlToSQLRate, mqlsEsteMes: mql.monthlyMQLs, tamanhoEmpresa: mql.companySize,
+        cargosAlvo: mql.jobTitles, segmentos: mql.industries, comportamentos: mql.behaviors,
+      })
+      setMql(() => ({ jobTitles: saved.cargosAlvo, companySize: saved.tamanhoEmpresa, industries: saved.segmentos, behaviors: saved.comportamentos, score: saved.scoreMinimo, monthlyMQLs: saved.mqlsEsteMes, mqlToSQLRate: saved.taxaMqlSql }))
+      setEditMode(false)
+    } catch (error) { console.error(error) } finally { setSaving(false) }
+  }
+
   return (
     <div className="h-full overflow-auto p-5">
       <div className="max-w-3xl mx-auto">
@@ -868,9 +904,9 @@ function MQLView({ mql, setMql }: { mql: MQLState; setMql: (fn: (prev: MQLState)
             <h2 className="text-base font-semibold text-[#F0F0F5]">Definição do MQL Ideal</h2>
             <p className="text-sm text-[#8A8A9A] mt-0.5">Critérios de qualificação e conversão</p>
           </div>
-          <button onClick={() => setEditMode((e) => !e)} className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl transition-all"
+          <button onClick={toggleEdit} disabled={saving} className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl transition-all disabled:opacity-50"
             style={editMode ? { background: '#00C853', color: '#fff' } : { background: 'rgba(125,26,215,0.08)', color: '#507AE6' }}>
-            {editMode ? <><Check size={15} /> Salvar</> : <><Edit2 size={15} /> Editar</>}
+            {editMode ? <><Check size={15} /> {saving ? 'Salvando…' : 'Salvar'}</> : <><Edit2 size={15} /> Editar</>}
           </button>
         </div>
 
@@ -997,6 +1033,9 @@ export default function Metricas({ channel, setChannel, posts }: Props) {
   useEffect(() => {
     api.metrics.custom()
       .then((rows) => setMetrics(rows.map((row, i) => ({ ...mapMetric(row), color: METRIC_COLORS[i % METRIC_COLORS.length] }))))
+      .catch(console.error)
+    api.metrics.mql()
+      .then((saved) => setMql({ jobTitles: saved.cargosAlvo, companySize: saved.tamanhoEmpresa, industries: saved.segmentos, behaviors: saved.comportamentos, score: saved.scoreMinimo, monthlyMQLs: saved.mqlsEsteMes, mqlToSQLRate: saved.taxaMqlSql }))
       .catch(console.error)
   }, [])
   const [globalMetrics, setGlobalMetrics] = useState<GlobalMetricsState>({
