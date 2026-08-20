@@ -103,6 +103,7 @@ model User {
   updatedAt      DateTime         @updatedAt
   atribuicoes    TaskAssignment[]
   engajamentos   TeamEngagement[]
+  pontuacoesEngajamento EngagementScore[]
   resetCodes     PasswordResetCode[]
   participacoes  CalendarEventAttendee[]
   eventosCriados CalendarEvent[]
@@ -262,6 +263,30 @@ model TeamEngagement {
 
   @@unique([userId, periodo])
   @@index([periodo])
+}
+
+// Critérios de avaliação de engajamento configuráveis pela Gerente (ex.: Pontualidade, Presença,
+// Autonomia). "Qualidade" não é um critério aqui — continua calculada automaticamente a partir das
+// notas das tasks.
+model EngagementCriterion {
+  id        String            @id @default(uuid())
+  nome      String            @unique
+  ordem     Int               @default(0)
+  createdAt DateTime          @default(now())
+  scores    EngagementScore[]
+}
+
+model EngagementScore {
+  id          String              @id @default(uuid())
+  criterionId String
+  userId      String
+  periodo     String
+  valor       Float?
+  criterion   EngagementCriterion @relation(fields: [criterionId], references: [id], onDelete: Cascade)
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([criterionId, userId, periodo])
+  @@index([userId, periodo])
 }
 
 model Post {

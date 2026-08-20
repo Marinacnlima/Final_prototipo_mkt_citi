@@ -75,15 +75,6 @@ export interface TeamMember {
   color: string
 }
 
-export interface EngagementData {
-  memberId: number | string
-  name: string
-  punctuality: number
-  quality: number
-  presence: number
-  tasksCompleted: number
-  tasksTotal: number
-}
 
 export interface CalendarEvent {
   id: string
@@ -237,12 +228,6 @@ export const initialKanban: KanbanColumn[] = [
 ]
 
 // ─── Team Engagement ─────────────────────────────────────────────────────────
-
-export const engagementData: EngagementData[] = [
-  { memberId: 2, name: 'Carlos Melo', punctuality: 4.5, quality: 4.4, presence: 4.8, tasksCompleted: 14, tasksTotal: 16 },
-  { memberId: 3, name: 'Beatriz Santos', punctuality: 3.9, quality: 4.6, presence: 5.0, tasksCompleted: 11, tasksTotal: 15 },
-  { memberId: 4, name: 'Rafael Costa', punctuality: 4.3, quality: 4.7, presence: 4.0, tasksCompleted: 9, tasksTotal: 11 },
-]
 
 // ─── Posts Library ───────────────────────────────────────────────────────────
 

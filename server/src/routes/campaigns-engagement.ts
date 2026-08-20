@@ -31,5 +31,44 @@ campaignsRouter.delete('/:id/metrics/:metricId',asyncRoute(async(req,res)=>{awai
 
 export const engagementRouter = Router(); engagementRouter.use(authenticate,managerOnly)
 const monthBounds=(period:string)=>{if(!/^\d{4}-\d{2}$/.test(period))throw new ApiError(422,'INVALID_PERIOD');const start=new Date(`${period}-01T00:00:00.000Z`);const end=new Date(Date.UTC(start.getUTCFullYear(),start.getUTCMonth()+1,1));return{start,end}}
-engagementRouter.get('/',asyncRoute(async(req,res)=>{const period=z.string().default(new Date().toISOString().slice(0,7)).parse(req.query.periodo);const {start,end}=monthBounds(period);const users=await prisma.user.findMany({where:{ativo:true,perfil:'ANALISTA'},include:{engajamentos:{where:{periodo:period}},atribuicoes:{where:{task:{OR:[{dataEntrega:{gte:start,lt:end}},{dataEntrega:null,createdAt:{gte:start,lt:end}}]}},include:{task:{include:{coluna:true}}}}}});const membros=users.map((user)=>{const manual=user.engajamentos[0];const graded=user.atribuicoes.map((a)=>a.nota).filter((n):n is number=>n!==null);return{userId:user.id,nome:user.nomeCompleto,cargo:user.cargo,compromisso:manual?.compromisso??null,presenca:manual?.presenca??null,observacoes:manual?.observacoes??null,qualidade:graded.length?Math.round(graded.reduce((a,b)=>a+b,0)/graded.length*10)/10:null,tasksTotal:user.atribuicoes.length,tasksConcluidas:user.atribuicoes.filter((a)=>a.task.coluna.isDone).length}});const average=(key:'compromisso'|'presenca'|'qualidade')=>{const values=membros.map((m)=>m[key]).filter((v):v is number=>v!==null);return values.length?Math.round(values.reduce((a,b)=>a+b,0)/values.length*10)/10:null};res.json({periodo:period,medias:{compromisso:average('compromisso'),qualidade:average('qualidade'),presenca:average('presenca')},membros})}))
-engagementRouter.put('/:userId',asyncRoute(async(req,res)=>{const periodo=z.string().parse(req.query.periodo);monthBounds(periodo);const body=z.object({compromisso:z.number().min(0).max(5).nullable().optional(),presenca:z.number().min(0).max(5).nullable().optional(),observacoes:z.string().nullable().optional()}).parse(req.body);res.json(await prisma.teamEngagement.upsert({where:{userId_periodo:{userId:String(req.params.userId),periodo}},create:{userId:String(req.params.userId),periodo,...body},update:body}))}))
+
+// Critérios de avaliação configuráveis pela Gerente (ex.: Pontualidade, Presença, Autonomia).
+// "Qualidade" não é um critério aqui — continua calculada automaticamente a partir das notas das tasks.
+engagementRouter.get('/criteria',asyncRoute(async(_req,res)=>res.json(await prisma.engagementCriterion.findMany({orderBy:{ordem:'asc'}}))))
+engagementRouter.post('/criteria',asyncRoute(async(req,res)=>{const body=z.object({nome:z.string().trim().min(1)}).parse(req.body);const max=await prisma.engagementCriterion.aggregate({_max:{ordem:true}});res.status(201).json(await prisma.engagementCriterion.create({data:{nome:body.nome,ordem:(max._max.ordem??-1)+1}}))}))
+engagementRouter.patch('/criteria/:id',asyncRoute(async(req,res)=>{const body=z.object({nome:z.string().trim().min(1).optional(),ordem:z.number().int().optional()}).parse(req.body);res.json(await prisma.engagementCriterion.update({where:{id:String(req.params.id)},data:body}))}))
+engagementRouter.delete('/criteria/:id',asyncRoute(async(req,res)=>{await prisma.engagementCriterion.delete({where:{id:String(req.params.id)}});res.status(204).send()}))
+
+engagementRouter.get('/',asyncRoute(async(req,res)=>{
+  const period=z.string().default(new Date().toISOString().slice(0,7)).parse(req.query.periodo)
+  const {start,end}=monthBounds(period)
+  const [criterios,users]=await Promise.all([
+    prisma.engagementCriterion.findMany({orderBy:{ordem:'asc'}}),
+    prisma.user.findMany({where:{ativo:true,perfil:'ANALISTA'},include:{
+      engajamentos:{where:{periodo:period}},
+      pontuacoesEngajamento:{where:{periodo:period}},
+      atribuicoes:{where:{task:{OR:[{dataEntrega:{gte:start,lt:end}},{dataEntrega:null,createdAt:{gte:start,lt:end}}]}},include:{task:{include:{coluna:true}}}},
+    }}),
+  ])
+  const membros=users.map((user)=>{
+    const manual=user.engajamentos[0]
+    const graded=user.atribuicoes.map((a)=>a.nota).filter((n):n is number=>n!==null)
+    const scores:Record<string,number|null>={}
+    for(const c of criterios){const s=user.pontuacoesEngajamento.find((p)=>p.criterionId===c.id);scores[c.id]=s?.valor??null}
+    return{userId:user.id,nome:user.nomeCompleto,cargo:user.cargo,observacoes:manual?.observacoes??null,qualidade:graded.length?Math.round(graded.reduce((a,b)=>a+b,0)/graded.length*10)/10:null,scores,tasksTotal:user.atribuicoes.length,tasksConcluidas:user.atribuicoes.filter((a)=>a.task.coluna.isDone).length}
+  })
+  const avg=(values:(number|null)[])=>{const nums=values.filter((v):v is number=>v!==null);return nums.length?Math.round(nums.reduce((a,b)=>a+b,0)/nums.length*10)/10:null}
+  const porCriterio:Record<string,number|null>={}
+  for(const c of criterios)porCriterio[c.id]=avg(membros.map((m)=>m.scores[c.id]))
+  res.json({periodo:period,criterios,medias:{qualidade:avg(membros.map((m)=>m.qualidade)),porCriterio},membros})
+}))
+engagementRouter.put('/:userId',asyncRoute(async(req,res)=>{
+  const periodo=z.string().parse(req.query.periodo);monthBounds(periodo)
+  const userId=String(req.params.userId)
+  const body=z.object({observacoes:z.string().nullable().optional(),scores:z.array(z.object({criterionId:z.string(),valor:z.number().min(0).max(5).nullable()})).optional()}).parse(req.body)
+  await prisma.$transaction(async(tx)=>{
+    if(body.observacoes!==undefined)await tx.teamEngagement.upsert({where:{userId_periodo:{userId,periodo}},create:{userId,periodo,observacoes:body.observacoes},update:{observacoes:body.observacoes}})
+    for(const s of body.scores??[])await tx.engagementScore.upsert({where:{criterionId_userId_periodo:{criterionId:s.criterionId,userId,periodo}},create:{criterionId:s.criterionId,userId,periodo,valor:s.valor},update:{valor:s.valor}})
+  })
+  res.json({ok:true})
+}))
