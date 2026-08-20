@@ -1605,12 +1605,12 @@ function EngagementView({ columns }: { columns: KanbanColumn[] }) {
             <p className="text-sm text-[#8A8A9A] mt-0.5">Visível apenas para a Gerente · {new Date(`${period}-02`).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })} · Escala 0–5</p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => setCriteriaModalOpen(true)} className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl transition-all"
-              style={{ background: 'rgba(255,255,255,0.06)', color: '#8A8A9A' }}>
+            <button onClick={() => setCriteriaModalOpen(true)} className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl transition-all hover:border-[rgba(255,255,255,0.2)]"
+              style={{ background: 'rgba(255,255,255,0.04)', color: '#8A8A9A', border: '1.5px solid rgba(255,255,255,0.1)' }}>
               <Settings size={15} /> Critérios
             </button>
             <button onClick={toggleEditMode} className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl transition-all"
-              style={editMode ? { background: '#00C853', color: '#fff' } : { background: 'rgba(125,26,215,0.08)', color: '#507AE6' }}>
+              style={editMode ? { background: '#00C853', color: '#fff', border: '1.5px solid transparent' } : { background: 'rgba(125,26,215,0.08)', color: '#507AE6', border: '1.5px solid rgba(125,26,215,0.2)' }}>
               {editMode ? <><Check size={15} /> Salvar</> : <><Edit2 size={15} /> Editar</>}
             </button>
           </div>
